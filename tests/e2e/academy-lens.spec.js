@@ -31,9 +31,16 @@ async function panelSnapshot(page) {
     const select = shadow && shadow.querySelector("[data-language]");
     return {
       exists: Boolean(root),
+      collapsed: shadow ? shadow.querySelector(".panel").dataset.collapsed : null,
+      bodyVisible: shadow ? window.getComputedStyle(shadow.querySelector(".body")).display !== "none" : null,
       selected: select ? select.value : null,
       options: select ? Array.from(select.options).map((option) => option.textContent) : [],
       buttons: shadow ? Array.from(shadow.querySelectorAll("button")).map((button) => button.textContent.trim()) : [],
+      actionButtons: shadow
+        ? Array.from(shadow.querySelectorAll("[data-translate], [data-restore]")).map((button) =>
+            button.textContent.trim()
+          )
+        : [],
       note: shadow ? shadow.querySelector("[data-language-note]").textContent : null,
       status: shadow ? shadow.querySelector("[data-status]").textContent : null
     };
@@ -73,6 +80,8 @@ test.describe("AcademyLens extension E2E", () => {
       const snapshot = await panelSnapshot(harness.page);
 
       expect(snapshot.exists).toBe(true);
+      expect(snapshot.collapsed).toBe("false");
+      expect(snapshot.bodyVisible).toBe(true);
       expect(snapshot.selected).toBe("ko");
       expect(snapshot.options.slice(0, 10)).toEqual([
         "English",
@@ -86,8 +95,26 @@ test.describe("AcademyLens extension E2E", () => {
         "Deutsch",
         "Português (BR)"
       ]);
-      expect(snapshot.buttons).toEqual(["번역", "원문 복원"]);
+      expect(snapshot.actionButtons).toEqual(["번역", "원문 복원"]);
       expect(snapshot.note).toContain("용어 사전");
+    } finally {
+      await stopHarness(harness);
+    }
+  });
+
+  test("collapse control hides and restores the full panel", async () => {
+    const harness = await startHarness();
+    try {
+      await clickPanelButton(harness.page, "[data-collapse]");
+      await expect.poll(async () => (await panelSnapshot(harness.page)).collapsed).toBe("true");
+      let snapshot = await panelSnapshot(harness.page);
+      expect(snapshot.bodyVisible).toBe(false);
+
+      await clickPanelButton(harness.page, "[data-collapse]");
+      await expect.poll(async () => (await panelSnapshot(harness.page)).collapsed).toBe("false");
+      snapshot = await panelSnapshot(harness.page);
+      expect(snapshot.bodyVisible).toBe(true);
+      expect(snapshot.actionButtons).toEqual(["번역", "원문 복원"]);
     } finally {
       await stopHarness(harness);
     }
@@ -243,6 +270,7 @@ test.describe("AcademyLens extension E2E", () => {
         await harness.page.waitForTimeout(150);
         const box = await harness.page.evaluate(() => {
           const panel = document.querySelector(".academylens-root").shadowRoot.querySelector(".panel");
+          const body = panel.querySelector(".body");
           const rect = panel.getBoundingClientRect();
           return {
             left: rect.left,
@@ -250,14 +278,24 @@ test.describe("AcademyLens extension E2E", () => {
             right: rect.right,
             bottom: rect.bottom,
             width: rect.width,
-            height: rect.height
+            height: rect.height,
+            collapsed: panel.dataset.collapsed,
+            bodyVisible: window.getComputedStyle(body).display !== "none"
           };
         });
         expect(box.left).toBeGreaterThanOrEqual(0);
         expect(box.top).toBeGreaterThanOrEqual(0);
         expect(box.right).toBeLessThanOrEqual(viewport.width);
         expect(box.bottom).toBeLessThanOrEqual(viewport.height);
-        expect(box.width).toBeGreaterThan(240);
+        if (viewport.width <= 420) {
+          expect(box.width).toBeGreaterThan(200);
+          expect(box.collapsed).toBe("true");
+          expect(box.bodyVisible).toBe(false);
+        } else {
+          expect(box.width).toBeGreaterThan(240);
+          expect(box.collapsed).toBe("false");
+          expect(box.bodyVisible).toBe(true);
+        }
 
         const screenshot = await harness.page.screenshot();
         expect(screenshot.length).toBeGreaterThan(20000);

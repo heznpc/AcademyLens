@@ -19,7 +19,11 @@
     lastUrl: location.href,
     generation: 0,
     observer: null,
-    debounceTimer: 0
+    debounceTimer: 0,
+    placementTimer: 0,
+    placementSettleTimers: [],
+    collapsed: false,
+    collapseUserSet: false
   };
 
   function getLocal(keys) {
@@ -71,6 +75,19 @@
     panel.setAttribute("aria-busy", String(Boolean(isBusy)));
   }
 
+  function setCollapsed(isCollapsed, options = {}) {
+    if (options.user) state.collapseUserSet = true;
+    state.collapsed = Boolean(isCollapsed);
+    if (!state.shadow) return;
+    const panel = state.shadow.querySelector(".panel");
+    const toggle = state.shadow.querySelector("[data-collapse]");
+    if (!panel || !toggle) return;
+    panel.dataset.collapsed = String(state.collapsed);
+    toggle.textContent = state.collapsed ? "+" : "-";
+    toggle.setAttribute("aria-expanded", String(!state.collapsed));
+    toggle.setAttribute("aria-label", state.collapsed ? message("action.expand") : message("action.collapse"));
+  }
+
   function sendMessage(message, timeoutMs = 30000) {
     return new Promise((resolve, reject) => {
       let settled = false;
@@ -98,6 +115,64 @@
 
   function languageLabel(code) {
     return C.getLanguageLabel(code, uiLocale);
+  }
+
+  function looksLikeBottomOverlay(element, rect) {
+    if (!element || element === state.panel || state.panel?.contains(element)) return false;
+    if (!rect || rect.width < Math.min(280, window.innerWidth * 0.35) || rect.height < 36) return false;
+    if (rect.bottom < window.innerHeight - 12) return false;
+
+    const text = Text.normalizeWhitespace(element.innerText || element.textContent || "");
+    const hasCookiePromptText = /cookies?|accept all|reject all|manage preferences/i.test(text);
+    const hasOverlayText = hasCookiePromptText || /privacy/i.test(text);
+    const style = window.getComputedStyle(element);
+    if (["fixed", "sticky"].includes(style.position)) {
+      return element.getAttribute("role") === "dialog" || hasOverlayText;
+    }
+
+    return (
+      window.innerWidth <= 420 &&
+      hasCookiePromptText &&
+      rect.width > window.innerWidth * 0.7 &&
+      rect.height > 80 &&
+      rect.height < window.innerHeight * 0.6 &&
+      rect.bottom > window.innerHeight - 40
+    );
+  }
+
+  function updatePanelPlacement() {
+    if (!state.panel || !state.shadow) return;
+    const panel = state.shadow.querySelector(".panel");
+    if (!panel) return;
+
+    const baseGap = 14;
+    let offset = 0;
+
+    for (const element of document.body.querySelectorAll("*")) {
+      const rect = element.getBoundingClientRect();
+      if (!looksLikeBottomOverlay(element, rect)) continue;
+      offset = Math.max(offset, Math.ceil(window.innerHeight - rect.top + baseGap));
+    }
+
+    panel.dataset.bottomOverlay = String(offset > 0);
+    state.panel.style.setProperty("--academylens-bottom-offset", `${offset}px`);
+    if (!state.collapseUserSet) {
+      setCollapsed(offset > 0 || window.innerWidth <= 420);
+    }
+  }
+
+  function schedulePanelPlacement(delay = 80) {
+    window.clearTimeout(state.placementTimer);
+    state.placementTimer = window.setTimeout(updatePanelPlacement, delay);
+  }
+
+  function settlePanelPlacement() {
+    for (const timer of state.placementSettleTimers) {
+      window.clearTimeout(timer);
+    }
+    state.placementSettleTimers = [100, 350, 800, 1500, 3000, 5000].map((delay) =>
+      window.setTimeout(updatePanelPlacement, delay)
+    );
   }
 
   async function loadSettings() {
@@ -159,9 +234,9 @@
         .panel {
           position: fixed;
           right: 18px;
-          bottom: 18px;
+          bottom: calc(14px + var(--academylens-bottom-offset, 0px));
           z-index: 2147483647;
-          width: 278px;
+          width: min(286px, calc(100vw - 32px));
           border: 1px solid rgba(15, 23, 42, 0.16);
           border-radius: 8px;
           background: rgba(255, 255, 255, 0.98);
@@ -169,6 +244,9 @@
           color: #111827;
           overflow: hidden;
           pointer-events: auto;
+          transition:
+            bottom 180ms ease,
+            box-shadow 180ms ease;
         }
         .top {
           display: flex;
@@ -189,10 +267,34 @@
           color: #475569;
           white-space: nowrap;
         }
+        .top-actions {
+          display: inline-flex;
+          align-items: center;
+          gap: 8px;
+        }
+        .icon-button {
+          display: inline-grid;
+          width: 22px;
+          min-height: 22px;
+          place-items: center;
+          border: 1px solid rgba(15, 23, 42, 0.12);
+          border-radius: 6px;
+          background: rgba(248, 250, 252, 0.9);
+          color: #334155;
+          font-size: 15px;
+          line-height: 1;
+        }
         .body {
           display: grid;
           gap: 8px;
           padding: 10px 12px 12px;
+        }
+        .panel[data-collapsed="true"] {
+          width: 214px;
+          box-shadow: 0 10px 28px rgba(15, 23, 42, 0.13);
+        }
+        .panel[data-collapsed="true"] .body {
+          display: none;
         }
         .field {
           display: grid;
@@ -285,11 +387,24 @@
         .progress[data-active="true"]::before {
           background: #2563eb;
         }
+        @media (max-width: 420px) {
+          .panel {
+            right: 14px;
+            width: min(286px, calc(100vw - 28px));
+          }
+          .panel[data-bottom-overlay="true"][data-collapsed="true"] {
+            top: 84px;
+            bottom: auto;
+          }
+        }
       </style>
       <section class="panel">
         <div class="top">
           <div class="name">AcademyLens</div>
-          <div class="badge">${message("badge.unofficial")}</div>
+          <div class="top-actions">
+            <div class="badge">${message("badge.unofficial")}</div>
+            <button type="button" class="icon-button" data-collapse aria-expanded="true" aria-label="${message("action.collapse")}">-</button>
+          </div>
         </div>
         <div class="body">
           <div class="field">
@@ -351,11 +466,17 @@
 
     shadow.querySelector("[data-translate]").addEventListener("click", () => translatePage());
     shadow.querySelector("[data-restore]").addEventListener("click", restorePage);
+    shadow.querySelector("[data-collapse]").addEventListener("click", () => {
+      setCollapsed(!state.collapsed, { user: true });
+      schedulePanelPlacement();
+    });
 
     document.documentElement.append(host);
     state.panel = host;
     state.shadow = shadow;
     updateLanguageSupport();
+    setCollapsed(false);
+    settlePanelPlacement();
   }
 
   function currentRecords() {
@@ -489,6 +610,7 @@
     state.nodeRecords = new WeakMap();
     setBusy(false);
     setProgress(0);
+    schedulePanelPlacement();
     if (!options.silent) {
       setStatus(message("status.restored", { count: restored }), "ok");
     }
@@ -505,6 +627,7 @@
     bumpGeneration();
     restorePage({ bump: false, silent: true });
     setStatus(message("status.ready"));
+    settlePanelPlacement();
     if (state.settings.autoTranslate && state.settings.targetLanguage !== "en") {
       scheduleAutoTranslate(900);
     }
@@ -513,6 +636,7 @@
   function watchSpaNavigation() {
     state.observer = new MutationObserver(() => {
       handleRouteChange();
+      schedulePanelPlacement();
 
       if (!state.settings.autoTranslate) return;
       scheduleAutoTranslate(800);
@@ -544,9 +668,15 @@
 
     window.addEventListener("popstate", handleRouteChange);
     window.addEventListener("hashchange", handleRouteChange);
+    window.addEventListener("resize", () => schedulePanelPlacement());
+    window.addEventListener("scroll", () => schedulePanelPlacement(120), { passive: true });
     window.addEventListener("pagehide", () => {
       state.observer?.disconnect();
       window.clearTimeout(state.debounceTimer);
+      window.clearTimeout(state.placementTimer);
+      for (const timer of state.placementSettleTimers) {
+        window.clearTimeout(timer);
+      }
     });
   }
 
