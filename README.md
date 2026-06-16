@@ -36,6 +36,10 @@ AcademyLens is a separate project because OpenAI Academy has a different product
 
 OpenAI Academy is hosted through Gradual for course enrollment, progress tracking, and course-completion certificates. AcademyLens intentionally stays outside those flows and works only with visible page text.
 
+## Built For Academy Pages
+
+AcademyLens is designed around OpenAI Academy course-page patterns and tested against Gradual-style course, study-room, and lesson DOM structures. It translates visible lesson content while avoiding navigation, progress, certificates, quizzes, and account controls.
+
 ## Planned v1.1
 
 AI-assisted terminology review may return only if it can be implemented without remote hosted code risk, such as a reviewed local bundle or another compliant opt-in bridge.
@@ -81,3 +85,7 @@ Load the extension:
 ## Privacy
 
 See [PRIVACY_POLICY.md](PRIVACY_POLICY.md).
+
+## Acknowledgements
+
+Development assisted by OpenAI Codex.
