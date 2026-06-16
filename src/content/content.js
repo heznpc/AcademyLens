@@ -320,10 +320,10 @@
         }
         .panel {
           position: fixed;
-          right: 18px;
-          bottom: calc(14px + var(--academylens-bottom-offset, 0px));
+          right: 22px;
+          bottom: calc(18px + var(--academylens-bottom-offset, 0px));
           z-index: 2147483647;
-          width: min(286px, calc(100vw - 32px));
+          width: min(342px, calc(100vw - 36px));
           border: 1px solid rgba(15, 23, 42, 0.16);
           border-radius: 8px;
           background: rgba(255, 255, 255, 0.98);
@@ -340,17 +340,17 @@
           align-items: center;
           justify-content: space-between;
           gap: 10px;
-          padding: 10px 12px;
+          padding: 12px 14px;
           border-bottom: 1px solid rgba(15, 23, 42, 0.1);
         }
         .name {
-          font-size: 13px;
+          font-size: 14px;
           font-weight: 700;
           letter-spacing: 0;
           white-space: nowrap;
         }
         .badge {
-          font-size: 10px;
+          font-size: 11px;
           color: #475569;
           white-space: nowrap;
         }
@@ -361,8 +361,8 @@
         }
         .icon-button {
           display: inline-grid;
-          width: 22px;
-          min-height: 22px;
+          width: 24px;
+          min-height: 24px;
           place-items: center;
           border: 1px solid rgba(15, 23, 42, 0.12);
           border-radius: 6px;
@@ -373,11 +373,11 @@
         }
         .body {
           display: grid;
-          gap: 8px;
-          padding: 10px 12px 12px;
+          gap: 10px;
+          padding: 12px 14px 14px;
         }
         .panel[data-collapsed="true"] {
-          width: 214px;
+          width: 232px;
           box-shadow: 0 10px 28px rgba(15, 23, 42, 0.13);
         }
         .panel[data-collapsed="true"] .body {
@@ -385,12 +385,12 @@
         }
         .field {
           display: grid;
-          gap: 5px;
+          gap: 6px;
         }
         .note {
           color: #64748b;
-          font-size: 10.5px;
-          line-height: 1.35;
+          font-size: 11.5px;
+          line-height: 1.4;
         }
         .note[data-glossary="true"] {
           color: #047857;
@@ -411,22 +411,22 @@
           align-items: center;
           gap: 6px;
           color: #475569;
-          font-size: 11px;
+          font-size: 12px;
           line-height: 1;
         }
         .toggle input {
-          width: 14px;
-          height: 14px;
+          width: 15px;
+          height: 15px;
           margin: 0;
         }
         button, select {
-          min-height: 34px;
+          min-height: 38px;
           border-radius: 6px;
           border: 1px solid rgba(15, 23, 42, 0.16);
           background: #fff;
           color: #111827;
           font: inherit;
-          font-size: 12px;
+          font-size: 13px;
         }
         button {
           cursor: pointer;
@@ -442,9 +442,9 @@
           opacity: 0.55;
         }
         .status {
-          min-height: 16px;
+          min-height: 18px;
           color: #475569;
-          font-size: 11px;
+          font-size: 12px;
           line-height: 1.45;
         }
         .status[data-tone="error"] {
@@ -456,7 +456,7 @@
         .progress {
           --value: 0%;
           flex: 1;
-          height: 3px;
+          height: 4px;
           min-width: 54px;
           overflow: hidden;
           border-radius: 999px;
@@ -477,7 +477,7 @@
         @media (max-width: 420px) {
           .panel {
             right: 14px;
-            width: min(286px, calc(100vw - 28px));
+            width: min(330px, calc(100vw - 28px));
           }
           .panel[data-bottom-overlay="true"][data-collapsed="true"] {
             top: 84px;
