@@ -78,6 +78,11 @@ async function startHarness(options = {}) {
   return { calls, ext, fixture, page };
 }
 
+async function waitForFrame(page, pattern) {
+  await expect.poll(() => page.frames().some((frame) => pattern.test(frame.url()))).toBe(true);
+  return page.frames().find((frame) => pattern.test(frame.url()));
+}
+
 async function stopHarness(harness) {
   if (harness.ext) await closeExtension(harness.ext);
   if (harness.fixture) await stopFixtureServer(harness.fixture.server);
@@ -270,6 +275,35 @@ test.describe("AcademyLens extension E2E", () => {
       await expect(harness.page.locator("#certificate-title")).toHaveText("Course Certificate");
       await expect(harness.page.locator("#quiz-title")).toHaveText("Quiz Results");
       await expect(harness.page.locator("[data-testid='account-menu']")).toContainText("Settings");
+    } finally {
+      await stopHarness(harness);
+    }
+  });
+
+  test("translates nested SCORM lesson content from the top-level panel", async () => {
+    const harness = await startHarness({ path: "/learn/ai-foundations-juzjs/lessons" });
+    try {
+      await expandPanel(harness.page);
+      const scormFrame = await waitForFrame(harness.page, /scormcontent\/index\.html/);
+      await expect(scormFrame.locator("#scorm-title")).toHaveText("AI Foundations");
+      await expect(harness.page.locator(".academylens-root")).toHaveCount(1);
+
+      await clickPanelButton(harness.page, "[data-translate]");
+      await expect(scormFrame.locator("#scorm-title")).toHaveText("AI 기초");
+      await expect(scormFrame.locator("#scorm-body")).toHaveText(
+        "이 과정은 AI와 ChatGPT를 안전하게 사용하기 위한 기반을 구축하도록 설계되었습니다."
+      );
+      await expect(scormFrame.locator("#scorm-llm")).toHaveText(
+        "대규모 언어 모델은 사람들이 책임 있는 검토를 연습하도록 돕습니다."
+      );
+      await expect(harness.page.locator("#gradual-topbar")).toContainText("Home");
+      await expect(harness.page.locator("#gradual-topbar")).toContainText("Study Room");
+
+      await clickPanelButton(harness.page, "[data-restore]");
+      await expect(scormFrame.locator("#scorm-title")).toHaveText("AI Foundations");
+      await expect(scormFrame.locator("#scorm-body")).toHaveText(
+        "This course is designed to build foundations for using AI and ChatGPT safely."
+      );
     } finally {
       await stopHarness(harness);
     }

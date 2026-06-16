@@ -1,5 +1,18 @@
 const KO = new Map([
+  ["AI Foundations", "AI 기초"],
   ["Build practical AI skills for work", "업무를 위한 실용 AI 기술 구축"],
+  [
+    "This course is designed to build foundations for using __AL_TERM_0__ and __AL_TERM_1__ safely.",
+    "이 과정은 __AL_TERM_0__와 __AL_TERM_1__를 안전하게 사용하기 위한 기반을 구축하도록 설계되었습니다."
+  ],
+  [
+    "This course is designed to build foundations for using AI and __AL_TERM_0__ safely.",
+    "이 과정은 AI와 __AL_TERM_0__를 안전하게 사용하기 위한 기반을 구축하도록 설계되었습니다."
+  ],
+  [
+    "__AL_TERM_0__ help people practice responsible review.",
+    "__AL_TERM_0__은 사람들이 책임 있는 검토를 연습하도록 돕습니다."
+  ],
   [
     "__AL_TERM_0__ courses use __AL_TERM_1__ and __AL_TERM_2__.",
     "__AL_TERM_0__ 강의는 __AL_TERM_1__와 __AL_TERM_2__를 사용합니다."

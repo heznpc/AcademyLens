@@ -84,6 +84,9 @@
       "status.targetLanguage": "Target language: {language}",
       "status.glossaryLoading": "Glossary is still loading.",
       "status.noNewText": "No new course text found.",
+      "status.frameDispatch": "Sent translation to embedded course content.",
+      "status.frameTranslated": "Translated {count} embedded course text blocks.",
+      "status.frameRestored": "Restored embedded course content.",
       "status.translating": "Translating {count} text blocks...",
       "status.translated": "Translated {count} text blocks.",
       "status.translatedPartial": "Translated {count} text blocks. {failed} failed.",
@@ -109,6 +112,9 @@
       "status.targetLanguage": "번역 언어: {language}",
       "status.glossaryLoading": "용어 사전을 불러오는 중입니다.",
       "status.noNewText": "새로 번역할 강의 텍스트가 없습니다.",
+      "status.frameDispatch": "임베드된 강의 콘텐츠에 번역을 전달했습니다.",
+      "status.frameTranslated": "임베드된 강의 텍스트 {count}개를 번역했습니다.",
+      "status.frameRestored": "임베드된 강의 콘텐츠를 원문으로 복원했습니다.",
       "status.translating": "텍스트 {count}개 번역 중...",
       "status.translated": "텍스트 {count}개를 번역했습니다.",
       "status.translatedPartial": "텍스트 {count}개를 번역했습니다. {failed}개는 실패했습니다.",
@@ -123,7 +129,9 @@
     /^https:\/\/academy\.openai\.com\/[a-z-]+\/?$/i,
     /^https:\/\/academy\.openai\.com\/(?:[a-z-]+\/)?pages\/courses/i,
     /^https:\/\/academy\.openai\.com\/(?:[a-z-]+\/)?public\/courses\//i,
-    /^https:\/\/academy\.openai\.com\/(?:[a-z-]+\/)?courses\//i
+    /^https:\/\/academy\.openai\.com\/(?:[a-z-]+\/)?courses\//i,
+    /^https:\/\/academy\.openai\.com\/learn\//i,
+    /^https:\/\/academy\.openai\.com\/api\/courses\/[^/]+\/scorm-proxy\//i
   ]);
 
   const EXCLUDED_SELECTOR = [

@@ -5,6 +5,8 @@
   const Glossary = globalThis.AcademyLensGlossary;
   const Text = globalThis.AcademyLensTextUtils;
   const uiLocale = C && C.getUiLocale ? C.getUiLocale(navigator.language) : "en";
+  const FRAME_MESSAGE_SOURCE = "AcademyLens";
+  const isTopFrame = window.top === window;
 
   if (!C || !Glossary || !Text || !C.isAcademyUrl(location.href)) return;
 
@@ -25,6 +27,10 @@
     collapsed: false,
     collapseUserSet: false
   };
+
+  function frameMessageId() {
+    return `${Date.now().toString(36)}-${Math.random().toString(36).slice(2)}`;
+  }
 
   function getLocal(keys) {
     return chrome.storage.local.get(keys);
@@ -115,6 +121,87 @@
 
   function languageLabel(code) {
     return C.getLanguageLabel(code, uiLocale);
+  }
+
+  function postToChildFrames(action, extra = {}) {
+    let sent = 0;
+    const payload = {
+      source: FRAME_MESSAGE_SOURCE,
+      action,
+      messageId: extra.messageId || frameMessageId(),
+      targetLanguage: extra.targetLanguage || state.settings.targetLanguage
+    };
+
+    for (const frame of document.querySelectorAll("iframe")) {
+      if (!frame.contentWindow) continue;
+      try {
+        frame.contentWindow.postMessage(payload, location.origin);
+        sent += 1;
+      } catch {
+        // Cross-origin or not-yet-ready course frames are skipped; later user actions can retry.
+      }
+    }
+
+    return sent;
+  }
+
+  function postFrameResult(kind, result = {}) {
+    if (isTopFrame || !window.top) return;
+    window.top.postMessage(
+      {
+        source: FRAME_MESSAGE_SOURCE,
+        action: "frameResult",
+        kind,
+        applied: result.applied || 0,
+        failed: result.failed || 0
+      },
+      location.origin
+    );
+  }
+
+  function handleFrameResult(data) {
+    if (!isTopFrame || !data || data.action !== "frameResult") return;
+    if (data.kind === "translate" && data.applied > 0) {
+      setStatus(message("status.frameTranslated", { count: data.applied }), data.failed > 0 ? "error" : "ok");
+    }
+    if (data.kind === "restore") {
+      setStatus(message("status.frameRestored"), "ok");
+    }
+  }
+
+  async function handleFrameCommand(data) {
+    if (isTopFrame || !data || data.source !== FRAME_MESSAGE_SOURCE) return;
+    if (data.targetLanguage) {
+      state.settings.targetLanguage = data.targetLanguage;
+    }
+
+    if (data.action === "translate") {
+      postToChildFrames("translate", {
+        messageId: data.messageId,
+        targetLanguage: state.settings.targetLanguage
+      });
+      const result = await translatePage({ broadcastFrames: false });
+      postFrameResult("translate", result);
+    }
+
+    if (data.action === "restore") {
+      postToChildFrames("restore", {
+        messageId: data.messageId,
+        targetLanguage: state.settings.targetLanguage
+      });
+      const result = restorePage({ broadcastFrames: false });
+      postFrameResult("restore", result);
+    }
+  }
+
+  function watchFrameMessages() {
+    window.addEventListener("message", (event) => {
+      if (event.origin !== location.origin) return;
+      const data = event.data || {};
+      if (data.source !== FRAME_MESSAGE_SOURCE) return;
+      handleFrameResult(data);
+      handleFrameCommand(data);
+    });
   }
 
   function looksLikeBottomOverlay(element, rect) {
@@ -500,14 +587,14 @@
       .filter((item) => item.normalized);
   }
 
-  async function translatePage() {
+  async function translatePage(options = {}) {
     const generation = bumpGeneration();
     const targetLanguage = state.settings.targetLanguage;
     const pageUrl = location.href;
+    const shouldBroadcastFrames = isTopFrame && options.broadcastFrames !== false;
 
     if (targetLanguage === "en") {
-      restorePage({ bump: false });
-      return;
+      return restorePage({ bump: false, broadcastFrames: shouldBroadcastFrames });
     }
 
     let glossary;
@@ -518,10 +605,11 @@
       return;
     }
 
+    const childFrameCount = shouldBroadcastFrames ? postToChildFrames("translate", { targetLanguage }) : 0;
     const candidates = collectCandidates();
     if (candidates.length === 0) {
-      setStatus(message("status.noNewText"), "ok");
-      return;
+      setStatus(childFrameCount > 0 ? message("status.frameDispatch") : message("status.noNewText"), "ok");
+      return { applied: 0, failed: 0, childFrameCount };
     }
 
     const unique = new Map();
@@ -548,7 +636,7 @@
         setProgress(0);
         setStatus(error.message || message("status.failed"), "error");
       }
-      return;
+      return { applied: 0, failed: 1, childFrameCount };
     } finally {
       setBusy(false, generation);
     }
@@ -559,7 +647,7 @@
     if (!response || !response.ok) {
       setProgress(0);
       setStatus(response && response.error ? response.error : message("status.failed"), "error");
-      return;
+      return { applied: 0, failed: 1, childFrameCount };
     }
 
     let applied = 0;
@@ -595,10 +683,14 @@
         : message("status.translated", { count: applied }),
       failed > 0 ? "error" : "ok"
     );
+    return { applied, failed, childFrameCount };
   }
 
   function restorePage(options = {}) {
     if (options.bump !== false) bumpGeneration();
+    if (isTopFrame && options.broadcastFrames !== false) {
+      postToChildFrames("restore");
+    }
     let restored = 0;
     for (const record of currentRecords()) {
       if (!record.node || !record.node.isConnected) continue;
@@ -614,6 +706,7 @@
     if (!options.silent) {
       setStatus(message("status.restored", { count: restored }), "ok");
     }
+    return { restored };
   }
 
   function scheduleAutoTranslate(delay) {
@@ -684,7 +777,10 @@
     await loadSettings();
     await loadGlossaryIndex();
     await ensureGlossary(state.settings.targetLanguage);
-    createPanel();
+    if (isTopFrame) {
+      createPanel();
+    }
+    watchFrameMessages();
     watchHistoryNavigation();
     watchSpaNavigation();
     if (state.settings.autoTranslate) {

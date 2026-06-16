@@ -68,6 +68,51 @@ const PAGES = {
         </main>
       </body>
     </html>`,
+  "/learn/ai-foundations-juzjs/lessons": `<!doctype html>
+    <html>
+      <head><meta charset="utf-8"><title>AcademyLens SCORM Shell Fixture</title></head>
+      <body>
+        <header id="gradual-topbar">
+          <a href="/home">Home</a>
+          <span>/</span>
+          <a href="/home/courses">Courses</a>
+          <span>/</span>
+          <a href="/home/courses/ai-foundations-juzjs">AI Foundations</a>
+          <span>/</span>
+          <span>Study Room</span>
+          <button>Exit Course</button>
+        </header>
+        <main>
+          <iframe
+            id="scorm-driver"
+            title="AI Foundations"
+            src="/api/courses/ai-foundations-juzjs/scorm-proxy/courses/oaiacademy/demo/scormdriver/indexAPI.html"
+          ></iframe>
+        </main>
+      </body>
+    </html>`,
+  "/api/courses/ai-foundations-juzjs/scorm-proxy/courses/oaiacademy/demo/scormdriver/indexAPI.html": `<!doctype html>
+    <html>
+      <head><meta charset="utf-8"><title>SCORM Driver</title></head>
+      <body>
+        <iframe id="scorm-content" title="AI Foundations content" src="/api/courses/ai-foundations-juzjs/scorm-proxy/courses/oaiacademy/demo/scormcontent/index.html#/preview"></iframe>
+      </body>
+    </html>`,
+  "/api/courses/ai-foundations-juzjs/scorm-proxy/courses/oaiacademy/demo/scormcontent/index.html": `<!doctype html>
+    <html>
+      <head><meta charset="utf-8"><title>SCORM Content</title></head>
+      <body>
+        <section id="scorm-hero">
+          <h1 id="scorm-title">AI Foundations</h1>
+          <a id="scorm-start" href="#/lessons/welcome">START COURSE</a>
+        </section>
+        <section id="scorm-intro">
+          <h2 id="scorm-provider">OpenAI</h2>
+          <p id="scorm-body">This course is designed to build foundations for using AI and ChatGPT safely.</p>
+          <p id="scorm-llm">Large language models help people practice responsible review.</p>
+        </section>
+      </body>
+    </html>`,
   "/lesson-2": `<!doctype html>
     <html>
       <head><meta charset="utf-8"><title>AcademyLens Lesson 2</title></head>

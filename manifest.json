@@ -25,6 +25,7 @@
       "matches": ["https://academy.openai.com/*"],
       "js": ["src/lib/constants.js", "src/lib/glossary.js", "src/lib/text-utils.js", "src/content/content.js"],
       "css": ["src/content/content.css"],
+      "all_frames": true,
       "run_at": "document_idle"
     }
   ],
