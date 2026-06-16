@@ -87,8 +87,13 @@
     if (!state.shadow) return;
     const panel = state.shadow.querySelector(".panel");
     const toggle = state.shadow.querySelector("[data-collapse]");
+    const body = state.shadow.querySelector(".body");
     if (!panel || !toggle) return;
     panel.dataset.collapsed = String(state.collapsed);
+    if (body) {
+      body.toggleAttribute("inert", state.collapsed);
+      body.setAttribute("aria-hidden", String(state.collapsed));
+    }
     toggle.textContent = state.collapsed ? "+" : "-";
     toggle.setAttribute("aria-expanded", String(!state.collapsed));
     toggle.setAttribute("aria-label", state.collapsed ? message("action.expand") : message("action.collapse"));
@@ -331,9 +336,20 @@
           color: #111827;
           overflow: hidden;
           pointer-events: auto;
+          opacity: 0;
+          transform: translate3d(0, 10px, 0) scale(0.985);
+          transform-origin: right bottom;
           transition:
             bottom 180ms ease,
-            box-shadow 180ms ease;
+            box-shadow 180ms ease,
+            width 190ms cubic-bezier(0.2, 0.8, 0.2, 1),
+            opacity 180ms ease-out,
+            transform 180ms cubic-bezier(0.2, 0.8, 0.2, 1);
+          will-change: opacity, transform;
+        }
+        .panel[data-mounted="true"] {
+          opacity: 1;
+          transform: translate3d(0, 0, 0) scale(1);
         }
         .top {
           display: flex;
@@ -374,14 +390,28 @@
         .body {
           display: grid;
           gap: 10px;
+          max-height: 260px;
+          overflow: hidden;
           padding: 12px 14px 14px;
+          opacity: 1;
+          transform: translateY(0);
+          transition:
+            max-height 190ms cubic-bezier(0.2, 0.8, 0.2, 1),
+            opacity 140ms ease,
+            padding 190ms cubic-bezier(0.2, 0.8, 0.2, 1),
+            transform 190ms cubic-bezier(0.2, 0.8, 0.2, 1);
         }
         .panel[data-collapsed="true"] {
           width: 232px;
           box-shadow: 0 10px 28px rgba(15, 23, 42, 0.13);
         }
         .panel[data-collapsed="true"] .body {
-          display: none;
+          max-height: 0;
+          padding-top: 0;
+          padding-bottom: 0;
+          opacity: 0;
+          pointer-events: none;
+          transform: translateY(-4px);
         }
         .field {
           display: grid;
@@ -484,8 +514,19 @@
             bottom: auto;
           }
         }
+        @media (prefers-reduced-motion: reduce) {
+          .panel,
+          .body,
+          .progress::before {
+            transition: none;
+          }
+          .panel {
+            opacity: 1;
+            transform: none;
+          }
+        }
       </style>
-      <section class="panel">
+      <section class="panel" data-collapsed="true">
         <div class="top">
           <div class="name">AcademyLens</div>
           <div class="top-actions">
@@ -564,6 +605,10 @@
     updateLanguageSupport();
     setCollapsed(true);
     settlePanelPlacement();
+    window.requestAnimationFrame(() => {
+      const panel = shadow.querySelector(".panel");
+      if (panel) panel.dataset.mounted = "true";
+    });
   }
 
   function currentRecords() {

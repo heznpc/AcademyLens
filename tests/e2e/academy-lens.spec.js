@@ -39,10 +39,11 @@ async function panelSnapshot(page) {
     const root = document.querySelector(".academylens-root");
     const shadow = root && root.shadowRoot;
     const select = shadow && shadow.querySelector("[data-language]");
+    const body = shadow && shadow.querySelector(".body");
     return {
       exists: Boolean(root),
       collapsed: shadow ? shadow.querySelector(".panel").dataset.collapsed : null,
-      bodyVisible: shadow ? window.getComputedStyle(shadow.querySelector(".body")).display !== "none" : null,
+      bodyVisible: body ? !body.hasAttribute("inert") && body.getAttribute("aria-hidden") !== "true" : null,
       selected: select ? select.value : null,
       options: select ? Array.from(select.options).map((option) => option.textContent) : [],
       buttons: shadow ? Array.from(shadow.querySelectorAll("button")).map((button) => button.textContent.trim()) : [],
@@ -352,7 +353,7 @@ test.describe("AcademyLens extension E2E", () => {
             width: rect.width,
             height: rect.height,
             collapsed: panel.dataset.collapsed,
-            bodyVisible: window.getComputedStyle(body).display !== "none"
+            bodyVisible: !body.hasAttribute("inert") && body.getAttribute("aria-hidden") !== "true"
           };
         });
         expect(box.left).toBeGreaterThanOrEqual(0);
