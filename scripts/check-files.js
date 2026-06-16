@@ -1,5 +1,6 @@
 const { existsSync, readdirSync, readFileSync, statSync } = require("node:fs");
-const { join } = require("node:path");
+const { execFileSync } = require("node:child_process");
+const { dirname, join } = require("node:path");
 
 const ROOT = join(__dirname, "..");
 const REQUIRED_PACKAGE_SCRIPTS = [
@@ -10,6 +11,7 @@ const REQUIRED_PACKAGE_SCRIPTS = [
   "node-check",
   "capture:academy",
   "check:manifest",
+  "check:glossary",
   "check:files",
   "build:zip",
   "check:full"
@@ -25,8 +27,27 @@ const REQUIRED_PROTECTED_TERMS = [
   "API",
   "SDK",
   "JSON",
+  "JSON Schema",
+  "Responses API",
+  "Agents SDK",
   "Gradual",
   "Google Translate"
+];
+const REQUIRED_GITIGNORE_PATTERNS = [
+  "node_modules/",
+  "dist/",
+  "test-results/",
+  "playwright-report/",
+  ".chrome-profile/",
+  ".env",
+  ".env.*",
+  "!.env.example",
+  "*.zip",
+  "*.crx",
+  "*.pem",
+  "*.trace",
+  "*.har",
+  "*.webm"
 ];
 
 function readJson(path) {
@@ -62,6 +83,20 @@ for (const script of REQUIRED_PACKAGE_SCRIPTS) {
   assert(pkg.scripts && pkg.scripts[script], `Missing package script: ${script}`);
 }
 
+const gitignore = readFileSync(join(ROOT, ".gitignore"), "utf8")
+  .split(/\r?\n/)
+  .map((line) => line.trim())
+  .filter(Boolean);
+for (const pattern of REQUIRED_GITIGNORE_PATTERNS) {
+  assert(gitignore.includes(pattern), `Missing .gitignore pattern: ${pattern}`);
+}
+
+const trackedIgnoredFiles = execFileSync("git", ["ls-files", "-ci", "--exclude-standard"], {
+  cwd: ROOT,
+  encoding: "utf8"
+}).trim();
+assert(!trackedIgnoredFiles, `Tracked files match .gitignore:\n${trackedIgnoredFiles}`);
+
 const manifest = readJson("manifest.json");
 assert(manifest.manifest_version === 3, "Manifest must be MV3");
 assert(manifest.name.includes("Unofficial"), "Manifest name must keep unofficial notice");
@@ -83,19 +118,36 @@ for (const resource of manifest.web_accessible_resources || []) {
   for (const item of resource.resources || []) {
     if (item.endsWith("/*")) {
       assert(existsSync(join(ROOT, item.slice(0, -2))), `Missing resource directory: ${item}`);
+    } else if (item.includes("*")) {
+      assert(existsSync(join(ROOT, dirname(item))), `Missing wildcard resource directory: ${item}`);
     } else {
       assertFile(item);
     }
   }
 }
 
-const glossary = readJson("src/data/glossary.ko.json");
+const glossaryIndex = readJson("src/data/glossary.index.json");
 for (const term of REQUIRED_PROTECTED_TERMS) {
-  assert(glossary.protectedTerms.includes(term), `Missing protected term: ${term}`);
+  assert(glossaryIndex.protectedTerms.includes(term), `Missing protected term: ${term}`);
 }
-assert(glossary.terms.length >= 10, "Korean glossary should keep at least 10 terms");
+assert(Array.isArray(glossaryIndex.glossaries), "Glossary registry must list registered language glossaries");
+assert(
+  glossaryIndex.glossaries.some((entry) => entry.locale === "ko" && entry.path === "src/data/glossary.ko.json"),
+  "Glossary registry must keep the first reviewed Korean pack registered"
+);
 assertFile("tests/fixtures/gradual-study-room-fragment.html");
 assertFile("src/lib/ai-review-bridge.js");
+assertFile("docs/GLOSSARY_CONTRIBUTING.md");
+
+const publicCourseFixture = "tests/fixtures/openai-academy-public-course.html";
+assertFile(publicCourseFixture);
+const publicCourseFixtureSource = readFileSync(join(ROOT, publicCourseFixture), "utf8");
+assert(publicCourseFixtureSource.length < 10000, "Public Academy course fixture should stay sanitized and small");
+assert(!/<script[^>]+src=/i.test(publicCourseFixtureSource), "Public Academy fixture must not include remote scripts");
+assert(
+  !/sentry-trace|baggage|__CF\$cv|_buildManifest/i.test(publicCourseFixtureSource),
+  "Public Academy fixture must not include live runtime telemetry metadata"
+);
 
 const runtimeFiles = ["manifest.json", ...listFiles("src", (path) => /\.(js|html|json)$/i.test(path))];
 for (const file of runtimeFiles) {
@@ -104,6 +156,12 @@ for (const file of runtimeFiles) {
   assert(!/<script[^>]+src=["']https?:\/\//i.test(source), `Remote script tag is not allowed in runtime: ${file}`);
   assert(!/importScripts\(\s*["']https?:\/\//i.test(source), `Remote importScripts is not allowed in runtime: ${file}`);
   assert(!/import\(\s*["']https?:\/\//i.test(source), `Remote dynamic import is not allowed in runtime: ${file}`);
+}
+
+const positioningFiles = ["README.md", "store-assets/STORE_LISTING.md", "docs/MVP_PLAN.md", "docs/TERMINOLOGY_MAP.md"];
+for (const file of positioningFiles) {
+  const source = readFileSync(join(ROOT, file), "utf8");
+  assert(!/Korean-first/i.test(source), `Positioning should not narrow AcademyLens to Korean-first: ${file}`);
 }
 
 const zipPath = join(ROOT, "dist", "academy-lens.zip");

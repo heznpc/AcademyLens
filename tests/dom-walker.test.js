@@ -72,9 +72,12 @@ test("applyTranslatedText preserves surrounding whitespace and supports restore"
 test("actual OpenAI Academy public course fixture is recognized without translating Gradual chrome", () => {
   const html = readFileSync(join(__dirname, "fixtures/openai-academy-public-course.html"), "utf8");
 
-  assert.match(html, /"page":"\/public\/courses\/\[courseSlug\]"/);
+  assert.match(html, /"page"\s*:\s*"\/public\/courses\/\[courseSlug\]"/);
   assert.match(html, /id="gradual-topbar"/);
   assert.match(html, /id="gradual-sidebar"/);
+  assert(!/<script[^>]+src=/i.test(html));
+  assert(!/sentry-trace|baggage|__CF\$cv|_buildManifest/i.test(html));
+  assert(html.length < 10000);
 
   withDom(html, (document) => {
     const nodes = Text.collectTranslatableTextNodes(document.body, {

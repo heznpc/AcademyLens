@@ -4,5 +4,14 @@ dist/
 test-results/
 playwright-report/
 .chrome-profile/
+.env
+.env.*
+!.env.example
+*.log
+*.crx
+*.pem
 *.zip
+*.trace
+*.har
+*.webm
 .DS_Store

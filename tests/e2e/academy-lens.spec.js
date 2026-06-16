@@ -93,7 +93,7 @@ test.describe("AcademyLens extension E2E", () => {
     }
   });
 
-  test("translates, preserves protected terms, applies Korean glossary terms, and restores", async () => {
+  test("translates, preserves protected terms, applies reviewed glossary terms, and restores", async () => {
     const harness = await startHarness();
     try {
       await clickPanelButton(harness.page, "[data-translate]");
@@ -215,7 +215,7 @@ test.describe("AcademyLens extension E2E", () => {
         "대규모 언어 모델은 반복 가능한 워크플로 초안을 도울 수 있습니다."
       );
       await expect(harness.page.locator("#study-review")).toHaveText(
-        "검토 지점은 팀이 결과물을 책임 있게 평가하도록 돕습니다."
+        "검토 지점은 팀이 출력을 책임 있게 평가하도록 돕습니다."
       );
       await expect(harness.page.locator("#study-context")).toHaveText(
         "ChatGPT를 사용하기 전에 명확한 컨텍스트를 설정하세요."

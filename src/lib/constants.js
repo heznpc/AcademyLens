@@ -73,8 +73,9 @@
       "field.targetLanguage": "Target language",
       "popup.description": "Translate OpenAI Academy course content in your language.",
       "popup.autoTranslate": "Auto-translate new course text",
-      "popup.languageNoteGlossary": "Korean glossary corrections are enabled.",
-      "popup.languageNoteMachine": "Machine translation with protected terms. No glossary corrections yet.",
+      "popup.languageNoteGlossary": "Reviewed community glossary corrections are enabled for this language.",
+      "popup.languageNoteMachine":
+        "Machine translation with protected terms. A reviewed glossary is not installed for this language yet.",
       "panel.autoTranslate": "Auto",
       "notice.unofficial": DISCLAIMER,
       "status.ready": "Ready on OpenAI Academy.",
@@ -96,8 +97,8 @@
       "field.targetLanguage": "번역할 언어",
       "popup.description": "OpenAI Academy 강의 내용을 원하는 언어로 번역합니다.",
       "popup.autoTranslate": "새 강의 텍스트 자동 번역",
-      "popup.languageNoteGlossary": "한국어는 용어 사전 보정이 적용됩니다.",
-      "popup.languageNoteMachine": "기계번역과 보호 용어만 적용됩니다. 이 언어의 용어 사전은 아직 없습니다.",
+      "popup.languageNoteGlossary": "이 언어에는 검토된 커뮤니티 용어 사전 보정이 적용됩니다.",
+      "popup.languageNoteMachine": "기계번역과 보호 용어만 적용됩니다. 이 언어의 검토된 용어 사전은 아직 없습니다.",
       "panel.autoTranslate": "자동 번역",
       "notice.unofficial": "비공식 확장 프로그램이며 OpenAI와 제휴되어 있지 않습니다.",
       "status.ready": "OpenAI Academy에서 사용할 준비가 됐습니다.",
@@ -192,13 +193,16 @@
     return language.nativeLabel || language.label;
   }
 
-  function isGlossaryBackedLanguage(code) {
+  function isGlossaryBackedLanguage(code, glossaryIndex) {
+    if (glossaryIndex && Array.isArray(glossaryIndex.glossaries)) {
+      return glossaryIndex.glossaries.some((entry) => entry && entry.locale === code);
+    }
     return GLOSSARY_BACKED_LANGUAGES.includes(code);
   }
 
-  function getLanguageSupportMessage(code, locale) {
+  function getLanguageSupportMessage(code, locale, glossaryIndex) {
     return getMessage(
-      isGlossaryBackedLanguage(code) ? "popup.languageNoteGlossary" : "popup.languageNoteMachine",
+      isGlossaryBackedLanguage(code, glossaryIndex) ? "popup.languageNoteGlossary" : "popup.languageNoteMachine",
       locale
     );
   }

@@ -35,7 +35,7 @@
   },
   "web_accessible_resources": [
     {
-      "resources": ["src/data/glossary.ko.json", "assets/icons/*"],
+      "resources": ["src/data/*.json", "assets/icons/*"],
       "matches": ["https://academy.openai.com/*"]
     }
   ]

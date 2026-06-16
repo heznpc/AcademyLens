@@ -19,9 +19,9 @@ Required notice: Unofficial, not affiliated with OpenAI.
 - Login-only lesson pages as best-effort DOM translation after the user signs in.
 - Static AI terminology glossary.
 - Google Translate fast translation.
-- Korean-first glossary correction.
+- Community glossary correction for installed reviewed language packs.
 - Protected-term preservation for all target languages.
-- Clear UI disclosure when a selected language is machine-translation-only.
+- Clear UI disclosure when a selected language is using a reviewed glossary or protected-term-only machine translation.
 - Generation guard for restore/language/route-change races.
 - Playwright E2E coverage for core translation flows, study-room-style DOM, and visual smoke checks.
 

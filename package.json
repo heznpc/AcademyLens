@@ -14,8 +14,9 @@
     "node-check": "node scripts/check-js-syntax.js",
     "build:zip": "rm -f dist/academy-lens.zip && mkdir -p dist && zip -r dist/academy-lens.zip manifest.json assets src README.md PRIVACY_POLICY.md -x '*.DS_Store'",
     "check:manifest": "node -e \"JSON.parse(require('fs').readFileSync('manifest.json', 'utf8')); console.log('manifest ok')\"",
+    "check:glossary": "node scripts/check-glossary.js",
     "check:files": "node scripts/check-files.js",
-    "check:all": "npm run node-check && npm run lint && npm run format:check && npm test && npm run check:manifest && npm run check:files",
+    "check:all": "npm run node-check && npm run lint && npm run format:check && npm test && npm run check:manifest && npm run check:glossary && npm run check:files",
     "check:full": "npm run check:all && npm run test:e2e && npm run build:zip"
   },
   "keywords": [

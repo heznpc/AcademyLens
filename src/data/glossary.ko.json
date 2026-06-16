@@ -1,5 +1,52 @@
 {
   "locale": "ko",
+  "name": "AcademyLens Korean OpenAI Academy glossary",
+  "sourceCatalog": {
+    "academy:courses": {
+      "title": "OpenAI Academy Courses",
+      "url": "https://academy.openai.com/pages/courses"
+    },
+    "academy:home": {
+      "title": "OpenAI Academy",
+      "url": "https://academy.openai.com/"
+    },
+    "openai-docs:prompt-engineering": {
+      "title": "Prompt engineering",
+      "url": "https://developers.openai.com/api/docs/guides/prompt-engineering"
+    },
+    "openai-docs:concepts": {
+      "title": "Key concepts",
+      "url": "https://developers.openai.com/api/docs/concepts"
+    },
+    "openai-docs:text-generation": {
+      "title": "Text generation",
+      "url": "https://developers.openai.com/api/docs/guides/text"
+    },
+    "openai-docs:structured-outputs": {
+      "title": "Structured model outputs",
+      "url": "https://developers.openai.com/api/docs/guides/structured-outputs"
+    },
+    "openai-docs:agents": {
+      "title": "Agents SDK",
+      "url": "https://developers.openai.com/api/docs/guides/agents"
+    },
+    "openai-docs:agent-definitions": {
+      "title": "Agent definitions",
+      "url": "https://developers.openai.com/api/docs/guides/agents/define-agents"
+    },
+    "openai-docs:guardrails": {
+      "title": "Guardrails and human review",
+      "url": "https://developers.openai.com/api/docs/guides/agents/guardrails-approvals"
+    },
+    "openai-docs:observability": {
+      "title": "Integrations and observability",
+      "url": "https://developers.openai.com/api/docs/guides/agents/integrations-observability"
+    },
+    "openai-docs:evaluation": {
+      "title": "Evaluation best practices",
+      "url": "https://developers.openai.com/api/docs/guides/evaluation-best-practices"
+    }
+  },
   "protectedTerms": [
     "OpenAI",
     "OpenAI Academy",
@@ -9,8 +56,11 @@
     "GPT-4",
     "LLM",
     "API",
-    "JSON",
     "SDK",
+    "JSON",
+    "JSON Schema",
+    "Responses API",
+    "Agents SDK",
     "Gradual",
     "Google Translate"
   ],
@@ -18,92 +68,429 @@
     {
       "source": "artificial intelligence",
       "target": "인공지능",
-      "note": "General Korean rendering for AI."
+      "category": "academy-learning",
+      "sources": ["academy:home", "academy:courses"],
+      "note": "General Korean rendering for AI in Academy course positioning."
+    },
+    {
+      "source": "AI fluency",
+      "target": "AI 활용 역량",
+      "category": "academy-learning",
+      "sources": ["academy:courses"],
+      "note": "Academy course copy frames fluency as practical workplace capability."
     },
     {
       "source": "large language model",
       "target": "대규모 언어 모델",
+      "category": "model-concepts",
+      "sources": ["academy:home", "openai-docs:text-generation"],
       "note": "Expand LLM on first use when helpful."
     },
     {
       "source": "large language models",
       "target": "대규모 언어 모델",
+      "category": "model-concepts",
+      "sources": ["academy:home", "openai-docs:text-generation"],
       "note": "Plural form used in course copy."
-    },
-    {
-      "source": "agent",
-      "target": "에이전트",
-      "note": "Use 에이전트 for AI agent contexts."
-    },
-    {
-      "source": "agents",
-      "target": "에이전트",
-      "note": "Plural form used in course copy."
-    },
-    {
-      "source": "workflow",
-      "target": "워크플로",
-      "note": "Prefer 워크플로 over 작업흐름 in product learning context."
-    },
-    {
-      "source": "workflows",
-      "target": "워크플로",
-      "note": "Plural form used in course copy."
-    },
-    {
-      "source": "prompt",
-      "target": "프롬프트",
-      "note": "Use 프롬프트 as the noun."
-    },
-    {
-      "source": "prompts",
-      "target": "프롬프트",
-      "note": "Plural form used in course copy."
-    },
-    {
-      "source": "prompting",
-      "target": "프롬프팅",
-      "note": "Use 프롬프팅 for the practice."
     },
     {
       "source": "model",
       "target": "모델",
+      "category": "model-concepts",
+      "sources": ["openai-docs:concepts", "openai-docs:text-generation"],
       "note": "AI model context."
     },
     {
       "source": "models",
       "target": "모델",
-      "note": "Plural form used in course copy."
+      "category": "model-concepts",
+      "sources": ["openai-docs:concepts", "openai-docs:text-generation"],
+      "note": "Plural form used across docs and course copy."
     },
     {
       "source": "token",
       "target": "토큰",
-      "note": "Keep technical term concise."
+      "category": "model-concepts",
+      "sources": ["openai-docs:concepts"],
+      "note": "Keep the technical term concise."
     },
     {
-      "source": "evaluation",
-      "target": "평가",
-      "note": "AI output evaluation."
+      "source": "tokens",
+      "target": "토큰",
+      "category": "model-concepts",
+      "sources": ["openai-docs:concepts"],
+      "note": "Plural form for tokenized text."
+    },
+    {
+      "source": "context length",
+      "target": "컨텍스트 길이",
+      "category": "model-concepts",
+      "sources": ["openai-docs:concepts"],
+      "note": "OpenAI docs discuss model limits through context length."
+    },
+    {
+      "source": "prompt engineering",
+      "target": "프롬프트 엔지니어링",
+      "category": "prompting",
+      "sources": ["openai-docs:prompt-engineering"],
+      "note": "Keep the established Korean technical loanword."
+    },
+    {
+      "source": "prompt",
+      "target": "프롬프트",
+      "category": "prompting",
+      "sources": ["academy:home", "openai-docs:prompt-engineering", "openai-docs:text-generation"],
+      "note": "Use 프롬프트 as the noun."
+    },
+    {
+      "source": "prompts",
+      "target": "프롬프트",
+      "category": "prompting",
+      "sources": ["academy:courses", "openai-docs:prompt-engineering", "openai-docs:text-generation"],
+      "note": "Plural form used in Academy course copy."
+    },
+    {
+      "source": "prompting",
+      "target": "프롬프팅",
+      "category": "prompting",
+      "sources": ["openai-docs:prompt-engineering"],
+      "note": "Use 프롬프팅 for the practice."
+    },
+    {
+      "source": "instruction",
+      "target": "지시",
+      "category": "prompting",
+      "sources": ["academy:home", "openai-docs:prompt-engineering"],
+      "note": "Academy emphasizes clear instructions; docs frame prompting as instructions to the model."
+    },
+    {
+      "source": "instructions",
+      "target": "지시",
+      "category": "prompting",
+      "sources": ["academy:home", "openai-docs:prompt-engineering"],
+      "note": "Plural form; avoid translating as generic 안내 when it means model instructions."
+    },
+    {
+      "source": "clear instructions",
+      "target": "명확한 지시",
+      "category": "prompting",
+      "sources": ["academy:home", "academy:courses", "openai-docs:prompt-engineering"],
+      "note": "Academy course copy repeats this as a learning skill."
     },
     {
       "source": "context",
       "target": "컨텍스트",
+      "category": "prompting",
+      "sources": ["academy:home", "academy:courses", "openai-docs:prompt-engineering"],
       "note": "Prefer 컨텍스트 when discussing model inputs."
+    },
+    {
+      "source": "useful context",
+      "target": "유용한 컨텍스트",
+      "category": "prompting",
+      "sources": ["academy:home"],
+      "note": "Academy AI Foundations copy uses this as a practical prompting habit."
+    },
+    {
+      "source": "relevant context",
+      "target": "관련 컨텍스트",
+      "category": "prompting",
+      "sources": ["academy:courses"],
+      "note": "Academy courses page uses relevant context in workplace practice copy."
+    },
+    {
+      "source": "output",
+      "target": "출력",
+      "category": "review",
+      "sources": ["academy:home", "openai-docs:text-generation"],
+      "note": "Use 출력 for model-generated results."
+    },
+    {
+      "source": "outputs",
+      "target": "출력",
+      "category": "review",
+      "sources": ["academy:home", "academy:courses", "openai-docs:text-generation"],
+      "note": "Plural form; keep concise in lesson text."
+    },
+    {
+      "source": "review outputs",
+      "target": "출력 검토",
+      "category": "review",
+      "sources": ["academy:home", "academy:courses"],
+      "note": "Academy positions output review as a core learner habit."
+    },
+    {
+      "source": "reviewing outputs",
+      "target": "출력 검토",
+      "category": "review",
+      "sources": ["academy:home"],
+      "note": "Gerund form from Academy course copy."
     },
     {
       "source": "review point",
       "target": "검토 지점",
+      "category": "review",
+      "sources": ["academy:home"],
       "note": "Used in workflow quality control."
     },
     {
       "source": "review points",
       "target": "검토 지점",
+      "category": "review",
+      "sources": ["academy:home"],
       "note": "Plural form used in course copy."
+    },
+    {
+      "source": "responsibly",
+      "target": "책임 있게",
+      "category": "review",
+      "sources": ["academy:home", "academy:courses"],
+      "note": "Academy copy emphasizes responsible everyday work with AI."
+    },
+    {
+      "source": "delegate",
+      "target": "위임",
+      "category": "academy-learning",
+      "sources": ["academy:courses"],
+      "note": "Academy courses ask learners to decide what to delegate to AI."
+    },
+    {
+      "source": "staying in control",
+      "target": "통제권 유지",
+      "category": "academy-learning",
+      "sources": ["academy:courses"],
+      "note": "Preserve the control/supervision nuance from Academy course copy."
+    },
+    {
+      "source": "repeatable",
+      "target": "반복 가능한",
+      "category": "workflow",
+      "sources": ["academy:courses"],
+      "note": "Course copy uses repeatability as the move from ad hoc prompting to workflows."
+    },
+    {
+      "source": "repeatable ways of working",
+      "target": "반복 가능한 업무 방식",
+      "category": "workflow",
+      "sources": ["academy:courses"],
+      "note": "Academy course pathway phrase; keep work-practice framing."
+    },
+    {
+      "source": "workflow",
+      "target": "워크플로",
+      "category": "workflow",
+      "sources": ["academy:courses", "openai-docs:agents"],
+      "note": "Prefer 워크플로 over 작업흐름 in product learning context."
+    },
+    {
+      "source": "workflows",
+      "target": "워크플로",
+      "category": "workflow",
+      "sources": ["academy:courses", "openai-docs:agents"],
+      "note": "Plural form used in course and agent docs."
+    },
+    {
+      "source": "agent",
+      "target": "에이전트",
+      "category": "agents",
+      "sources": ["academy:courses", "openai-docs:agents", "openai-docs:agent-definitions"],
+      "note": "Use 에이전트 for AI agent contexts."
+    },
+    {
+      "source": "agents",
+      "target": "에이전트",
+      "category": "agents",
+      "sources": ["academy:courses", "openai-docs:agents", "openai-docs:agent-definitions"],
+      "note": "Plural form used in Academy and OpenAI agent docs."
+    },
+    {
+      "source": "agentic workflows",
+      "target": "에이전트형 워크플로",
+      "category": "agents",
+      "sources": ["academy:courses", "openai-docs:agents"],
+      "note": "Use when Academy content discusses structured workflows with agents."
+    },
+    {
+      "source": "tool",
+      "target": "도구",
+      "category": "agents",
+      "sources": ["openai-docs:agents", "openai-docs:agent-definitions"],
+      "note": "Agent docs use tools as runtime capabilities."
+    },
+    {
+      "source": "tools",
+      "target": "도구",
+      "category": "agents",
+      "sources": ["openai-docs:agents", "openai-docs:agent-definitions"],
+      "note": "Plural form."
+    },
+    {
+      "source": "tool call",
+      "target": "도구 호출",
+      "category": "agents",
+      "sources": ["openai-docs:observability"],
+      "note": "Preserve the execution-event meaning."
+    },
+    {
+      "source": "tool calls",
+      "target": "도구 호출",
+      "category": "agents",
+      "sources": ["openai-docs:observability"],
+      "note": "Plural form used in traces."
+    },
+    {
+      "source": "handoff",
+      "target": "핸드오프",
+      "category": "agents",
+      "sources": ["openai-docs:agent-definitions", "openai-docs:observability"],
+      "note": "Use a consistent loanword for agent-to-agent delegation."
+    },
+    {
+      "source": "handoffs",
+      "target": "핸드오프",
+      "category": "agents",
+      "sources": ["openai-docs:agent-definitions", "openai-docs:observability"],
+      "note": "Plural form."
+    },
+    {
+      "source": "guardrail",
+      "target": "가드레일",
+      "category": "agents",
+      "sources": ["openai-docs:guardrails", "openai-docs:observability"],
+      "note": "Use 가드레일 for automated validation boundaries."
+    },
+    {
+      "source": "guardrails",
+      "target": "가드레일",
+      "category": "agents",
+      "sources": ["openai-docs:guardrails", "openai-docs:observability"],
+      "note": "Plural form."
+    },
+    {
+      "source": "human review",
+      "target": "사람 검토",
+      "category": "agents",
+      "sources": ["openai-docs:guardrails"],
+      "note": "Keep the human-in-the-loop approval nuance."
+    },
+    {
+      "source": "approval",
+      "target": "승인",
+      "category": "agents",
+      "sources": ["openai-docs:guardrails"],
+      "note": "Guardrails docs pair approvals with sensitive actions."
+    },
+    {
+      "source": "approvals",
+      "target": "승인",
+      "category": "agents",
+      "sources": ["openai-docs:guardrails"],
+      "note": "Plural form."
+    },
+    {
+      "source": "trace",
+      "target": "트레이스",
+      "category": "observability",
+      "sources": ["openai-docs:observability"],
+      "note": "Use 트레이스 for structured execution records."
+    },
+    {
+      "source": "traces",
+      "target": "트레이스",
+      "category": "observability",
+      "sources": ["openai-docs:observability"],
+      "note": "Plural form."
+    },
+    {
+      "source": "tracing",
+      "target": "트레이싱",
+      "category": "observability",
+      "sources": ["openai-docs:observability"],
+      "note": "Use for observability feature names."
+    },
+    {
+      "source": "structured outputs",
+      "target": "구조화된 출력",
+      "category": "structured-output",
+      "sources": ["openai-docs:structured-outputs", "openai-docs:text-generation"],
+      "note": "Use this rendering for schema-constrained model responses."
+    },
+    {
+      "source": "schema",
+      "target": "스키마",
+      "category": "structured-output",
+      "sources": ["openai-docs:structured-outputs"],
+      "note": "Technical term for response shape."
+    },
+    {
+      "source": "schemas",
+      "target": "스키마",
+      "category": "structured-output",
+      "sources": ["openai-docs:structured-outputs"],
+      "note": "Plural form."
+    },
+    {
+      "source": "evaluation",
+      "target": "평가",
+      "category": "evaluation",
+      "sources": ["openai-docs:evaluation"],
+      "note": "AI output/system evaluation."
+    },
+    {
+      "source": "evaluations",
+      "target": "평가",
+      "category": "evaluation",
+      "sources": ["openai-docs:evaluation"],
+      "note": "Plural form."
+    },
+    {
+      "source": "eval",
+      "target": "평가",
+      "category": "evaluation",
+      "sources": ["openai-docs:evaluation"],
+      "note": "Render eval as 평가 in learner-facing Korean text unless referring to an API name."
+    },
+    {
+      "source": "evals",
+      "target": "평가",
+      "category": "evaluation",
+      "sources": ["openai-docs:evaluation"],
+      "note": "Plural shorthand."
+    },
+    {
+      "source": "grader",
+      "target": "채점기",
+      "category": "evaluation",
+      "sources": ["openai-docs:evaluation"],
+      "note": "Evaluation component for scoring outputs."
+    },
+    {
+      "source": "graders",
+      "target": "채점기",
+      "category": "evaluation",
+      "sources": ["openai-docs:evaluation"],
+      "note": "Plural form."
     },
     {
       "source": "self-paced",
       "target": "자기 주도형",
+      "category": "course-format",
+      "sources": ["academy:home"],
       "note": "Course pacing."
+    },
+    {
+      "source": "course completion certificate",
+      "target": "과정 수료증",
+      "category": "course-format",
+      "sources": ["academy:courses"],
+      "note": "Academy learner credential wording."
+    },
+    {
+      "source": "course completion certificates",
+      "target": "과정 수료증",
+      "category": "course-format",
+      "sources": ["academy:courses"],
+      "note": "Plural form."
     }
   ]
 }

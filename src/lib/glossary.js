@@ -69,6 +69,8 @@
             .map((entry) => ({
               source: String(entry.source),
               target: String(entry.target),
+              category: entry.category ? String(entry.category) : "",
+              sources: Array.isArray(entry.sources) ? entry.sources.map((source) => String(source)) : [],
               note: entry.note ? String(entry.note) : ""
             }))
         : []

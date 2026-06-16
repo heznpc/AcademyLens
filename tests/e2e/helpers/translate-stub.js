@@ -10,6 +10,7 @@ const KO = new Map([
   ],
   ["__AL_TERM_0__ __AL_TERM_1__ examples stay readable.", "__AL_TERM_0__ __AL_TERM_1__ 예제는 읽기 쉽게 유지됩니다."],
   ["Advanced __AL_TERM_0__ engineering", "고급 __AL_TERM_0__ 엔지니어링"],
+  ["Advanced __AL_TERM_0__", "고급 __AL_TERM_0__"],
   [
     "__AL_TERM_0__ lessons use __AL_TERM_1__ and __AL_TERM_2__ examples.",
     "__AL_TERM_0__ 강의는 __AL_TERM_1__ 및 __AL_TERM_2__ 예제를 사용합니다."
@@ -23,8 +24,20 @@ const KO = new Map([
     "__AL_TERM_0__은 반복 가능한 __AL_TERM_1__ 초안을 도울 수 있습니다."
   ],
   [
+    "__AL_TERM_0__ can help draft __AL_TERM_1__ __AL_TERM_2__.",
+    "__AL_TERM_0__은 __AL_TERM_1__ __AL_TERM_2__ 초안을 도울 수 있습니다."
+  ],
+  [
     "__AL_TERM_0__ help teams evaluate outputs responsibly.",
     "__AL_TERM_0__은 팀이 결과물을 책임 있게 평가하도록 돕습니다."
+  ],
+  [
+    "__AL_TERM_0__ help teams evaluate __AL_TERM_1__ __AL_TERM_2__.",
+    "__AL_TERM_0__은 팀이 __AL_TERM_1__을 __AL_TERM_2__ 평가하도록 돕습니다."
+  ],
+  [
+    "__AL_TERM_0__ help teams evaluate __AL_TERM_2__ __AL_TERM_1__.",
+    "__AL_TERM_0__은 팀이 __AL_TERM_2__을 __AL_TERM_1__ 평가하도록 돕습니다."
   ],
   [
     "Set clear __AL_TERM_1__ before using __AL_TERM_0__.",

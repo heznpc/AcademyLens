@@ -1,0 +1,30 @@
+{
+  "schemaVersion": 1,
+  "protectedTerms": [
+    "OpenAI",
+    "OpenAI Academy",
+    "ChatGPT",
+    "GPT",
+    "GPT-5",
+    "GPT-4",
+    "LLM",
+    "API",
+    "SDK",
+    "JSON",
+    "JSON Schema",
+    "Responses API",
+    "Agents SDK",
+    "Gradual",
+    "Google Translate"
+  ],
+  "glossaries": [
+    {
+      "locale": "ko",
+      "language": "Korean",
+      "path": "src/data/glossary.ko.json",
+      "status": "reviewed",
+      "termCount": 61,
+      "notes": "First reviewed community glossary built from OpenAI Academy course language and OpenAI developer docs."
+    }
+  ]
+}

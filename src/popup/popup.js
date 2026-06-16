@@ -6,6 +6,7 @@
   const language = document.getElementById("targetLanguage");
   const autoTranslate = document.getElementById("autoTranslate");
   const languageSupport = document.getElementById("languageSupport");
+  let glossaryIndex = null;
 
   document.documentElement.lang = uiLocale;
   for (const node of document.querySelectorAll("[data-i18n]")) {
@@ -20,6 +21,13 @@
     language.append(option);
   }
 
+  try {
+    const response = await fetch(chrome.runtime.getURL("src/data/glossary.index.json"));
+    if (response.ok) glossaryIndex = await response.json();
+  } catch {
+    glossaryIndex = null;
+  }
+
   const stored = await chrome.storage.local.get([C.STORAGE_KEYS.SETTINGS]);
   const settings = {
     ...C.DEFAULT_SETTINGS,
@@ -31,8 +39,8 @@
   updateLanguageSupport();
 
   function updateLanguageSupport() {
-    languageSupport.textContent = C.getLanguageSupportMessage(language.value, uiLocale);
-    languageSupport.dataset.glossary = String(C.isGlossaryBackedLanguage(language.value));
+    languageSupport.textContent = C.getLanguageSupportMessage(language.value, uiLocale, glossaryIndex);
+    languageSupport.dataset.glossary = String(C.isGlossaryBackedLanguage(language.value, glossaryIndex));
   }
 
   async function save() {

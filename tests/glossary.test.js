@@ -5,7 +5,21 @@ const test = require("node:test");
 
 const Glossary = require("../src/lib/glossary.js");
 
+const glossaryIndex = JSON.parse(readFileSync(join(__dirname, "../src/data/glossary.index.json"), "utf8"));
 const glossary = JSON.parse(readFileSync(join(__dirname, "../src/data/glossary.ko.json"), "utf8"));
+
+test("registers installed community glossaries", () => {
+  assert(glossaryIndex.protectedTerms.includes("OpenAI Academy"));
+  assert(
+    glossaryIndex.glossaries.some(
+      (entry) =>
+        entry.locale === "ko" &&
+        entry.path === "src/data/glossary.ko.json" &&
+        entry.status === "reviewed" &&
+        entry.termCount === glossary.terms.length
+    )
+  );
+});
 
 test("masks and restores protected OpenAI terms", () => {
   const original = "OpenAI Academy introduces ChatGPT, GPT, and LLM workflows.";
@@ -27,10 +41,26 @@ test("normalizes glossary entries", () => {
   assert(normalized.protectedTerms.includes("ChatGPT"));
   assert(normalized.protectedTerms.includes("GPT"));
   assert(normalized.terms.some((entry) => entry.source === "workflow"));
+  assert(
+    normalized.terms.some(
+      (entry) =>
+        entry.source === "clear instructions" &&
+        entry.category === "prompting" &&
+        entry.sources.includes("academy:courses")
+    )
+  );
+  assert(
+    normalized.terms.some(
+      (entry) =>
+        entry.source === "structured outputs" &&
+        entry.category === "structured-output" &&
+        entry.sources.includes("openai-docs:structured-outputs")
+    )
+  );
 });
 
-test("prepares Korean glossary terms as target-language placeholders", () => {
-  const original = "Artificial intelligence workflows use OpenAI Academy prompts.";
+test("prepares installed glossary terms as target-language placeholders", () => {
+  const original = "Artificial intelligence workflows use OpenAI Academy prompts with clear instructions.";
   const prepared = Glossary.prepareForTranslation(original, glossary, "ko");
 
   assert(!prepared.text.includes("Artificial intelligence"));
@@ -39,10 +69,10 @@ test("prepares Korean glossary terms as target-language placeholders", () => {
   assert(prepared.placeholders.some((placeholder) => placeholder.value === "OpenAI Academy"));
 
   const restored = Glossary.restoreProtectedTerms(prepared.text, prepared.placeholders);
-  assert.equal(restored, "인공지능 워크플로 use OpenAI Academy 프롬프트.");
+  assert.equal(restored, "인공지능 워크플로 use OpenAI Academy 프롬프트 with 명확한 지시.");
 });
 
-test("prepares common plural course terms for Korean glossary correction", () => {
+test("prepares common plural course terms for reviewed glossary correction", () => {
   const original = "Reusable prompts help agents build workflows with models.";
   const prepared = Glossary.prepareForTranslation(original, glossary, "ko");
   const restored = Glossary.restoreProtectedTerms(prepared.text, prepared.placeholders);
@@ -50,7 +80,7 @@ test("prepares common plural course terms for Korean glossary correction", () =>
   assert.equal(restored, "Reusable 프롬프트 help 에이전트 build 워크플로 with 모델.");
 });
 
-test("does not apply Korean glossary terms to other target languages", () => {
+test("does not apply locale-specific glossary terms to other target languages", () => {
   const original = "Artificial intelligence uses prompts.";
   const prepared = Glossary.prepareForTranslation(original, glossary, "ja");
 

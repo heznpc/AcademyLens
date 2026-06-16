@@ -2,7 +2,7 @@
 
 Translate OpenAI Academy course content in your language with protected AI terminology.
 
-AcademyLens is an unofficial Chrome extension for learners using OpenAI Academy. It focuses on course text translation and protected AI terminology.
+AcademyLens is an unofficial Chrome extension for learners using OpenAI Academy. It focuses on course text translation and community-reviewed OpenAI/AI terminology glossaries.
 
 **Unofficial, not affiliated with OpenAI.**
 
@@ -10,16 +10,16 @@ AcademyLens is an unofficial Chrome extension for learners using OpenAI Academy.
 
 - Runs only on `https://academy.openai.com/*`.
 - Translates visible course content into the selected language.
-- Preserves core OpenAI and AI terminology such as OpenAI, ChatGPT, GPT, LLM, API, and Gradual.
-- Applies the Korean glossary to known AI terms before machine translation.
+- Preserves core OpenAI and AI terminology such as OpenAI, ChatGPT, GPT, LLM, API, Responses API, Agents SDK, JSON, and Gradual.
+- Applies installed community glossaries built from OpenAI Academy course language and OpenAI documentation terminology before machine translation.
 - Uses native language names in the language picker.
-- Shows whether the selected language has glossary-backed correction or machine translation only.
+- Shows whether the selected language has an installed reviewed glossary or machine translation with protected terms.
 - Uses Google Translate for fast page translation.
 - Guards against late translation responses after Restore, language switches, and Gradual/Next.js route changes.
 - Does not modify enrollment, progress tracking, certificates, account state, or Gradual platform data.
 - Does not load remote AI scripts.
 
-Korean is the first glossary-backed target language. Other target languages currently use machine translation plus protected-term preservation only.
+The first reviewed glossary pack is Korean, but the project is designed for multilingual open-source glossary contributions. Languages without an installed reviewed glossary still use machine translation plus protected-term preservation. See [docs/TERMINOLOGY_MAP.md](docs/TERMINOLOGY_MAP.md) and [docs/GLOSSARY_CONTRIBUTING.md](docs/GLOSSARY_CONTRIBUTING.md).
 
 ## Why Separate From SkillBridge?
 
@@ -61,10 +61,15 @@ npm run lint
 npm run format:check
 npm test
 npm run check:manifest
+npm run check:glossary
 npm run check:files
 npm run test:e2e
 npm run build:zip
 ```
+
+## Glossary Contributions
+
+AcademyLens welcomes multilingual glossary packs. Add language packs under `src/data/glossary.<locale>.json`, register them in `src/data/glossary.index.json`, and run `npm run check:glossary`. AI-generated drafts are useful starting points, but reviewed packs should be source-backed and human-reviewed. See [docs/GLOSSARY_CONTRIBUTING.md](docs/GLOSSARY_CONTRIBUTING.md).
 
 Capture a sanitized Academy DOM fixture from a Playwright profile:
 

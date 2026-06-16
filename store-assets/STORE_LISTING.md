@@ -2,7 +2,7 @@
 
 Translate OpenAI Academy course content in your language with protected AI terminology.
 
-AcademyLens helps learners read OpenAI Academy courses with fast page translation and AI terminology safeguards.
+AcademyLens helps learners read OpenAI Academy courses with fast page translation and community-reviewed OpenAI/AI terminology glossaries.
 
 **Unofficial, not affiliated with OpenAI.**
 
@@ -19,15 +19,15 @@ It translates visible course content and preserves important AI terms.
 Features:
 
 - Translate OpenAI Academy course pages.
-- Preserve terms such as OpenAI, ChatGPT, GPT, LLM, API, and Gradual.
-- Apply a Korean-first AI glossary for selected terminology.
-- Show when another selected language is machine-translation-only.
+- Preserve terms such as OpenAI, ChatGPT, GPT, LLM, API, Responses API, Agents SDK, JSON, and Gradual.
+- Apply installed community glossaries based on OpenAI Academy course language and OpenAI documentation terminology.
+- Show when a selected language is using an installed reviewed glossary or machine translation with protected terms.
 - Restore original page text with one click.
 - Protect against stale translations after Restore, language switching, and Gradual/Next.js navigation.
 - Avoid translating Gradual progress, certificate, quiz, and account controls.
 - Keep translation settings in Chrome storage.
 
-Korean currently has the strongest glossary support. Other target languages use machine translation with protected-term preservation.
+Korean is the first reviewed glossary pack. Other language packs can be added by contributors; languages without a reviewed pack use machine translation with protected-term preservation.
 
 AcademyLens does not manage enrollment, progress, certificates, accounts, or OpenAI Academy settings.
 

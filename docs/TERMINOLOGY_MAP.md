@@ -1,0 +1,45 @@
+# OpenAI Academy Terminology Map
+
+AcademyLens is positioned around multilingual community glossaries that connect OpenAI Academy course language with OpenAI documentation terminology.
+
+This is not a claim of affiliation with OpenAI. The glossary uses public OpenAI Academy pages and OpenAI developer documentation as terminology references.
+
+Korean is currently the first reviewed glossary pack. It is a proof of quality bar, not a product boundary.
+
+## Source Set
+
+- OpenAI Academy course pages: `https://academy.openai.com/`, `https://academy.openai.com/pages/courses`
+- Prompting: `https://developers.openai.com/api/docs/guides/prompt-engineering`
+- Core model concepts: `https://developers.openai.com/api/docs/concepts`
+- Text generation and response formats: `https://developers.openai.com/api/docs/guides/text`
+- Structured Outputs: `https://developers.openai.com/api/docs/guides/structured-outputs`
+- Agents: `https://developers.openai.com/api/docs/guides/agents`
+- Guardrails and human review: `https://developers.openai.com/api/docs/guides/agents/guardrails-approvals`
+- Observability and tracing: `https://developers.openai.com/api/docs/guides/agents/integrations-observability`
+- Evaluation: `https://developers.openai.com/api/docs/guides/evaluation-best-practices`
+
+## Academy To Docs Mapping
+
+| Academy language              | OpenAI docs anchor                | Glossary direction             |
+| ----------------------------- | --------------------------------- | ------------------------------ |
+| clear instructions            | prompt engineering / instructions | 명확한 지시                    |
+| useful or relevant context    | prompt engineering / context      | 유용한 컨텍스트, 관련 컨텍스트 |
+| reviewing outputs             | text generation / outputs         | 출력 검토                      |
+| repeatable ways of working    | agents / workflows                | 반복 가능한 업무 방식          |
+| agents and workflows          | Agents SDK                        | 에이전트, 워크플로             |
+| staying in control            | guardrails / human review         | 통제권 유지                    |
+| structured work               | agents / orchestration / tools    | 구조화된 작업                  |
+| practical AI skills           | Academy course positioning        | 실용 AI 역량                   |
+| course completion certificate | Academy course credentialing      | 과정 수료증                    |
+
+## Glossary Rules
+
+- Product names and protocol/API terms stay protected: OpenAI, OpenAI Academy, ChatGPT, GPT, JSON, JSON Schema, Responses API, Agents SDK.
+- Installed glossary corrections are applied before machine translation by placeholder masking.
+- Languages without an installed reviewed glossary use machine translation plus protected-term preservation.
+- Every glossary term must include `category`, `sources`, and a short note explaining the translation choice.
+- `npm run check:glossary` rejects duplicate terms, unknown source IDs, protected-term collisions, thin notes, stale registry metadata, and insufficient Academy/OpenAI-docs coverage for reviewed packs.
+
+## Why This Matters
+
+Generic page translators can translate words, but they do not know that OpenAI Academy repeatedly teaches a pathway from clear instructions and relevant context to review points, repeatable workflows, agents, guardrails, and evaluations. AcademyLens should make that path read consistently in every contributed language pack.

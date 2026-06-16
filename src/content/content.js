@@ -10,7 +10,8 @@
 
   const state = {
     settings: { ...C.DEFAULT_SETTINGS },
-    glossary: null,
+    glossaryIndex: null,
+    glossaries: new Map(),
     panel: null,
     shadow: null,
     replacements: [],
@@ -47,8 +48,8 @@
     if (!state.shadow) return;
     const note = state.shadow.querySelector("[data-language-note]");
     if (!note) return;
-    note.textContent = C.getLanguageSupportMessage(state.settings.targetLanguage, uiLocale);
-    note.dataset.glossary = String(C.isGlossaryBackedLanguage(state.settings.targetLanguage));
+    note.textContent = C.getLanguageSupportMessage(state.settings.targetLanguage, uiLocale, state.glossaryIndex);
+    note.dataset.glossary = String(C.isGlossaryBackedLanguage(state.settings.targetLanguage, state.glossaryIndex));
   }
 
   function bumpGeneration() {
@@ -107,10 +108,39 @@
     };
   }
 
-  async function loadGlossary() {
-    const response = await fetch(chrome.runtime.getURL("src/data/glossary.ko.json"));
-    if (!response.ok) throw new Error("Failed to load glossary");
-    state.glossary = Glossary.normalizeGlossary(await response.json());
+  async function loadGlossaryIndex() {
+    const response = await fetch(chrome.runtime.getURL("src/data/glossary.index.json"));
+    if (!response.ok) throw new Error("Failed to load glossary registry");
+    state.glossaryIndex = await response.json();
+  }
+
+  function glossaryRecordForLanguage(targetLanguage) {
+    return state.glossaryIndex && state.glossaryIndex.glossaries
+      ? state.glossaryIndex.glossaries.find((entry) => entry && entry.locale === targetLanguage)
+      : null;
+  }
+
+  async function ensureGlossary(targetLanguage) {
+    if (state.glossaries.has(targetLanguage)) {
+      return state.glossaries.get(targetLanguage);
+    }
+
+    const record = glossaryRecordForLanguage(targetLanguage);
+    let glossary;
+    if (record && record.path) {
+      const response = await fetch(chrome.runtime.getURL(record.path));
+      if (!response.ok) throw new Error(`Failed to load glossary for ${targetLanguage}`);
+      glossary = Glossary.normalizeGlossary(await response.json());
+    } else {
+      glossary = Glossary.normalizeGlossary({
+        locale: targetLanguage,
+        protectedTerms: state.glossaryIndex ? state.glossaryIndex.protectedTerms : [],
+        terms: []
+      });
+    }
+
+    state.glossaries.set(targetLanguage, glossary);
+    return glossary;
   }
 
   function createPanel() {
@@ -298,6 +328,13 @@
       restorePage({ bump: false, silent: true });
       state.settings.targetLanguage = language.value;
       await chrome.storage.local.set({ [C.STORAGE_KEYS.SETTINGS]: state.settings });
+      try {
+        await ensureGlossary(state.settings.targetLanguage);
+      } catch (error) {
+        setStatus(error.message || message("status.failed"), "error");
+        updateLanguageSupport();
+        return;
+      }
       updateLanguageSupport();
       setStatus(message("status.targetLanguage", { language: languageLabel(language.value) }));
       if (state.settings.autoTranslate && state.settings.targetLanguage !== "en") {
@@ -352,8 +389,11 @@
       return;
     }
 
-    if (!state.glossary) {
-      setStatus(message("status.glossaryLoading"), "error");
+    let glossary;
+    try {
+      glossary = await ensureGlossary(targetLanguage);
+    } catch (error) {
+      setStatus(error.message || message("status.glossaryLoading"), "error");
       return;
     }
 
@@ -367,7 +407,7 @@
     const preparedByOriginal = new Map();
     for (const candidate of candidates) {
       if (unique.has(candidate.normalized)) continue;
-      const prepared = Glossary.prepareForTranslation(candidate.normalized, state.glossary, targetLanguage);
+      const prepared = Glossary.prepareForTranslation(candidate.normalized, glossary, targetLanguage);
       unique.set(candidate.normalized, prepared.text);
       preparedByOriginal.set(candidate.normalized, prepared);
     }
@@ -512,7 +552,8 @@
 
   try {
     await loadSettings();
-    await loadGlossary();
+    await loadGlossaryIndex();
+    await ensureGlossary(state.settings.targetLanguage);
     createPanel();
     watchHistoryNavigation();
     watchSpaNavigation();

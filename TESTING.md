@@ -10,6 +10,7 @@ npm run node-check
 npm run lint
 npm run format:check
 npm run check:manifest
+npm run check:glossary
 npm run check:files
 npm run test:e2e
 npm run build:zip
@@ -26,8 +27,10 @@ npm run check:full
 - DOM walker exclusions for Gradual chrome, code, hidden text, and already translated Korean text
 - logged-in-style study-room fixture filtering for lesson text vs. progress/certificate/quiz/account UI
 - restore whitespace behavior
-- Korean glossary pre-translation placeholders
-- Korean plural course-term placeholders
+- installed glossary pre-translation placeholders
+- plural course-term placeholders in reviewed glossary packs
+- Academy/OpenAI-docs source metadata for glossary terms
+- glossary source/category/duplicate/protected-term checks
 - native language picker labels
 - selected-language support messaging
 - local cache trimming by recent access
@@ -41,7 +44,7 @@ The E2E suite patches a temporary extension copy to run against local Gradual-st
 - native language labels
 - Translate and Restore
 - protected term preservation
-- Korean glossary term application
+- installed glossary term application
 - cache hit/miss behavior
 - rapid Translate -> Restore race
 - rapid language switching race
