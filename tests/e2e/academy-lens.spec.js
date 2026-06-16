@@ -309,6 +309,28 @@ test.describe("AcademyLens extension E2E", () => {
     }
   });
 
+  test("translates SCORM content after in-frame lesson navigation", async () => {
+    const harness = await startHarness({ path: "/learn/ai-foundations-juzjs/lessons" });
+    try {
+      await expandPanel(harness.page);
+      const scormFrame = await waitForFrame(harness.page, /scormcontent\/index\.html/);
+      await scormFrame.locator("#scorm-start").click();
+      await expect(scormFrame.locator("#scorm-lesson-title")).toHaveText("1.1 Welcome to AI Foundations");
+
+      await clickPanelButton(harness.page, "[data-translate]");
+      await expect(scormFrame.locator("#scorm-lesson-title")).toHaveText("1.1 AI 기초에 오신 것을 환영합니다");
+      await expect(scormFrame.locator("#scorm-lesson-caption")).toHaveText("강의에 오신 것을 환영합니다.");
+      await expect(scormFrame.locator("#scorm-media")).toBeVisible();
+      await expect(harness.page.locator("#gradual-topbar")).toContainText("Study Room");
+
+      await clickPanelButton(harness.page, "[data-restore]");
+      await expect(scormFrame.locator("#scorm-lesson-title")).toHaveText("1.1 Welcome to AI Foundations");
+      await expect(scormFrame.locator("#scorm-lesson-caption")).toHaveText("Welcome to the course.");
+    } finally {
+      await stopHarness(harness);
+    }
+  });
+
   test("panel has viewport-safe visual smoke coverage on desktop and mobile sizes", async () => {
     const harness = await startHarness();
     try {

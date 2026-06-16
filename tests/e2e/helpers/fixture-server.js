@@ -102,15 +102,43 @@ const PAGES = {
     <html>
       <head><meta charset="utf-8"><title>SCORM Content</title></head>
       <body>
-        <section id="scorm-hero">
-          <h1 id="scorm-title">AI Foundations</h1>
-          <a id="scorm-start" href="#/lessons/welcome">START COURSE</a>
-        </section>
-        <section id="scorm-intro">
-          <h2 id="scorm-provider">OpenAI</h2>
-          <p id="scorm-body">This course is designed to build foundations for using AI and ChatGPT safely.</p>
-          <p id="scorm-llm">Large language models help people practice responsible review.</p>
-        </section>
+        <div id="scorm-root"></div>
+        <script>
+          const root = document.querySelector("#scorm-root");
+          function renderPreview() {
+            root.innerHTML = [
+              '<section id="scorm-hero">',
+              '<h1 id="scorm-title">AI Foundations</h1>',
+              '<a id="scorm-start" href="#/lessons/welcome">START COURSE</a>',
+              '</section>',
+              '<section id="scorm-intro">',
+              '<h2 id="scorm-provider">OpenAI</h2>',
+              '<p id="scorm-body">This course is designed to build foundations for using AI and ChatGPT safely.</p>',
+              '<p id="scorm-llm">Large language models help people practice responsible review.</p>',
+              '</section>'
+            ].join('');
+          }
+          function renderLesson() {
+            root.innerHTML = [
+              '<button id="scorm-skip">SKIP TO LESSON</button>',
+              '<section id="scorm-lesson">',
+              '<h1 id="scorm-lesson-title">1.1 Welcome to AI Foundations</h1>',
+              '<iframe id="scorm-media" title="QM_AF-01_v3" src="about:blank"></iframe>',
+              '<p id="scorm-lesson-caption">Welcome to the course.</p>',
+              '<button id="scorm-continue">CONTINUE</button>',
+              '</section>'
+            ].join('');
+          }
+          function render() {
+            if (location.hash.startsWith("#/lessons/")) {
+              renderLesson();
+            } else {
+              renderPreview();
+            }
+          }
+          window.addEventListener("hashchange", render);
+          render();
+        </script>
       </body>
     </html>`,
   "/lesson-2": `<!doctype html>

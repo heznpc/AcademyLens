@@ -1,5 +1,9 @@
 const KO = new Map([
   ["AI Foundations", "AI 기초"],
+  ["1.1 Welcome to AI Foundations", "1.1 AI 기초에 오신 것을 환영합니다"],
+  ["Welcome to the course.", "강의에 오신 것을 환영합니다."],
+  ["SKIP TO LESSON", "강의로 건너뛰기"],
+  ["CONTINUE", "계속"],
   ["Build practical AI skills for work", "업무를 위한 실용 AI 기술 구축"],
   [
     "This course is designed to build foundations for using __AL_TERM_0__ and __AL_TERM_1__ safely.",
