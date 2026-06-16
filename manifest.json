@@ -1,0 +1,42 @@
+{
+  "manifest_version": 3,
+  "name": "AcademyLens for OpenAI Academy (Unofficial)",
+  "short_name": "AcademyLens",
+  "description": "Translate OpenAI Academy course content in your language with protected AI terminology. Unofficial, not affiliated with OpenAI.",
+  "version": "0.1.0",
+  "minimum_chrome_version": "124",
+  "author": "AcademyLens Contributors",
+  "homepage_url": "https://github.com/heznpc/academy-lens",
+  "permissions": ["storage"],
+  "host_permissions": ["https://academy.openai.com/*", "https://translate.googleapis.com/*"],
+  "action": {
+    "default_popup": "src/popup/popup.html",
+    "default_icon": {
+      "16": "assets/icons/icon16.png",
+      "48": "assets/icons/icon48.png",
+      "128": "assets/icons/icon128.png"
+    }
+  },
+  "background": {
+    "service_worker": "src/background/background.js"
+  },
+  "content_scripts": [
+    {
+      "matches": ["https://academy.openai.com/*"],
+      "js": ["src/lib/constants.js", "src/lib/glossary.js", "src/lib/text-utils.js", "src/content/content.js"],
+      "css": ["src/content/content.css"],
+      "run_at": "document_idle"
+    }
+  ],
+  "icons": {
+    "16": "assets/icons/icon16.png",
+    "48": "assets/icons/icon48.png",
+    "128": "assets/icons/icon128.png"
+  },
+  "web_accessible_resources": [
+    {
+      "resources": ["src/data/glossary.ko.json", "assets/icons/*"],
+      "matches": ["https://academy.openai.com/*"]
+    }
+  ]
+}

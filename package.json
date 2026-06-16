@@ -1,0 +1,35 @@
+{
+  "name": "academy-lens",
+  "version": "0.1.0",
+  "private": true,
+  "description": "AcademyLens browser extension for translating OpenAI Academy course content with protected AI terminology.",
+  "scripts": {
+    "test": "node --test \"tests/*.test.js\"",
+    "test:e2e": "playwright test",
+    "e2e:install": "playwright install chromium",
+    "capture:academy": "node scripts/capture-academy-dom.js",
+    "lint": "eslint src tests scripts playwright.config.js eslint.config.js",
+    "format": "prettier --write \"src/**/*.{js,css,html,json}\" \"tests/**/*.js\" \"scripts/**/*.js\" \"*.{js,json,md}\" \"docs/**/*.md\" \"store-assets/**/*.md\"",
+    "format:check": "prettier --check \"src/**/*.{js,css,html,json}\" \"tests/**/*.js\" \"scripts/**/*.js\" \"*.{js,json,md}\" \"docs/**/*.md\" \"store-assets/**/*.md\"",
+    "node-check": "node scripts/check-js-syntax.js",
+    "build:zip": "rm -f dist/academy-lens.zip && mkdir -p dist && zip -r dist/academy-lens.zip manifest.json assets src README.md PRIVACY_POLICY.md -x '*.DS_Store'",
+    "check:manifest": "node -e \"JSON.parse(require('fs').readFileSync('manifest.json', 'utf8')); console.log('manifest ok')\"",
+    "check:files": "node scripts/check-files.js",
+    "check:all": "npm run node-check && npm run lint && npm run format:check && npm test && npm run check:manifest && npm run check:files",
+    "check:full": "npm run check:all && npm run test:e2e && npm run build:zip"
+  },
+  "keywords": [
+    "chrome-extension",
+    "openai-academy",
+    "translation",
+    "gradual"
+  ],
+  "license": "MIT",
+  "devDependencies": {
+    "@eslint/js": "^10.0.1",
+    "@playwright/test": "^1.61.0",
+    "eslint": "^10.5.0",
+    "jsdom": "^29.1.1",
+    "prettier": "^3.8.4"
+  }
+}

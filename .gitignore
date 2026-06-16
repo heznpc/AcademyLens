@@ -1,0 +1,8 @@
+node_modules/
+coverage/
+dist/
+test-results/
+playwright-report/
+.chrome-profile/
+*.zip
+.DS_Store

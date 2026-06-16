@@ -1,0 +1,8 @@
+.academylens-root {
+  all: initial;
+  position: fixed;
+  inset: auto 0 0 auto;
+  z-index: 2147483647;
+  width: 0;
+  height: 0;
+}

@@ -1,0 +1,109 @@
+{
+  "locale": "ko",
+  "protectedTerms": [
+    "OpenAI",
+    "OpenAI Academy",
+    "ChatGPT",
+    "GPT",
+    "GPT-5",
+    "GPT-4",
+    "LLM",
+    "API",
+    "JSON",
+    "SDK",
+    "Gradual",
+    "Google Translate"
+  ],
+  "terms": [
+    {
+      "source": "artificial intelligence",
+      "target": "인공지능",
+      "note": "General Korean rendering for AI."
+    },
+    {
+      "source": "large language model",
+      "target": "대규모 언어 모델",
+      "note": "Expand LLM on first use when helpful."
+    },
+    {
+      "source": "large language models",
+      "target": "대규모 언어 모델",
+      "note": "Plural form used in course copy."
+    },
+    {
+      "source": "agent",
+      "target": "에이전트",
+      "note": "Use 에이전트 for AI agent contexts."
+    },
+    {
+      "source": "agents",
+      "target": "에이전트",
+      "note": "Plural form used in course copy."
+    },
+    {
+      "source": "workflow",
+      "target": "워크플로",
+      "note": "Prefer 워크플로 over 작업흐름 in product learning context."
+    },
+    {
+      "source": "workflows",
+      "target": "워크플로",
+      "note": "Plural form used in course copy."
+    },
+    {
+      "source": "prompt",
+      "target": "프롬프트",
+      "note": "Use 프롬프트 as the noun."
+    },
+    {
+      "source": "prompts",
+      "target": "프롬프트",
+      "note": "Plural form used in course copy."
+    },
+    {
+      "source": "prompting",
+      "target": "프롬프팅",
+      "note": "Use 프롬프팅 for the practice."
+    },
+    {
+      "source": "model",
+      "target": "모델",
+      "note": "AI model context."
+    },
+    {
+      "source": "models",
+      "target": "모델",
+      "note": "Plural form used in course copy."
+    },
+    {
+      "source": "token",
+      "target": "토큰",
+      "note": "Keep technical term concise."
+    },
+    {
+      "source": "evaluation",
+      "target": "평가",
+      "note": "AI output evaluation."
+    },
+    {
+      "source": "context",
+      "target": "컨텍스트",
+      "note": "Prefer 컨텍스트 when discussing model inputs."
+    },
+    {
+      "source": "review point",
+      "target": "검토 지점",
+      "note": "Used in workflow quality control."
+    },
+    {
+      "source": "review points",
+      "target": "검토 지점",
+      "note": "Plural form used in course copy."
+    },
+    {
+      "source": "self-paced",
+      "target": "자기 주도형",
+      "note": "Course pacing."
+    }
+  ]
+}

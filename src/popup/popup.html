@@ -1,0 +1,30 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>AcademyLens</title>
+    <link rel="stylesheet" href="popup.css" />
+  </head>
+  <body>
+    <main>
+      <header>
+        <strong>AcademyLens</strong>
+        <span>Unofficial</span>
+      </header>
+      <p data-i18n="popup.description">Translate OpenAI Academy course content in your language.</p>
+      <label>
+        <span data-i18n="field.targetLanguage">Target language</span>
+        <select id="targetLanguage"></select>
+      </label>
+      <p class="hint" id="languageSupport"></p>
+      <label class="toggle">
+        <input id="autoTranslate" type="checkbox" />
+        <span data-i18n="popup.autoTranslate">Auto-translate new course text</span>
+      </label>
+      <p class="notice" data-i18n="notice.unofficial">Unofficial, not affiliated with OpenAI.</p>
+    </main>
+    <script src="../lib/constants.js"></script>
+    <script src="popup.js"></script>
+  </body>
+</html>
