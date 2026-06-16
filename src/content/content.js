@@ -157,7 +157,7 @@
     panel.dataset.bottomOverlay = String(offset > 0);
     state.panel.style.setProperty("--academylens-bottom-offset", `${offset}px`);
     if (!state.collapseUserSet) {
-      setCollapsed(offset > 0 || window.innerWidth <= 420);
+      setCollapsed(true);
     }
   }
 
@@ -475,7 +475,7 @@
     state.panel = host;
     state.shadow = shadow;
     updateLanguageSupport();
-    setCollapsed(false);
+    setCollapsed(true);
     settlePanelPlacement();
   }
 

@@ -18,6 +18,15 @@ test("skips Gradual platform control phrases", () => {
   assert.equal(Text.shouldTranslateText("2/5 Lessons Completed", "ko"), false);
   assert.equal(Text.shouldTranslateText("View Certificate", "ko"), false);
   assert.equal(Text.shouldTranslateText("Start quiz", "ko"), false);
+  assert.equal(Text.shouldTranslateText("Home", "ko"), false);
+  assert.equal(Text.shouldTranslateText("Courses", "ko"), false);
+  assert.equal(Text.shouldTranslateText("Share", "ko"), false);
+  assert.equal(Text.shouldTranslateText("Participants", "ko"), false);
+  assert.equal(Text.shouldTranslateText("Terms of Use", "ko"), false);
+  assert.equal(Text.shouldTranslateText("Privacy Policy", "ko"), false);
+  assert.equal(Text.shouldTranslateText("Code of Conduct", "ko"), false);
+  assert.equal(Text.shouldTranslateText("Your Privacy Choices", "ko"), false);
+  assert.equal(Text.shouldTranslateText("Switch language", "ko"), false);
   assert.equal(Text.shouldTranslateText("Build practical AI skills for work", "ko"), true);
 });
 

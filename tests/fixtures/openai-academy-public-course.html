@@ -40,6 +40,13 @@
       </aside>
 
       <main data-testid="public-course-detail">
+        <div data-testid="course-breadcrumbs">
+          <a href="/home">Home</a>
+          <span>/</span>
+          <a href="/home/courses">Courses</a>
+          <span>/</span>
+          <span>AI Foundations</span>
+        </div>
         <section aria-labelledby="course-title">
           <p>OpenAI Academy</p>
           <h1 id="course-title">AI Foundations</h1>
@@ -64,12 +71,26 @@
           </p>
         </section>
 
+        <aside data-testid="course-share-panel">
+          <p>Participants</p>
+          <p>Share</p>
+          <a href="mailto:?subject=AI%20Foundations">Share via email</a>
+        </aside>
+
         <div class="cookie-shell" role="dialog" aria-label="Cookie notice">
           <p>We use cookies to keep the platform secure and improve your experience.</p>
           <button type="button">Accept All</button>
           <button type="button">Reject All</button>
         </div>
       </main>
+
+      <div aria-label="Site footer">
+        <a href="https://openai.com/policies/terms-of-use/">Terms of Use</a>
+        <a href="https://openai.com/policies/privacy-policy">Privacy Policy</a>
+        <a href="/code-of-conduct">Code of Conduct</a>
+        <button type="button">Your Privacy Choices</button>
+        <button type="button">Switch language</button>
+      </div>
     </div>
   </body>
 </html>

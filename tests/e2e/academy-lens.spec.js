@@ -16,6 +16,16 @@ async function clickPanelButton(page, selector) {
   }, selector);
 }
 
+async function expandPanel(page) {
+  const collapsed = await page.evaluate(() => {
+    const panel = document.querySelector(".academylens-root").shadowRoot.querySelector(".panel");
+    return panel.dataset.collapsed === "true";
+  });
+  if (collapsed) {
+    await clickPanelButton(page, "[data-collapse]");
+  }
+}
+
 async function setPanelLanguage(page, language) {
   await page.evaluate((targetLanguage) => {
     const select = document.querySelector(".academylens-root").shadowRoot.querySelector("[data-language]");
@@ -80,8 +90,8 @@ test.describe("AcademyLens extension E2E", () => {
       const snapshot = await panelSnapshot(harness.page);
 
       expect(snapshot.exists).toBe(true);
-      expect(snapshot.collapsed).toBe("false");
-      expect(snapshot.bodyVisible).toBe(true);
+      expect(snapshot.collapsed).toBe("true");
+      expect(snapshot.bodyVisible).toBe(false);
       expect(snapshot.selected).toBe("ko");
       expect(snapshot.options.slice(0, 10)).toEqual([
         "English",
@@ -106,15 +116,14 @@ test.describe("AcademyLens extension E2E", () => {
     const harness = await startHarness();
     try {
       await clickPanelButton(harness.page, "[data-collapse]");
-      await expect.poll(async () => (await panelSnapshot(harness.page)).collapsed).toBe("true");
+      await expect.poll(async () => (await panelSnapshot(harness.page)).collapsed).toBe("false");
       let snapshot = await panelSnapshot(harness.page);
-      expect(snapshot.bodyVisible).toBe(false);
+      expect(snapshot.bodyVisible).toBe(true);
 
       await clickPanelButton(harness.page, "[data-collapse]");
-      await expect.poll(async () => (await panelSnapshot(harness.page)).collapsed).toBe("false");
+      await expect.poll(async () => (await panelSnapshot(harness.page)).collapsed).toBe("true");
       snapshot = await panelSnapshot(harness.page);
-      expect(snapshot.bodyVisible).toBe(true);
-      expect(snapshot.actionButtons).toEqual(["번역", "원문 복원"]);
+      expect(snapshot.bodyVisible).toBe(false);
     } finally {
       await stopHarness(harness);
     }
@@ -123,6 +132,7 @@ test.describe("AcademyLens extension E2E", () => {
   test("translates, preserves protected terms, applies reviewed glossary terms, and restores", async () => {
     const harness = await startHarness();
     try {
+      await expandPanel(harness.page);
       await clickPanelButton(harness.page, "[data-translate]");
       await expect(harness.page.locator("#title")).toHaveText("업무를 위한 실용 AI 기술 구축");
       await expect(harness.page.locator("#protected")).toHaveText(
@@ -146,6 +156,7 @@ test.describe("AcademyLens extension E2E", () => {
   test("uses cache on the second translation pass", async () => {
     const harness = await startHarness();
     try {
+      await expandPanel(harness.page);
       await clickPanelButton(harness.page, "[data-translate]");
       await expect(harness.page.locator("#title")).toHaveText("업무를 위한 실용 AI 기술 구축");
       const firstPassCalls = harness.calls.length;
@@ -165,6 +176,7 @@ test.describe("AcademyLens extension E2E", () => {
   test("does not let a late translate response overwrite restore", async () => {
     const harness = await startHarness({ delayMs: 400 });
     try {
+      await expandPanel(harness.page);
       await clickPanelButton(harness.page, "[data-translate]");
       await harness.page.waitForTimeout(50);
       await clickPanelButton(harness.page, "[data-restore]");
@@ -180,6 +192,7 @@ test.describe("AcademyLens extension E2E", () => {
   test("resets progress after translation failure", async () => {
     const harness = await startHarness({ failAll: true });
     try {
+      await expandPanel(harness.page);
       await clickPanelButton(harness.page, "[data-translate]");
       await expect
         .poll(async () => {
@@ -198,6 +211,7 @@ test.describe("AcademyLens extension E2E", () => {
   test("rapid language switching resolves to the final selected language", async () => {
     const harness = await startHarness({ delayMs: 250 });
     try {
+      await expandPanel(harness.page);
       await clickPanelButton(harness.page, "[data-translate]");
       await setPanelLanguage(harness.page, "ja");
       await clickPanelButton(harness.page, "[data-translate]");
@@ -216,6 +230,7 @@ test.describe("AcademyLens extension E2E", () => {
   test("SPA navigation clears stale translations and translates the new route", async () => {
     const harness = await startHarness();
     try {
+      await expandPanel(harness.page);
       await clickPanelButton(harness.page, "[data-translate]");
       await expect(harness.page.locator("#title")).toHaveText("업무를 위한 실용 AI 기술 구축");
 
@@ -236,6 +251,7 @@ test.describe("AcademyLens extension E2E", () => {
   test("translates study-room lesson text without touching Gradual progress, certificate, quiz, or account UI", async () => {
     const harness = await startHarness({ path: "/study-room" });
     try {
+      await expandPanel(harness.page);
       await clickPanelButton(harness.page, "[data-translate]");
       await expect(harness.page.locator("#study-title")).toHaveText("업무를 위한 실용 AI 기술 구축");
       await expect(harness.page.locator("#study-models")).toHaveText(
@@ -287,15 +303,9 @@ test.describe("AcademyLens extension E2E", () => {
         expect(box.top).toBeGreaterThanOrEqual(0);
         expect(box.right).toBeLessThanOrEqual(viewport.width);
         expect(box.bottom).toBeLessThanOrEqual(viewport.height);
-        if (viewport.width <= 420) {
-          expect(box.width).toBeGreaterThan(200);
-          expect(box.collapsed).toBe("true");
-          expect(box.bodyVisible).toBe(false);
-        } else {
-          expect(box.width).toBeGreaterThan(240);
-          expect(box.collapsed).toBe("false");
-          expect(box.bodyVisible).toBe(true);
-        }
+        expect(box.width).toBeGreaterThan(200);
+        expect(box.collapsed).toBe("true");
+        expect(box.bodyVisible).toBe(false);
 
         const screenshot = await harness.page.screenshot();
         expect(screenshot.length).toBeGreaterThan(20000);

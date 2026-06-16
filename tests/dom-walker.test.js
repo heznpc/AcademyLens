@@ -91,6 +91,15 @@ test("actual OpenAI Academy public course fixture is recognized without translat
     assert(!combined.includes('"courses":{'));
     assert(!combined.includes("gradual-topbar"));
     assert(!combined.includes("Home\nEvents\nCourses"));
+    assert(!combined.includes("Home"));
+    assert(!combined.includes("Courses"));
+    assert(!combined.includes("Participants"));
+    assert(!combined.includes("Share"));
+    assert(!combined.includes("Terms of Use"));
+    assert(!combined.includes("Privacy Policy"));
+    assert(!combined.includes("Code of Conduct"));
+    assert(!combined.includes("Your Privacy Choices"));
+    assert(!combined.includes("Switch language"));
   });
 });
 
