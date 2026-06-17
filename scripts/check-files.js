@@ -52,6 +52,21 @@ const REQUIRED_GITIGNORE_PATTERNS = [
   "*.webm"
 ];
 const REQUIRED_PREMIUM_LOCALES = PREMIUM_LOCALE_RECORDS.map((record) => record.locale);
+const REQUIRED_OPEN_SOURCE_FILES = [
+  "LICENSE",
+  "CONTRIBUTING.md",
+  "CODE_OF_CONDUCT.md",
+  "SECURITY.md",
+  ".github/CODEOWNERS",
+  ".github/PULL_REQUEST_TEMPLATE.md",
+  ".github/ISSUE_TEMPLATE/bug_report.yml",
+  ".github/ISSUE_TEMPLATE/feature_request.yml",
+  ".github/ISSUE_TEMPLATE/glossary_submission.yml",
+  ".github/ISSUE_TEMPLATE/qa_report.yml",
+  ".github/ISSUE_TEMPLATE/config.yml",
+  ".github/workflows/ci.yml",
+  ".github/dependabot.yml"
+];
 
 function readJson(path) {
   return JSON.parse(readFileSync(join(ROOT, path), "utf8"));
@@ -82,8 +97,21 @@ function listFiles(dir, predicate) {
 }
 
 const pkg = readJson("package.json");
+assert(pkg.license === "MIT", "package.json license must be MIT");
+assert(
+  pkg.repository && /heznpc\/AcademyLens\.git$/i.test(pkg.repository.url),
+  "package.json repository must point to AcademyLens"
+);
+assert(
+  pkg.bugs && /heznpc\/AcademyLens\/issues$/i.test(pkg.bugs.url),
+  "package.json bugs URL must point to AcademyLens issues"
+);
 for (const script of REQUIRED_PACKAGE_SCRIPTS) {
   assert(pkg.scripts && pkg.scripts[script], `Missing package script: ${script}`);
+}
+
+for (const file of REQUIRED_OPEN_SOURCE_FILES) {
+  assertFile(file);
 }
 
 const gitignore = readFileSync(join(ROOT, ".gitignore"), "utf8")

@@ -1,0 +1,17 @@
+# AcademyLens CODEOWNERS
+#
+# Solo maintainer today. Keep load-bearing surfaces reviewed as the
+# project grows.
+
+* @heznpc
+
+/SECURITY.md @heznpc
+/PRIVACY_POLICY.md @heznpc
+/manifest.json @heznpc
+/.github/ @heznpc
+/src/content/ @heznpc
+/src/background/ @heznpc
+/src/lib/ @heznpc
+/src/data/ @heznpc
+/scripts/seed-premium-glossaries.js @heznpc
+/scripts/lib/glossary-config.js @heznpc

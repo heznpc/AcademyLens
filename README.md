@@ -1,10 +1,40 @@
+<div align="center">
+
+<img src="assets/icons/icon128.png" alt="AcademyLens" width="88" />
+
 # AcademyLens
 
-Translate OpenAI Academy course content in your language with protected AI terminology.
+[![CI](https://github.com/heznpc/AcademyLens/actions/workflows/ci.yml/badge.svg)](https://github.com/heznpc/AcademyLens/actions/workflows/ci.yml)
+[![MIT License](https://img.shields.io/badge/License-MIT-green.svg)](LICENSE)
+[![Chrome MV3](https://img.shields.io/badge/Chrome-Extension_MV3-blue.svg)](https://developer.chrome.com/docs/extensions/)
+[![GitHub contributors](https://img.shields.io/github/contributors/heznpc/AcademyLens)](https://github.com/heznpc/AcademyLens/graphs/contributors)
+[![PRs welcome](https://img.shields.io/badge/PRs-welcome-brightgreen.svg)](CONTRIBUTING.md)
+
+**Translate and review OpenAI Academy course content in your language.**
 
 AcademyLens is an unofficial Chrome extension for learners using OpenAI Academy. It focuses on course text translation and multilingual OpenAI/AI terminology glossaries.
 
 **Unofficial, not affiliated with OpenAI.**
+
+[Install Locally](#installation) · [Contribute](CONTRIBUTING.md) · [Report Bug](https://github.com/heznpc/AcademyLens/issues/new?template=bug_report.yml) · [Improve Glossary](https://github.com/heznpc/AcademyLens/issues/new?template=glossary_submission.yml)
+
+</div>
+
+---
+
+## Table of Contents
+
+- [Current Scope](#current-scope)
+- [Installation](#installation)
+- [Why Separate From SkillBridge?](#why-separate-from-skillbridge)
+- [Technical Shape](#technical-shape)
+- [Built For Academy Pages](#built-for-academy-pages)
+- [Planned v1.1](#planned-v11)
+- [Development](#development)
+- [Glossary Contributions](#glossary-contributions)
+- [Open Source](#open-source)
+- [Privacy](#privacy)
+- [License](#license)
 
 ## Current Scope
 
@@ -20,6 +50,27 @@ AcademyLens is an unofficial Chrome extension for learners using OpenAI Academy.
 - Does not load remote AI scripts.
 
 AcademyLens now ships twelve premium glossary packs for `de`, `es`, `fr`, `id`, `it`, `ja`, `ko`, `pt-BR`, `ru`, `vi`, `zh-CN`, and `zh-TW`. Korean is the first reviewed pack; the other premium packs are AI-drafted beta glossaries waiting for X translation cross-checks, community review, and native review. Languages outside the premium set still use machine translation plus protected-term preservation. See [docs/TERMINOLOGY_MAP.md](docs/TERMINOLOGY_MAP.md) and [docs/GLOSSARY_CONTRIBUTING.md](docs/GLOSSARY_CONTRIBUTING.md).
+
+## Installation
+
+Manual install for Chrome or another Chromium browser:
+
+```bash
+git clone https://github.com/heznpc/AcademyLens.git
+cd AcademyLens
+npm install
+npm run check:all
+```
+
+Then:
+
+1. Open `chrome://extensions`.
+2. Enable Developer mode.
+3. Click Load unpacked.
+4. Select this repo folder.
+5. Open `https://academy.openai.com/`.
+
+AcademyLens is not yet submitted to the Chrome Web Store. Store submission will wait until the product, glossary quality, privacy copy, and live Academy DOM behavior are ready.
 
 ## Why Separate From SkillBridge?
 
@@ -46,6 +97,14 @@ AI-assisted terminology review may return only if it can be implemented without 
 
 ## Development
 
+Install dependencies once:
+
+```bash
+npm install
+```
+
+Full local verification:
+
 ```bash
 npm run check:all
 npm run test:e2e
@@ -67,6 +126,12 @@ npm run test:e2e
 npm run build:zip
 ```
 
+The strict all-in-one gate is:
+
+```bash
+npm run check:full
+```
+
 ## Glossary Contributions
 
 AcademyLens welcomes multilingual glossary packs. Add language packs under `src/data/glossary.<locale>.json`, register them in `src/data/glossary.index.json`, and run `npm run check:glossary`. AI-generated drafts are useful starting points, but reviewed packs should be source-backed and human-reviewed. See [docs/GLOSSARY_CONTRIBUTING.md](docs/GLOSSARY_CONTRIBUTING.md).
@@ -85,17 +150,27 @@ npm run capture:academy -- --url https://academy.openai.com/pages/courses --out 
 
 To intentionally save a reviewed, sanitized capture under `tests/fixtures`, pass `--allow-fixture-write`.
 
-Load the extension:
+## Open Source
 
-1. Open `chrome://extensions`.
-2. Enable Developer mode.
-3. Click Load unpacked.
-4. Select this repo folder.
-5. Open `https://academy.openai.com/`.
+AcademyLens is MIT licensed and welcomes focused contributions.
+
+Good first contribution paths:
+
+- glossary corrections for `src/data/glossary.<locale>.json`
+- native-language review for AI-drafted glossary packs
+- sanitized OpenAI Academy / Gradual fixture improvements
+- UI/accessibility QA reports
+- tests for translation, restore, cache, SPA navigation, or glossary behavior
+
+Start with [CONTRIBUTING.md](CONTRIBUTING.md). Please keep every contribution clear that AcademyLens is unofficial and not affiliated with OpenAI.
 
 ## Privacy
 
 See [PRIVACY_POLICY.md](PRIVACY_POLICY.md).
+
+## License
+
+AcademyLens is released under the [MIT License](LICENSE).
 
 ## Acknowledgements
 

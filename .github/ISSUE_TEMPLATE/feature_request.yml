@@ -1,0 +1,32 @@
+name: Feature Request
+description: Suggest an improvement for AcademyLens.
+labels: ["enhancement"]
+body:
+  - type: textarea
+    id: problem
+    attributes:
+      label: Problem
+      description: What learner or contributor problem should this solve?
+    validations:
+      required: true
+  - type: textarea
+    id: proposal
+    attributes:
+      label: Proposed Solution
+      description: How should it work?
+    validations:
+      required: true
+  - type: textarea
+    id: alternatives
+    attributes:
+      label: Alternatives Considered
+      description: Optional. What other approaches did you consider?
+  - type: checkboxes
+    id: scope
+    attributes:
+      label: Scope Check
+      options:
+        - label: This keeps AcademyLens unofficial and not affiliated with OpenAI.
+          required: true
+        - label: This does not require remote hosted runtime code.
+        - label: This does not change enrollment, progress, certificates, quizzes, accounts, or credentials.

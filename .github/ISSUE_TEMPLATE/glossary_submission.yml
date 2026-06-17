@@ -1,0 +1,49 @@
+name: Glossary Correction Or Review
+description: Submit or review OpenAI Academy terminology for a language.
+labels: ["i18n", "glossary"]
+body:
+  - type: input
+    id: language
+    attributes:
+      label: Language
+      placeholder: Spanish (es), Japanese (ja), Portuguese Brazil (pt-BR), ...
+    validations:
+      required: true
+  - type: dropdown
+    id: contribution-type
+    attributes:
+      label: Contribution Type
+      options:
+        - Correct a term
+        - Add smoke-check term
+        - Review an AI-drafted pack
+        - Native/community review
+        - Request a new language
+    validations:
+      required: true
+  - type: textarea
+    id: terms
+    attributes:
+      label: Terms
+      description: Provide source/target pairs or review notes.
+      placeholder: |
+        source: structured outputs
+        current target: ...
+        recommended target: ...
+        reason: ...
+    validations:
+      required: true
+  - type: textarea
+    id: evidence
+    attributes:
+      label: Evidence Or Rationale
+      description: Link official docs, public examples, local usage, or native-speaker reasoning.
+  - type: checkboxes
+    id: verification
+    attributes:
+      label: Verification
+      options:
+        - label: I am fluent or native in this language, or I explain my review basis above.
+        - label: I preserved protected terms such as OpenAI, ChatGPT, GPT, API, SDK, JSON Schema, Responses API, Agents SDK, Gradual, and Google Translate.
+          required: true
+        - label: I understand AI-audited output is not the same as native/community review.

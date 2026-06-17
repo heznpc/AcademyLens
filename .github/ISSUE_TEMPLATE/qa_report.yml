@@ -1,0 +1,53 @@
+name: QA Report
+description: Share manual testing results for AcademyLens.
+title: "QA: [browser] [language] - [summary]"
+labels: ["qa", "testing"]
+body:
+  - type: input
+    id: browser
+    attributes:
+      label: Browser And Version
+      placeholder: Chrome 126
+    validations:
+      required: true
+  - type: input
+    id: os
+    attributes:
+      label: Operating System
+      placeholder: macOS 15, Windows 11, Ubuntu 24.04
+    validations:
+      required: true
+  - type: input
+    id: language
+    attributes:
+      label: Language Tested
+      placeholder: ko, es, ja, zh-CN, ...
+    validations:
+      required: true
+  - type: input
+    id: academy-page
+    attributes:
+      label: Academy Page Type
+      placeholder: course list, course detail, study room, SCORM lesson
+  - type: checkboxes
+    id: checklist
+    attributes:
+      label: Manual QA Checklist
+      options:
+        - label: Extension panel appears on academy.openai.com.
+        - label: Translate completes without console errors.
+        - label: Restore returns original text.
+        - label: Protected terms remain intact.
+        - label: Course/lesson text translates but Gradual controls stay usable.
+        - label: SPA navigation does not duplicate or stale-apply translations.
+        - label: Language switching resolves to the final selected language.
+  - type: textarea
+    id: issues
+    attributes:
+      label: Issues Found
+      placeholder: List any bugs, visual glitches, or terminology problems.
+  - type: textarea
+    id: screenshots
+    attributes:
+      label: Screenshots
+      description: Optional. Avoid screenshots with private account details.

@@ -1,0 +1,65 @@
+name: Bug Report
+description: Report a broken feature, UI issue, or translation failure.
+labels: ["bug"]
+body:
+  - type: textarea
+    id: description
+    attributes:
+      label: Description
+      description: What happened?
+      placeholder: The page translated, but...
+    validations:
+      required: true
+  - type: textarea
+    id: steps
+    attributes:
+      label: Steps To Reproduce
+      placeholder: |
+        1. Open https://academy.openai.com/...
+        2. Select language ...
+        3. Click Translate
+        4. Observe ...
+    validations:
+      required: true
+  - type: textarea
+    id: expected
+    attributes:
+      label: Expected Behavior
+      placeholder: What should have happened?
+    validations:
+      required: true
+  - type: input
+    id: url
+    attributes:
+      label: Academy URL
+      placeholder: https://academy.openai.com/...
+  - type: dropdown
+    id: language
+    attributes:
+      label: Language
+      options:
+        - German (de)
+        - Spanish (es)
+        - French (fr)
+        - Indonesian (id)
+        - Italian (it)
+        - Japanese (ja)
+        - Korean (ko)
+        - Portuguese Brazil (pt-BR)
+        - Russian (ru)
+        - Vietnamese (vi)
+        - Chinese Simplified (zh-CN)
+        - Chinese Traditional (zh-TW)
+        - Other
+    validations:
+      required: true
+  - type: input
+    id: browser
+    attributes:
+      label: Browser And OS
+      placeholder: Chrome 126 on macOS 15
+  - type: textarea
+    id: screenshots
+    attributes:
+      label: Screenshots Or Console Output
+      description: Paste screenshots or relevant console messages if available. Do not include private account data.
