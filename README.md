@@ -2,7 +2,7 @@
 
 Translate OpenAI Academy course content in your language with protected AI terminology.
 
-AcademyLens is an unofficial Chrome extension for learners using OpenAI Academy. It focuses on course text translation and community-reviewed OpenAI/AI terminology glossaries.
+AcademyLens is an unofficial Chrome extension for learners using OpenAI Academy. It focuses on course text translation and multilingual OpenAI/AI terminology glossaries.
 
 **Unofficial, not affiliated with OpenAI.**
 
@@ -11,15 +11,15 @@ AcademyLens is an unofficial Chrome extension for learners using OpenAI Academy.
 - Runs only on `https://academy.openai.com/*`.
 - Translates visible course content into the selected language.
 - Preserves core OpenAI and AI terminology such as OpenAI, ChatGPT, GPT, LLM, API, Responses API, Agents SDK, JSON, and Gradual.
-- Applies installed community glossaries built from OpenAI Academy course language and OpenAI documentation terminology before machine translation.
+- Applies installed premium glossaries built from OpenAI Academy course language and OpenAI documentation terminology before machine translation.
 - Uses native language names in the language picker.
-- Shows whether the selected language has an installed reviewed glossary or machine translation with protected terms.
+- Shows whether the selected language has a reviewed glossary, an AI-drafted beta glossary, or machine translation with protected terms.
 - Uses Google Translate for fast page translation.
 - Guards against late translation responses after Restore, language switches, and Gradual/Next.js route changes.
 - Does not modify enrollment, progress tracking, certificates, account state, or Gradual platform data.
 - Does not load remote AI scripts.
 
-The first reviewed glossary pack is Korean, but the project is designed for multilingual open-source glossary contributions. Languages without an installed reviewed glossary still use machine translation plus protected-term preservation. See [docs/TERMINOLOGY_MAP.md](docs/TERMINOLOGY_MAP.md) and [docs/GLOSSARY_CONTRIBUTING.md](docs/GLOSSARY_CONTRIBUTING.md).
+AcademyLens now ships twelve premium glossary packs for `de`, `es`, `fr`, `id`, `it`, `ja`, `ko`, `pt-BR`, `ru`, `vi`, `zh-CN`, and `zh-TW`. Korean is the first reviewed pack; the other premium packs are AI-drafted beta glossaries waiting for X translation cross-checks, community review, and native review. Languages outside the premium set still use machine translation plus protected-term preservation. See [docs/TERMINOLOGY_MAP.md](docs/TERMINOLOGY_MAP.md) and [docs/GLOSSARY_CONTRIBUTING.md](docs/GLOSSARY_CONTRIBUTING.md).
 
 ## Why Separate From SkillBridge?
 
@@ -70,6 +70,12 @@ npm run build:zip
 ## Glossary Contributions
 
 AcademyLens welcomes multilingual glossary packs. Add language packs under `src/data/glossary.<locale>.json`, register them in `src/data/glossary.index.json`, and run `npm run check:glossary`. AI-generated drafts are useful starting points, but reviewed packs should be source-backed and human-reviewed. See [docs/GLOSSARY_CONTRIBUTING.md](docs/GLOSSARY_CONTRIBUTING.md).
+
+Regenerate the current twelve premium draft packs from the maintained seed:
+
+```bash
+npm run glossary:seed
+```
 
 Capture a sanitized Academy DOM fixture from a Playwright profile:
 

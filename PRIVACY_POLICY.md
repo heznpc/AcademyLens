@@ -20,6 +20,8 @@ AcademyLens stores settings and a local translation cache in Chrome extension st
 - auto-translate preference
 - cached translation text
 
+Bundled glossary files are stored inside the extension package. They do not require a network request to AcademyLens or any AcademyLens server.
+
 ## What AcademyLens Does Not Do
 
 - It does not read or change your OpenAI Academy enrollment.
@@ -30,6 +32,7 @@ AcademyLens stores settings and a local translation cache in Chrome extension st
 - It does not require an API key.
 - It does not load remote AI scripts.
 - It does not run GPT/Puter-based review in the current runtime. The included AI review bridge is disabled and cannot send review text.
+- It does not connect to X/Twitter. Public X translation checks are a manual glossary QA process outside the extension runtime.
 
 ## Third Parties
 

@@ -2,13 +2,24 @@
 
 AcademyLens is designed for multilingual glossary packs.
 
-The extension can translate every supported target language through machine translation and protected-term preservation. A language becomes glossary-backed when a reviewed `src/data/glossary.<locale>.json` file is registered in `src/data/glossary.index.json`.
+The extension can translate every supported target language through machine translation and protected-term preservation. A language becomes glossary-backed when `src/data/glossary.<locale>.json` is registered in `src/data/glossary.index.json`.
 
 ## Current Packs
 
-| Locale | Status   | File                        | Notes                     |
-| ------ | -------- | --------------------------- | ------------------------- |
-| `ko`   | reviewed | `src/data/glossary.ko.json` | First quality-bar example |
+| Locale  | Status      | File                           | Notes                         |
+| ------- | ----------- | ------------------------------ | ----------------------------- |
+| `de`    | llm-drafted | `src/data/glossary.de.json`    | Needs community/native review |
+| `es`    | llm-drafted | `src/data/glossary.es.json`    | Needs community/native review |
+| `fr`    | llm-drafted | `src/data/glossary.fr.json`    | Needs community/native review |
+| `id`    | llm-drafted | `src/data/glossary.id.json`    | Needs community/native review |
+| `it`    | llm-drafted | `src/data/glossary.it.json`    | Needs community/native review |
+| `ja`    | llm-drafted | `src/data/glossary.ja.json`    | Needs community/native review |
+| `ko`    | reviewed    | `src/data/glossary.ko.json`    | First quality-bar example     |
+| `pt-BR` | llm-drafted | `src/data/glossary.pt-BR.json` | Needs community/native review |
+| `ru`    | llm-drafted | `src/data/glossary.ru.json`    | Needs community/native review |
+| `vi`    | llm-drafted | `src/data/glossary.vi.json`    | Needs community/native review |
+| `zh-CN` | llm-drafted | `src/data/glossary.zh-CN.json` | Needs community/native review |
+| `zh-TW` | llm-drafted | `src/data/glossary.zh-TW.json` | Needs community/native review |
 
 ## Contribution Model
 
@@ -19,7 +30,7 @@ The extension can translate every supported target language through machine tran
 5. Add or update tests when the pack changes translation behavior.
 6. Keep the pack unofficial and source-backed.
 
-AI-generated draft glossaries are welcome as a starting point, but reviewed packs should not be raw model output. A reviewed pack needs human review, official-source mapping, and passing checks.
+AI-generated draft glossaries are welcome as a starting point, but reviewed packs should not be raw model output. A reviewed pack needs human review, official-source mapping, X translation cross-check notes where useful, and passing checks.
 
 ## Required Shape
 
@@ -30,6 +41,7 @@ Each glossary file should include:
 - `sourceCatalog`: official Academy/OpenAI docs sources used by the pack.
 - `protectedTerms`: product, API, SDK, and platform terms that should remain unchanged.
 - `terms`: English source phrases mapped to target-language terms.
+- `qaSignals`: draft/review status for official alignment, Google Translate baseline, X translation cross-check, and community review.
 
 Each term must include:
 
@@ -38,6 +50,14 @@ Each term must include:
 - `category`: shared category such as `prompting`, `agents`, `evaluation`, or `workflow`.
 - `sources`: IDs from `sourceCatalog`.
 - `note`: short explanation of the translation choice.
+
+## Status Ladder
+
+- `llm-drafted`: AI-assisted first pass. It can ship as beta correction data, but should be clearly disclosed.
+- `llm-audited`: AI draft has received a focused second-pass audit against source docs and likely machine-translation failures.
+- `community-reviewed`: A fluent community reviewer has checked the language values.
+- `native-reviewed`: A native speaker has checked the language values and register.
+- `reviewed`: Project-maintainer-approved pack that has enough evidence and tests to serve as the quality-bar example.
 
 ## Reviewed Pack Bar
 
@@ -51,7 +71,17 @@ A `reviewed` glossary pack must have:
 - No collision with protected terms.
 - Notes that explain the choice, not just repeat the target word.
 
-Use `draft` status for early community packs that need review.
+Use `llm-drafted` status for early community packs that need review.
+
+## X Translation Cross-Check
+
+OpenAI employees and product accounts often discuss new OpenAI features on X, and X provides built-in post translation. AcademyLens can use that as a practical cross-check signal:
+
+- Use public posts only.
+- Keep short notes about terminology behavior, not copied post text.
+- Treat X translation as a real-world machine-translation signal, not an official OpenAI translation source.
+- Do not scrape X or automate around account restrictions for glossary evidence.
+- Prefer link-backed manual observations such as "X commonly renders `structured outputs` this way, but official alignment remains unavailable."
 
 ## Official Source Anchors
 
@@ -72,9 +102,17 @@ A practical draft workflow:
 
 1. Collect English terms from Academy course pages and official OpenAI docs.
 2. Ask an AI model to propose target-language terminology with short rationale.
-3. Review the draft with a native speaker or domain reviewer.
-4. Preserve official product/API names exactly.
-5. Run `npm run check:glossary`.
-6. Add an E2E or unit fixture if the pack changes expected placeholder behavior.
+3. Compare likely failure cases against Google Translate.
+4. Cross-check selected terms against public X translations where useful.
+5. Review the draft with a native speaker or domain reviewer.
+6. Preserve official product/API names exactly.
+7. Run `npm run check:glossary`.
+8. Add an E2E or unit fixture if the pack changes expected placeholder behavior.
+
+Regenerate the current twelve premium draft packs from the maintained seed:
+
+```bash
+npm run glossary:seed
+```
 
 The useful contribution is not just translation. It is consistent terminology across lessons, docs concepts, and OpenAI product names.

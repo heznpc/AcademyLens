@@ -1,4 +1,5 @@
 {
+  "schemaVersion": 1,
   "locale": "ko",
   "name": "AcademyLens Korean OpenAI Academy glossary",
   "sourceCatalog": {
@@ -492,5 +493,13 @@
       "sources": ["academy:courses"],
       "note": "Plural form."
     }
-  ]
+  ],
+  "status": "reviewed",
+  "qaSignals": {
+    "draftMethod": "AI-assisted terminology draft with manual Korean review",
+    "officialAlignment": "partial",
+    "googleTranslateBaseline": "checked for protected OpenAI/AI terminology",
+    "xTranslationCheck": "pending",
+    "communityReview": "open"
+  }
 }

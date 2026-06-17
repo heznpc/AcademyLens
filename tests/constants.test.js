@@ -40,12 +40,17 @@ test("UI messages are localized for Korean browsers", () => {
 });
 
 test("language support messages distinguish glossary-backed languages", () => {
-  const glossaryIndex = { glossaries: [{ locale: "ko" }, { locale: "ja" }] };
+  const glossaryIndex = {
+    glossaries: [
+      { locale: "ko", status: "reviewed" },
+      { locale: "ja", status: "llm-drafted" }
+    ]
+  };
 
   assert.equal(Constants.isGlossaryBackedLanguage("ko"), true);
-  assert.equal(Constants.isGlossaryBackedLanguage("ja"), false);
+  assert.equal(Constants.isGlossaryBackedLanguage("ja"), true);
   assert.equal(Constants.isGlossaryBackedLanguage("ja", glossaryIndex), true);
   assert.match(Constants.getLanguageSupportMessage("ko", "ko-KR"), /용어 사전/);
-  assert.match(Constants.getLanguageSupportMessage("ja", "ko-KR", glossaryIndex), /용어 사전/);
+  assert.match(Constants.getLanguageSupportMessage("ja", "ko-KR", glossaryIndex), /AI 초안/);
   assert.match(Constants.getLanguageSupportMessage("es", "ko-KR", glossaryIndex), /기계번역/);
 });

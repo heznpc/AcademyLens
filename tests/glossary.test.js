@@ -7,9 +7,12 @@ const Glossary = require("../src/lib/glossary.js");
 
 const glossaryIndex = JSON.parse(readFileSync(join(__dirname, "../src/data/glossary.index.json"), "utf8"));
 const glossary = JSON.parse(readFileSync(join(__dirname, "../src/data/glossary.ko.json"), "utf8"));
+const premiumLocales = ["de", "es", "fr", "id", "it", "ja", "ko", "pt-BR", "ru", "vi", "zh-CN", "zh-TW"];
 
-test("registers installed community glossaries", () => {
+test("registers installed premium glossaries", () => {
   assert(glossaryIndex.protectedTerms.includes("OpenAI Academy"));
+  assert.deepEqual(glossaryIndex.premiumLocales, premiumLocales);
+  assert.equal(glossaryIndex.glossaries.length, premiumLocales.length);
   assert(
     glossaryIndex.glossaries.some(
       (entry) =>
@@ -19,6 +22,29 @@ test("registers installed community glossaries", () => {
         entry.termCount === glossary.terms.length
     )
   );
+});
+
+test("registers twelve premium glossary packs with matching source keys", () => {
+  const baseline = new Set(glossary.terms.map((entry) => entry.source));
+
+  for (const locale of premiumLocales) {
+    const record = glossaryIndex.glossaries.find((entry) => entry.locale === locale);
+    assert(record, `missing ${locale} registry entry`);
+    assert.equal(record.termCount, glossary.terms.length);
+    assert(["llm-drafted", "reviewed"].includes(record.status));
+    assert(record.xTranslationCheck);
+
+    const pack = JSON.parse(readFileSync(join(__dirname, `../src/data/glossary.${locale}.json`), "utf8"));
+    assert.equal(pack.locale, locale);
+    assert.equal(pack.status, record.status);
+    assert.equal(pack.terms.length, glossary.terms.length);
+    assert(pack.qaSignals.xTranslationCheck);
+    assert.deepEqual(
+      new Set(pack.terms.map((entry) => entry.source)),
+      baseline,
+      `${locale} should keep the shared English source key set`
+    );
+  }
 });
 
 test("masks and restores protected OpenAI terms", () => {

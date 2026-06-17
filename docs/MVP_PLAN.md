@@ -17,11 +17,11 @@ Required notice: Unofficial, not affiliated with OpenAI.
 - OpenAI Academy pages under `academy.openai.com`.
 - Course listing and public course detail pages.
 - Login-only lesson pages as best-effort DOM translation after the user signs in.
-- Static AI terminology glossary.
+- Twelve premium AI terminology glossary packs.
 - Google Translate fast translation.
-- Community glossary correction for installed reviewed language packs.
+- Glossary correction for reviewed packs and clearly labeled AI-drafted beta packs.
 - Protected-term preservation for all target languages.
-- Clear UI disclosure when a selected language is using a reviewed glossary or protected-term-only machine translation.
+- Clear UI disclosure when a selected language is using a reviewed glossary, an AI-drafted beta glossary, or protected-term-only machine translation.
 - Generation guard for restore/language/route-change races.
 - Playwright E2E coverage for core translation flows, study-room-style DOM, and visual smoke checks.
 

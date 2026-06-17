@@ -10,6 +10,7 @@ const REQUIRED_PACKAGE_SCRIPTS = [
   "format:check",
   "node-check",
   "capture:academy",
+  "glossary:seed",
   "check:manifest",
   "check:glossary",
   "check:files",
@@ -49,6 +50,7 @@ const REQUIRED_GITIGNORE_PATTERNS = [
   "*.har",
   "*.webm"
 ];
+const REQUIRED_PREMIUM_LOCALES = ["de", "es", "fr", "id", "it", "ja", "ko", "pt-BR", "ru", "vi", "zh-CN", "zh-TW"];
 
 function readJson(path) {
   return JSON.parse(readFileSync(join(ROOT, path), "utf8"));
@@ -131,10 +133,14 @@ for (const term of REQUIRED_PROTECTED_TERMS) {
   assert(glossaryIndex.protectedTerms.includes(term), `Missing protected term: ${term}`);
 }
 assert(Array.isArray(glossaryIndex.glossaries), "Glossary registry must list registered language glossaries");
-assert(
-  glossaryIndex.glossaries.some((entry) => entry.locale === "ko" && entry.path === "src/data/glossary.ko.json"),
-  "Glossary registry must keep the first reviewed Korean pack registered"
-);
+for (const locale of REQUIRED_PREMIUM_LOCALES) {
+  assert(
+    glossaryIndex.glossaries.some(
+      (entry) => entry.locale === locale && entry.path === `src/data/glossary.${locale}.json`
+    ),
+    `Glossary registry must include premium pack: ${locale}`
+  );
+}
 assertFile("tests/fixtures/gradual-study-room-fragment.html");
 assertFile("src/lib/ai-review-bridge.js");
 assertFile("docs/GLOSSARY_CONTRIBUTING.md");

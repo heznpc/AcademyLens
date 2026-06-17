@@ -1,5 +1,6 @@
 {
   "schemaVersion": 1,
+  "premiumLocales": ["de", "es", "fr", "id", "it", "ja", "ko", "pt-BR", "ru", "vi", "zh-CN", "zh-TW"],
   "protectedTerms": [
     "OpenAI",
     "OpenAI Academy",
@@ -17,14 +18,148 @@
     "Gradual",
     "Google Translate"
   ],
+  "qaLayers": [
+    {
+      "id": "llm-draft",
+      "label": "AI-assisted draft",
+      "notes": "Term choices are drafted from OpenAI Academy wording and public OpenAI developer documentation."
+    },
+    {
+      "id": "google-translate-baseline",
+      "label": "Google Translate baseline",
+      "notes": "Used to identify where runtime machine translation needs glossary correction."
+    },
+    {
+      "id": "x-translation-cross-check",
+      "label": "X public translation cross-check",
+      "notes": "Manual, link-backed comparison against public OpenAI-related posts on X. This is a real-world machine-translation signal, not an official OpenAI translation source."
+    },
+    {
+      "id": "community-native-review",
+      "label": "Community/native review",
+      "notes": "Locale reviewers can improve JSON values while parity checks protect the source key set."
+    }
+  ],
   "glossaries": [
+    {
+      "locale": "de",
+      "language": "German",
+      "path": "src/data/glossary.de.json",
+      "status": "llm-drafted",
+      "termCount": 61,
+      "officialAlignment": "partial",
+      "xTranslationCheck": "pending",
+      "notes": "AI-drafted premium glossary seed. Needs X translation cross-check, community review, and native review before reviewed status."
+    },
+    {
+      "locale": "es",
+      "language": "Spanish",
+      "path": "src/data/glossary.es.json",
+      "status": "llm-drafted",
+      "termCount": 61,
+      "officialAlignment": "partial",
+      "xTranslationCheck": "pending",
+      "notes": "AI-drafted premium glossary seed. Needs X translation cross-check, community review, and native review before reviewed status."
+    },
+    {
+      "locale": "fr",
+      "language": "French",
+      "path": "src/data/glossary.fr.json",
+      "status": "llm-drafted",
+      "termCount": 61,
+      "officialAlignment": "partial",
+      "xTranslationCheck": "pending",
+      "notes": "AI-drafted premium glossary seed. Needs X translation cross-check, community review, and native review before reviewed status."
+    },
+    {
+      "locale": "id",
+      "language": "Indonesian",
+      "path": "src/data/glossary.id.json",
+      "status": "llm-drafted",
+      "termCount": 61,
+      "officialAlignment": "partial",
+      "xTranslationCheck": "pending",
+      "notes": "AI-drafted premium glossary seed. Needs X translation cross-check, community review, and native review before reviewed status."
+    },
+    {
+      "locale": "it",
+      "language": "Italian",
+      "path": "src/data/glossary.it.json",
+      "status": "llm-drafted",
+      "termCount": 61,
+      "officialAlignment": "partial",
+      "xTranslationCheck": "pending",
+      "notes": "AI-drafted premium glossary seed. Needs X translation cross-check, community review, and native review before reviewed status."
+    },
+    {
+      "locale": "ja",
+      "language": "Japanese",
+      "path": "src/data/glossary.ja.json",
+      "status": "llm-drafted",
+      "termCount": 61,
+      "officialAlignment": "partial",
+      "xTranslationCheck": "pending",
+      "notes": "AI-drafted premium glossary seed. Needs X translation cross-check, community review, and native review before reviewed status."
+    },
     {
       "locale": "ko",
       "language": "Korean",
       "path": "src/data/glossary.ko.json",
       "status": "reviewed",
       "termCount": 61,
+      "officialAlignment": "partial",
+      "xTranslationCheck": "pending",
       "notes": "First reviewed community glossary built from OpenAI Academy course language and OpenAI developer docs."
+    },
+    {
+      "locale": "pt-BR",
+      "language": "Portuguese Brazil",
+      "path": "src/data/glossary.pt-BR.json",
+      "status": "llm-drafted",
+      "termCount": 61,
+      "officialAlignment": "partial",
+      "xTranslationCheck": "pending",
+      "notes": "AI-drafted premium glossary seed. Needs X translation cross-check, community review, and native review before reviewed status."
+    },
+    {
+      "locale": "ru",
+      "language": "Russian",
+      "path": "src/data/glossary.ru.json",
+      "status": "llm-drafted",
+      "termCount": 61,
+      "officialAlignment": "partial",
+      "xTranslationCheck": "pending",
+      "notes": "AI-drafted premium glossary seed. Needs X translation cross-check, community review, and native review before reviewed status."
+    },
+    {
+      "locale": "vi",
+      "language": "Vietnamese",
+      "path": "src/data/glossary.vi.json",
+      "status": "llm-drafted",
+      "termCount": 61,
+      "officialAlignment": "partial",
+      "xTranslationCheck": "pending",
+      "notes": "AI-drafted premium glossary seed. Needs X translation cross-check, community review, and native review before reviewed status."
+    },
+    {
+      "locale": "zh-CN",
+      "language": "Chinese Simplified",
+      "path": "src/data/glossary.zh-CN.json",
+      "status": "llm-drafted",
+      "termCount": 61,
+      "officialAlignment": "partial",
+      "xTranslationCheck": "pending",
+      "notes": "AI-drafted premium glossary seed. Needs X translation cross-check, community review, and native review before reviewed status."
+    },
+    {
+      "locale": "zh-TW",
+      "language": "Chinese Traditional",
+      "path": "src/data/glossary.zh-TW.json",
+      "status": "llm-drafted",
+      "termCount": 61,
+      "officialAlignment": "partial",
+      "xTranslationCheck": "pending",
+      "notes": "AI-drafted premium glossary seed. Needs X translation cross-check, community review, and native review before reviewed status."
     }
   ]
 }
