@@ -80,6 +80,7 @@ const QUALITY_SMOKE_TERMS = Object.freeze({
   es: Object.freeze({
     "agentic workflows": "flujos de trabajo con agentes",
     approvals: "aprobaciones",
+    guardrails: "guardrails",
     "structured outputs": "salidas estructuradas"
   }),
   fr: Object.freeze({
@@ -92,6 +93,8 @@ const QUALITY_SMOKE_TERMS = Object.freeze({
     "structured outputs": "output terstruktur"
   }),
   it: Object.freeze({
+    "human review": "revisione umana",
+    "review point": "punto di revisione",
     schema: "schema",
     schemas: "schemi",
     "structured outputs": "output strutturati"
@@ -107,10 +110,13 @@ const QUALITY_SMOKE_TERMS = Object.freeze({
   "pt-BR": Object.freeze({
     "agentic workflows": "fluxos de trabalho com agentes",
     approvals: "aprovações",
+    "human review": "revisão humana",
+    repeatable: "repetível",
     "structured outputs": "saídas estruturadas"
   }),
   ru: Object.freeze({
     prompt: "промпт",
+    trace: "трейс",
     "structured outputs": "структурированные выводы"
   }),
   vi: Object.freeze({
@@ -124,7 +130,9 @@ const QUALITY_SMOKE_TERMS = Object.freeze({
     "structured outputs": "结构化输出"
   }),
   "zh-TW": Object.freeze({
+    agent: "智能體",
     prompt: "提示詞",
+    schema: "結構描述",
     "structured outputs": "結構化輸出"
   })
 });

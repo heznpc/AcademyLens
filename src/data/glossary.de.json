@@ -79,427 +79,427 @@
       "target": "Künstliche Intelligenz",
       "category": "academy-learning",
       "sources": ["academy:home", "academy:courses"],
-      "note": "AI-drafted term rendering from OpenAI Academy and OpenAI developer documentation; pending X translation cross-check and community review. Source rationale: General Korean rendering for AI in Academy course positioning."
+      "note": "AI-drafted term rendering from OpenAI Academy and OpenAI developer documentation; pending X translation cross-check and community review."
     },
     {
       "source": "AI fluency",
       "target": "KI-Kompetenz",
       "category": "academy-learning",
       "sources": ["academy:courses"],
-      "note": "AI-drafted term rendering from OpenAI Academy and OpenAI developer documentation; pending X translation cross-check and community review. Source rationale: Academy course copy frames fluency as practical workplace capability."
+      "note": "AI-drafted term rendering from OpenAI Academy and OpenAI developer documentation; pending X translation cross-check and community review."
     },
     {
       "source": "large language model",
       "target": "großes Sprachmodell",
       "category": "model-concepts",
       "sources": ["academy:home", "openai-docs:text-generation"],
-      "note": "AI-drafted term rendering from OpenAI Academy and OpenAI developer documentation; pending X translation cross-check and community review. Source rationale: Expand LLM on first use when helpful."
+      "note": "AI-drafted term rendering from OpenAI Academy and OpenAI developer documentation; pending X translation cross-check and community review."
     },
     {
       "source": "large language models",
       "target": "große Sprachmodelle",
       "category": "model-concepts",
       "sources": ["academy:home", "openai-docs:text-generation"],
-      "note": "AI-drafted term rendering from OpenAI Academy and OpenAI developer documentation; pending X translation cross-check and community review. Source rationale: Plural form used in course copy."
+      "note": "AI-drafted term rendering from OpenAI Academy and OpenAI developer documentation; pending X translation cross-check and community review."
     },
     {
       "source": "model",
       "target": "Modell",
       "category": "model-concepts",
       "sources": ["openai-docs:concepts", "openai-docs:text-generation"],
-      "note": "AI-drafted term rendering from OpenAI Academy and OpenAI developer documentation; pending X translation cross-check and community review. Source rationale: AI model context."
+      "note": "AI-drafted term rendering from OpenAI Academy and OpenAI developer documentation; pending X translation cross-check and community review."
     },
     {
       "source": "models",
       "target": "Modelle",
       "category": "model-concepts",
       "sources": ["openai-docs:concepts", "openai-docs:text-generation"],
-      "note": "AI-drafted term rendering from OpenAI Academy and OpenAI developer documentation; pending X translation cross-check and community review. Source rationale: Plural form used across docs and course copy."
+      "note": "AI-drafted term rendering from OpenAI Academy and OpenAI developer documentation; pending X translation cross-check and community review."
     },
     {
       "source": "token",
       "target": "Token",
       "category": "model-concepts",
       "sources": ["openai-docs:concepts"],
-      "note": "AI-drafted term rendering from OpenAI Academy and OpenAI developer documentation; pending X translation cross-check and community review. Source rationale: Keep the technical term concise."
+      "note": "AI-drafted term rendering from OpenAI Academy and OpenAI developer documentation; pending X translation cross-check and community review."
     },
     {
       "source": "tokens",
       "target": "Tokens",
       "category": "model-concepts",
       "sources": ["openai-docs:concepts"],
-      "note": "AI-drafted term rendering from OpenAI Academy and OpenAI developer documentation; pending X translation cross-check and community review. Source rationale: Plural form for tokenized text."
+      "note": "AI-drafted term rendering from OpenAI Academy and OpenAI developer documentation; pending X translation cross-check and community review."
     },
     {
       "source": "context length",
       "target": "Kontextlänge",
       "category": "model-concepts",
       "sources": ["openai-docs:concepts"],
-      "note": "AI-drafted term rendering from OpenAI Academy and OpenAI developer documentation; pending X translation cross-check and community review. Source rationale: OpenAI docs discuss model limits through context length."
+      "note": "AI-drafted term rendering from OpenAI Academy and OpenAI developer documentation; pending X translation cross-check and community review."
     },
     {
       "source": "prompt engineering",
       "target": "Prompt Engineering",
       "category": "prompting",
       "sources": ["openai-docs:prompt-engineering"],
-      "note": "AI-drafted term rendering from OpenAI Academy and OpenAI developer documentation; pending X translation cross-check and community review. Source rationale: Keep the established Korean technical loanword."
+      "note": "AI-drafted term rendering from OpenAI Academy and OpenAI developer documentation; pending X translation cross-check and community review."
     },
     {
       "source": "prompt",
       "target": "Prompt",
       "category": "prompting",
       "sources": ["academy:home", "openai-docs:prompt-engineering", "openai-docs:text-generation"],
-      "note": "AI-drafted term rendering from OpenAI Academy and OpenAI developer documentation; pending X translation cross-check and community review. Source rationale: Use 프롬프트 as the noun."
+      "note": "AI-drafted term rendering from OpenAI Academy and OpenAI developer documentation; pending X translation cross-check and community review."
     },
     {
       "source": "prompts",
       "target": "Prompts",
       "category": "prompting",
       "sources": ["academy:courses", "openai-docs:prompt-engineering", "openai-docs:text-generation"],
-      "note": "AI-drafted term rendering from OpenAI Academy and OpenAI developer documentation; pending X translation cross-check and community review. Source rationale: Plural form used in Academy course copy."
+      "note": "AI-drafted term rendering from OpenAI Academy and OpenAI developer documentation; pending X translation cross-check and community review."
     },
     {
       "source": "prompting",
       "target": "Prompting",
       "category": "prompting",
       "sources": ["openai-docs:prompt-engineering"],
-      "note": "AI-drafted term rendering from OpenAI Academy and OpenAI developer documentation; pending X translation cross-check and community review. Source rationale: Use 프롬프팅 for the practice."
+      "note": "AI-drafted term rendering from OpenAI Academy and OpenAI developer documentation; pending X translation cross-check and community review."
     },
     {
       "source": "instruction",
       "target": "Anweisung",
       "category": "prompting",
       "sources": ["academy:home", "openai-docs:prompt-engineering"],
-      "note": "AI-drafted term rendering from OpenAI Academy and OpenAI developer documentation; pending X translation cross-check and community review. Source rationale: Academy emphasizes clear instructions; docs frame prompting as instructions to the model."
+      "note": "AI-drafted term rendering from OpenAI Academy and OpenAI developer documentation; pending X translation cross-check and community review."
     },
     {
       "source": "instructions",
       "target": "Anweisungen",
       "category": "prompting",
       "sources": ["academy:home", "openai-docs:prompt-engineering"],
-      "note": "AI-drafted term rendering from OpenAI Academy and OpenAI developer documentation; pending X translation cross-check and community review. Source rationale: Plural form; avoid translating as generic 안내 when it means model instructions."
+      "note": "AI-drafted term rendering from OpenAI Academy and OpenAI developer documentation; pending X translation cross-check and community review."
     },
     {
       "source": "clear instructions",
       "target": "klare Anweisungen",
       "category": "prompting",
       "sources": ["academy:home", "academy:courses", "openai-docs:prompt-engineering"],
-      "note": "AI-drafted term rendering from OpenAI Academy and OpenAI developer documentation; pending X translation cross-check and community review. Source rationale: Academy course copy repeats this as a learning skill."
+      "note": "AI-drafted term rendering from OpenAI Academy and OpenAI developer documentation; pending X translation cross-check and community review."
     },
     {
       "source": "context",
       "target": "Kontext",
       "category": "prompting",
       "sources": ["academy:home", "academy:courses", "openai-docs:prompt-engineering"],
-      "note": "AI-drafted term rendering from OpenAI Academy and OpenAI developer documentation; pending X translation cross-check and community review. Source rationale: Prefer 컨텍스트 when discussing model inputs."
+      "note": "AI-drafted term rendering from OpenAI Academy and OpenAI developer documentation; pending X translation cross-check and community review."
     },
     {
       "source": "useful context",
       "target": "nützlicher Kontext",
       "category": "prompting",
       "sources": ["academy:home"],
-      "note": "AI-drafted term rendering from OpenAI Academy and OpenAI developer documentation; pending X translation cross-check and community review. Source rationale: Academy AI Foundations copy uses this as a practical prompting habit."
+      "note": "AI-drafted term rendering from OpenAI Academy and OpenAI developer documentation; pending X translation cross-check and community review."
     },
     {
       "source": "relevant context",
       "target": "relevanter Kontext",
       "category": "prompting",
       "sources": ["academy:courses"],
-      "note": "AI-drafted term rendering from OpenAI Academy and OpenAI developer documentation; pending X translation cross-check and community review. Source rationale: Academy courses page uses relevant context in workplace practice copy."
+      "note": "AI-drafted term rendering from OpenAI Academy and OpenAI developer documentation; pending X translation cross-check and community review."
     },
     {
       "source": "output",
       "target": "Ausgabe",
       "category": "review",
       "sources": ["academy:home", "openai-docs:text-generation"],
-      "note": "AI-drafted term rendering from OpenAI Academy and OpenAI developer documentation; pending X translation cross-check and community review. Source rationale: Use 출력 for model-generated results."
+      "note": "AI-drafted term rendering from OpenAI Academy and OpenAI developer documentation; pending X translation cross-check and community review."
     },
     {
       "source": "outputs",
       "target": "Ausgaben",
       "category": "review",
       "sources": ["academy:home", "academy:courses", "openai-docs:text-generation"],
-      "note": "AI-drafted term rendering from OpenAI Academy and OpenAI developer documentation; pending X translation cross-check and community review. Source rationale: Plural form; keep concise in lesson text."
+      "note": "AI-drafted term rendering from OpenAI Academy and OpenAI developer documentation; pending X translation cross-check and community review."
     },
     {
       "source": "review outputs",
       "target": "Ausgaben prüfen",
       "category": "review",
       "sources": ["academy:home", "academy:courses"],
-      "note": "AI-drafted term rendering from OpenAI Academy and OpenAI developer documentation; pending X translation cross-check and community review. Source rationale: Academy positions output review as a core learner habit."
+      "note": "AI-drafted term rendering from OpenAI Academy and OpenAI developer documentation; pending X translation cross-check and community review."
     },
     {
       "source": "reviewing outputs",
       "target": "Ausgaben prüfen",
       "category": "review",
       "sources": ["academy:home"],
-      "note": "AI-drafted term rendering from OpenAI Academy and OpenAI developer documentation; pending X translation cross-check and community review. Source rationale: Gerund form from Academy course copy."
+      "note": "AI-drafted term rendering from OpenAI Academy and OpenAI developer documentation; pending X translation cross-check and community review."
     },
     {
       "source": "review point",
       "target": "Prüfpunkt",
       "category": "review",
       "sources": ["academy:home"],
-      "note": "AI-drafted term rendering from OpenAI Academy and OpenAI developer documentation; pending X translation cross-check and community review. Source rationale: Used in workflow quality control."
+      "note": "AI-drafted term rendering from OpenAI Academy and OpenAI developer documentation; pending X translation cross-check and community review."
     },
     {
       "source": "review points",
       "target": "Prüfpunkte",
       "category": "review",
       "sources": ["academy:home"],
-      "note": "AI-drafted term rendering from OpenAI Academy and OpenAI developer documentation; pending X translation cross-check and community review. Source rationale: Plural form used in course copy."
+      "note": "AI-drafted term rendering from OpenAI Academy and OpenAI developer documentation; pending X translation cross-check and community review."
     },
     {
       "source": "responsibly",
       "target": "verantwortungsvoll",
       "category": "review",
       "sources": ["academy:home", "academy:courses"],
-      "note": "AI-drafted term rendering from OpenAI Academy and OpenAI developer documentation; pending X translation cross-check and community review. Source rationale: Academy copy emphasizes responsible everyday work with AI."
+      "note": "AI-drafted term rendering from OpenAI Academy and OpenAI developer documentation; pending X translation cross-check and community review."
     },
     {
       "source": "delegate",
       "target": "delegieren",
       "category": "academy-learning",
       "sources": ["academy:courses"],
-      "note": "AI-drafted term rendering from OpenAI Academy and OpenAI developer documentation; pending X translation cross-check and community review. Source rationale: Academy courses ask learners to decide what to delegate to AI."
+      "note": "AI-drafted term rendering from OpenAI Academy and OpenAI developer documentation; pending X translation cross-check and community review."
     },
     {
       "source": "staying in control",
       "target": "Kontrolle behalten",
       "category": "academy-learning",
       "sources": ["academy:courses"],
-      "note": "AI-drafted term rendering from OpenAI Academy and OpenAI developer documentation; pending X translation cross-check and community review. Source rationale: Preserve the control/supervision nuance from Academy course copy."
+      "note": "AI-drafted term rendering from OpenAI Academy and OpenAI developer documentation; pending X translation cross-check and community review."
     },
     {
       "source": "repeatable",
       "target": "wiederholbar",
       "category": "workflow",
       "sources": ["academy:courses"],
-      "note": "AI-drafted term rendering from OpenAI Academy and OpenAI developer documentation; pending X translation cross-check and community review. Source rationale: Course copy uses repeatability as the move from ad hoc prompting to workflows."
+      "note": "AI-drafted term rendering from OpenAI Academy and OpenAI developer documentation; pending X translation cross-check and community review."
     },
     {
       "source": "repeatable ways of working",
       "target": "wiederholbare Arbeitsweisen",
       "category": "workflow",
       "sources": ["academy:courses"],
-      "note": "AI-drafted term rendering from OpenAI Academy and OpenAI developer documentation; pending X translation cross-check and community review. Source rationale: Academy course pathway phrase; keep work-practice framing."
+      "note": "AI-drafted term rendering from OpenAI Academy and OpenAI developer documentation; pending X translation cross-check and community review."
     },
     {
       "source": "workflow",
       "target": "Workflow",
       "category": "workflow",
       "sources": ["academy:courses", "openai-docs:agents"],
-      "note": "AI-drafted term rendering from OpenAI Academy and OpenAI developer documentation; pending X translation cross-check and community review. Source rationale: Prefer 워크플로 over 작업흐름 in product learning context."
+      "note": "AI-drafted term rendering from OpenAI Academy and OpenAI developer documentation; pending X translation cross-check and community review."
     },
     {
       "source": "workflows",
       "target": "Workflows",
       "category": "workflow",
       "sources": ["academy:courses", "openai-docs:agents"],
-      "note": "AI-drafted term rendering from OpenAI Academy and OpenAI developer documentation; pending X translation cross-check and community review. Source rationale: Plural form used in course and agent docs."
+      "note": "AI-drafted term rendering from OpenAI Academy and OpenAI developer documentation; pending X translation cross-check and community review."
     },
     {
       "source": "agent",
       "target": "Agent",
       "category": "agents",
       "sources": ["academy:courses", "openai-docs:agents", "openai-docs:agent-definitions"],
-      "note": "AI-drafted term rendering from OpenAI Academy and OpenAI developer documentation; pending X translation cross-check and community review. Source rationale: Use 에이전트 for AI agent contexts."
+      "note": "AI-drafted term rendering from OpenAI Academy and OpenAI developer documentation; pending X translation cross-check and community review."
     },
     {
       "source": "agents",
       "target": "Agenten",
       "category": "agents",
       "sources": ["academy:courses", "openai-docs:agents", "openai-docs:agent-definitions"],
-      "note": "AI-drafted term rendering from OpenAI Academy and OpenAI developer documentation; pending X translation cross-check and community review. Source rationale: Plural form used in Academy and OpenAI agent docs."
+      "note": "AI-drafted term rendering from OpenAI Academy and OpenAI developer documentation; pending X translation cross-check and community review."
     },
     {
       "source": "agentic workflows",
       "target": "agentische Workflows",
       "category": "agents",
       "sources": ["academy:courses", "openai-docs:agents"],
-      "note": "AI-drafted term rendering from OpenAI Academy and OpenAI developer documentation; pending X translation cross-check and community review. Source rationale: Use when Academy content discusses structured workflows with agents."
+      "note": "AI-drafted term rendering from OpenAI Academy and OpenAI developer documentation; pending X translation cross-check and community review."
     },
     {
       "source": "tool",
       "target": "Tool",
       "category": "agents",
       "sources": ["openai-docs:agents", "openai-docs:agent-definitions"],
-      "note": "AI-drafted term rendering from OpenAI Academy and OpenAI developer documentation; pending X translation cross-check and community review. Source rationale: Agent docs use tools as runtime capabilities."
+      "note": "AI-drafted term rendering from OpenAI Academy and OpenAI developer documentation; pending X translation cross-check and community review."
     },
     {
       "source": "tools",
       "target": "Tools",
       "category": "agents",
       "sources": ["openai-docs:agents", "openai-docs:agent-definitions"],
-      "note": "AI-drafted term rendering from OpenAI Academy and OpenAI developer documentation; pending X translation cross-check and community review. Source rationale: Plural form."
+      "note": "AI-drafted term rendering from OpenAI Academy and OpenAI developer documentation; pending X translation cross-check and community review."
     },
     {
       "source": "tool call",
       "target": "Tool-Aufruf",
       "category": "agents",
       "sources": ["openai-docs:observability"],
-      "note": "AI-drafted term rendering from OpenAI Academy and OpenAI developer documentation; pending X translation cross-check and community review. Source rationale: Preserve the execution-event meaning."
+      "note": "AI-drafted term rendering from OpenAI Academy and OpenAI developer documentation; pending X translation cross-check and community review."
     },
     {
       "source": "tool calls",
       "target": "Tool-Aufrufe",
       "category": "agents",
       "sources": ["openai-docs:observability"],
-      "note": "AI-drafted term rendering from OpenAI Academy and OpenAI developer documentation; pending X translation cross-check and community review. Source rationale: Plural form used in traces."
+      "note": "AI-drafted term rendering from OpenAI Academy and OpenAI developer documentation; pending X translation cross-check and community review."
     },
     {
       "source": "handoff",
       "target": "Handoff",
       "category": "agents",
       "sources": ["openai-docs:agent-definitions", "openai-docs:observability"],
-      "note": "AI-drafted term rendering from OpenAI Academy and OpenAI developer documentation; pending X translation cross-check and community review. Source rationale: Use a consistent loanword for agent-to-agent delegation."
+      "note": "AI-drafted term rendering from OpenAI Academy and OpenAI developer documentation; pending X translation cross-check and community review."
     },
     {
       "source": "handoffs",
       "target": "Handoffs",
       "category": "agents",
       "sources": ["openai-docs:agent-definitions", "openai-docs:observability"],
-      "note": "AI-drafted term rendering from OpenAI Academy and OpenAI developer documentation; pending X translation cross-check and community review. Source rationale: Plural form."
+      "note": "AI-drafted term rendering from OpenAI Academy and OpenAI developer documentation; pending X translation cross-check and community review."
     },
     {
       "source": "guardrail",
       "target": "Guardrail",
       "category": "agents",
       "sources": ["openai-docs:guardrails", "openai-docs:observability"],
-      "note": "AI-drafted term rendering from OpenAI Academy and OpenAI developer documentation; pending X translation cross-check and community review. Source rationale: Use 가드레일 for automated validation boundaries."
+      "note": "AI-drafted term rendering from OpenAI Academy and OpenAI developer documentation; pending X translation cross-check and community review."
     },
     {
       "source": "guardrails",
       "target": "Guardrails",
       "category": "agents",
       "sources": ["openai-docs:guardrails", "openai-docs:observability"],
-      "note": "AI-drafted term rendering from OpenAI Academy and OpenAI developer documentation; pending X translation cross-check and community review. Source rationale: Plural form."
+      "note": "AI-drafted term rendering from OpenAI Academy and OpenAI developer documentation; pending X translation cross-check and community review."
     },
     {
       "source": "human review",
       "target": "menschliche Prüfung",
       "category": "agents",
       "sources": ["openai-docs:guardrails"],
-      "note": "AI-drafted term rendering from OpenAI Academy and OpenAI developer documentation; pending X translation cross-check and community review. Source rationale: Keep the human-in-the-loop approval nuance."
+      "note": "AI-drafted term rendering from OpenAI Academy and OpenAI developer documentation; pending X translation cross-check and community review."
     },
     {
       "source": "approval",
       "target": "Genehmigung",
       "category": "agents",
       "sources": ["openai-docs:guardrails"],
-      "note": "AI-drafted term rendering from OpenAI Academy and OpenAI developer documentation; pending X translation cross-check and community review. Source rationale: Guardrails docs pair approvals with sensitive actions."
+      "note": "AI-drafted term rendering from OpenAI Academy and OpenAI developer documentation; pending X translation cross-check and community review."
     },
     {
       "source": "approvals",
       "target": "Genehmigungen",
       "category": "agents",
       "sources": ["openai-docs:guardrails"],
-      "note": "AI-drafted term rendering from OpenAI Academy and OpenAI developer documentation; pending X translation cross-check and community review. Source rationale: Plural form."
+      "note": "AI-drafted term rendering from OpenAI Academy and OpenAI developer documentation; pending X translation cross-check and community review."
     },
     {
       "source": "trace",
       "target": "Trace",
       "category": "observability",
       "sources": ["openai-docs:observability"],
-      "note": "AI-drafted term rendering from OpenAI Academy and OpenAI developer documentation; pending X translation cross-check and community review. Source rationale: Use 트레이스 for structured execution records."
+      "note": "AI-drafted term rendering from OpenAI Academy and OpenAI developer documentation; pending X translation cross-check and community review."
     },
     {
       "source": "traces",
       "target": "Traces",
       "category": "observability",
       "sources": ["openai-docs:observability"],
-      "note": "AI-drafted term rendering from OpenAI Academy and OpenAI developer documentation; pending X translation cross-check and community review. Source rationale: Plural form."
+      "note": "AI-drafted term rendering from OpenAI Academy and OpenAI developer documentation; pending X translation cross-check and community review."
     },
     {
       "source": "tracing",
       "target": "Tracing",
       "category": "observability",
       "sources": ["openai-docs:observability"],
-      "note": "AI-drafted term rendering from OpenAI Academy and OpenAI developer documentation; pending X translation cross-check and community review. Source rationale: Use for observability feature names."
+      "note": "AI-drafted term rendering from OpenAI Academy and OpenAI developer documentation; pending X translation cross-check and community review."
     },
     {
       "source": "structured outputs",
       "target": "strukturierte Ausgaben",
       "category": "structured-output",
       "sources": ["openai-docs:structured-outputs", "openai-docs:text-generation"],
-      "note": "AI-drafted term rendering from OpenAI Academy and OpenAI developer documentation; pending X translation cross-check and community review. Source rationale: Use this rendering for schema-constrained model responses."
+      "note": "AI-drafted term rendering from OpenAI Academy and OpenAI developer documentation; pending X translation cross-check and community review."
     },
     {
       "source": "schema",
       "target": "Schema",
       "category": "structured-output",
       "sources": ["openai-docs:structured-outputs"],
-      "note": "AI-drafted term rendering from OpenAI Academy and OpenAI developer documentation; pending X translation cross-check and community review. Source rationale: Technical term for response shape."
+      "note": "AI-drafted term rendering from OpenAI Academy and OpenAI developer documentation; pending X translation cross-check and community review."
     },
     {
       "source": "schemas",
       "target": "Schemata",
       "category": "structured-output",
       "sources": ["openai-docs:structured-outputs"],
-      "note": "AI-drafted term rendering from OpenAI Academy and OpenAI developer documentation; pending X translation cross-check and community review. Source rationale: Plural form."
+      "note": "AI-drafted term rendering from OpenAI Academy and OpenAI developer documentation; pending X translation cross-check and community review."
     },
     {
       "source": "evaluation",
       "target": "Evaluation",
       "category": "evaluation",
       "sources": ["openai-docs:evaluation"],
-      "note": "AI-drafted term rendering from OpenAI Academy and OpenAI developer documentation; pending X translation cross-check and community review. Source rationale: AI output/system evaluation."
+      "note": "AI-drafted term rendering from OpenAI Academy and OpenAI developer documentation; pending X translation cross-check and community review."
     },
     {
       "source": "evaluations",
       "target": "Evaluationen",
       "category": "evaluation",
       "sources": ["openai-docs:evaluation"],
-      "note": "AI-drafted term rendering from OpenAI Academy and OpenAI developer documentation; pending X translation cross-check and community review. Source rationale: Plural form."
+      "note": "AI-drafted term rendering from OpenAI Academy and OpenAI developer documentation; pending X translation cross-check and community review."
     },
     {
       "source": "eval",
       "target": "Eval",
       "category": "evaluation",
       "sources": ["openai-docs:evaluation"],
-      "note": "AI-drafted term rendering from OpenAI Academy and OpenAI developer documentation; pending X translation cross-check and community review. Source rationale: Render eval as 평가 in learner-facing Korean text unless referring to an API name."
+      "note": "AI-drafted term rendering from OpenAI Academy and OpenAI developer documentation; pending X translation cross-check and community review."
     },
     {
       "source": "evals",
       "target": "Evals",
       "category": "evaluation",
       "sources": ["openai-docs:evaluation"],
-      "note": "AI-drafted term rendering from OpenAI Academy and OpenAI developer documentation; pending X translation cross-check and community review. Source rationale: Plural shorthand."
+      "note": "AI-drafted term rendering from OpenAI Academy and OpenAI developer documentation; pending X translation cross-check and community review."
     },
     {
       "source": "grader",
       "target": "Bewerter",
       "category": "evaluation",
       "sources": ["openai-docs:evaluation"],
-      "note": "AI-drafted term rendering from OpenAI Academy and OpenAI developer documentation; pending X translation cross-check and community review. Source rationale: Evaluation component for scoring outputs."
+      "note": "AI-drafted term rendering from OpenAI Academy and OpenAI developer documentation; pending X translation cross-check and community review."
     },
     {
       "source": "graders",
       "target": "Bewerter",
       "category": "evaluation",
       "sources": ["openai-docs:evaluation"],
-      "note": "AI-drafted term rendering from OpenAI Academy and OpenAI developer documentation; pending X translation cross-check and community review. Source rationale: Plural form."
+      "note": "AI-drafted term rendering from OpenAI Academy and OpenAI developer documentation; pending X translation cross-check and community review."
     },
     {
       "source": "self-paced",
       "target": "im eigenen Tempo",
       "category": "course-format",
       "sources": ["academy:home"],
-      "note": "AI-drafted term rendering from OpenAI Academy and OpenAI developer documentation; pending X translation cross-check and community review. Source rationale: Course pacing."
+      "note": "AI-drafted term rendering from OpenAI Academy and OpenAI developer documentation; pending X translation cross-check and community review."
     },
     {
       "source": "course completion certificate",
       "target": "Kursabschlusszertifikat",
       "category": "course-format",
       "sources": ["academy:courses"],
-      "note": "AI-drafted term rendering from OpenAI Academy and OpenAI developer documentation; pending X translation cross-check and community review. Source rationale: Academy learner credential wording."
+      "note": "AI-drafted term rendering from OpenAI Academy and OpenAI developer documentation; pending X translation cross-check and community review."
     },
     {
       "source": "course completion certificates",
       "target": "Kursabschlusszertifikate",
       "category": "course-format",
       "sources": ["academy:courses"],
-      "note": "AI-drafted term rendering from OpenAI Academy and OpenAI developer documentation; pending X translation cross-check and community review. Source rationale: Plural form."
+      "note": "AI-drafted term rendering from OpenAI Academy and OpenAI developer documentation; pending X translation cross-check and community review."
     }
   ]
 }
