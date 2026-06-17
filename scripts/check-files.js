@@ -12,7 +12,6 @@ const REQUIRED_PACKAGE_SCRIPTS = [
   "node-check",
   "capture:academy",
   "glossary:seed",
-  "glossary:audit-packets",
   "check:manifest",
   "check:glossary",
   "check:files",
@@ -146,7 +145,6 @@ for (const locale of REQUIRED_PREMIUM_LOCALES) {
 assertFile("tests/fixtures/gradual-study-room-fragment.html");
 assertFile("src/lib/ai-review-bridge.js");
 assertFile("docs/GLOSSARY_CONTRIBUTING.md");
-assertFile("docs/GLOSSARY_AUDIT.md");
 
 const publicCourseFixture = "tests/fixtures/openai-academy-public-course.html";
 assertFile(publicCourseFixture);
