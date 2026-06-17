@@ -1,7 +1,10 @@
 const assert = require("node:assert/strict");
+const { readFileSync } = require("node:fs");
+const { join } = require("node:path");
 const test = require("node:test");
 
 const Constants = require("../src/lib/constants.js");
+const glossaryIndex = JSON.parse(readFileSync(join(__dirname, "../src/data/glossary.index.json"), "utf8"));
 
 test("language labels use native names regardless of UI locale", () => {
   assert.equal(Constants.getLanguageLabel("en", "ko-KR"), "English");
@@ -40,17 +43,10 @@ test("UI messages are localized for Korean browsers", () => {
 });
 
 test("language support messages distinguish glossary-backed languages", () => {
-  const glossaryIndex = {
-    glossaries: [
-      { locale: "ko", status: "reviewed" },
-      { locale: "ja", status: "llm-drafted" }
-    ]
-  };
-
-  assert.equal(Constants.isGlossaryBackedLanguage("ko"), true);
-  assert.equal(Constants.isGlossaryBackedLanguage("ja"), true);
+  assert.equal(Constants.isGlossaryBackedLanguage("ko"), false);
+  assert.equal(Constants.isGlossaryBackedLanguage("ko", glossaryIndex), true);
   assert.equal(Constants.isGlossaryBackedLanguage("ja", glossaryIndex), true);
-  assert.match(Constants.getLanguageSupportMessage("ko", "ko-KR"), /용어 사전/);
+  assert.match(Constants.getLanguageSupportMessage("ko", "ko-KR", glossaryIndex), /용어 사전/);
   assert.match(Constants.getLanguageSupportMessage("ja", "ko-KR", glossaryIndex), /AI 초안/);
-  assert.match(Constants.getLanguageSupportMessage("es", "ko-KR", glossaryIndex), /기계번역/);
+  assert.match(Constants.getLanguageSupportMessage("ar", "ko-KR", glossaryIndex), /기계번역/);
 });

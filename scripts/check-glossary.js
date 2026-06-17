@@ -1,5 +1,6 @@
 const { existsSync, readFileSync, readdirSync } = require("node:fs");
 const { join } = require("node:path");
+const { ALLOWED_GLOSSARY_STATUSES, PREMIUM_LOCALE_RECORDS, QUALITY_SMOKE_TERMS } = require("./lib/glossary-config.js");
 
 const ROOT = join(__dirname, "..");
 const DATA_DIR = join(ROOT, "src", "data");
@@ -39,8 +40,7 @@ const REQUIRED_REVIEWED_TERMS = [
   "guardrails",
   "evals"
 ];
-const REQUIRED_PREMIUM_LOCALES = ["de", "es", "fr", "id", "it", "ja", "ko", "pt-BR", "ru", "vi", "zh-CN", "zh-TW"];
-const ALLOWED_STATUSES = ["llm-drafted", "llm-audited", "community-reviewed", "native-reviewed", "reviewed"];
+const REQUIRED_PREMIUM_LOCALES = PREMIUM_LOCALE_RECORDS.map((record) => record.locale);
 
 function readJson(path) {
   return JSON.parse(readFileSync(join(ROOT, path), "utf8"));
@@ -125,6 +125,8 @@ function assertGlossary(record) {
     }
   }
 
+  assertQualitySmokeTerms(locale, seenTerms);
+
   if (record.status === "reviewed" || record.status === "native-reviewed" || record.status === "community-reviewed") {
     for (const required of REQUIRED_REVIEWED_CATEGORIES) {
       assert(categories.has(required), `${locale} reviewed glossary missing category: ${required}`);
@@ -142,6 +144,18 @@ function assertGlossary(record) {
   }
 
   return { categories: categories.size, terms: glossary.terms.length, termKeys: [...seenTerms.keys()].sort() };
+}
+
+function assertQualitySmokeTerms(locale, seenTerms) {
+  const smokeTerms = QUALITY_SMOKE_TERMS[locale] || {};
+  for (const [source, expectedTarget] of Object.entries(smokeTerms)) {
+    const entry = seenTerms.get(normalized(source));
+    assert(entry, `${locale} quality smoke term missing: ${source}`);
+    assert(
+      entry.target === expectedTarget,
+      `${locale} quality smoke mismatch for "${source}": expected "${expectedTarget}", got "${entry.target}"`
+    );
+  }
 }
 
 const index = readJson("src/data/glossary.index.json");
@@ -165,7 +179,7 @@ let baselineLocale = "";
 for (const record of index.glossaries) {
   assert(record.locale, "Glossary registry entry missing locale");
   assert(record.path, `Glossary registry entry missing path for ${record.locale}`);
-  assert(ALLOWED_STATUSES.includes(record.status), `Unknown glossary status for ${record.locale}`);
+  assert(ALLOWED_GLOSSARY_STATUSES.includes(record.status), `Unknown glossary status for ${record.locale}`);
   assert(!registeredLocales.has(record.locale), `Duplicate registered locale: ${record.locale}`);
   assert(!registeredPaths.has(record.path), `Duplicate registered glossary path: ${record.path}`);
   assert(existsSync(join(ROOT, record.path)), `Registered glossary file does not exist: ${record.path}`);

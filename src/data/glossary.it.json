@@ -426,7 +426,7 @@
     },
     {
       "source": "schema",
-      "target": "schéma",
+      "target": "schema",
       "category": "structured-output",
       "sources": ["openai-docs:structured-outputs"],
       "note": "AI-drafted term rendering from OpenAI Academy and OpenAI developer documentation; pending X translation cross-check and community review. Source rationale: Technical term for response shape."

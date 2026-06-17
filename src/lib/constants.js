@@ -26,21 +26,6 @@
     autoTranslate: false
   });
 
-  const GLOSSARY_BACKED_LANGUAGES = Object.freeze([
-    "de",
-    "es",
-    "fr",
-    "id",
-    "it",
-    "ja",
-    "ko",
-    "pt-BR",
-    "ru",
-    "vi",
-    "zh-CN",
-    "zh-TW"
-  ]);
-
   const SUPPORTED_LANGUAGES = Object.freeze([
     { code: "en", label: "English", nativeLabel: "English" },
     { code: "ko", label: "Korean", nativeLabel: "한국어" },
@@ -237,9 +222,7 @@
     if (glossaryIndex && Array.isArray(glossaryIndex.glossaries)) {
       return glossaryIndex.glossaries.find((entry) => entry && entry.locale === code) || null;
     }
-    return GLOSSARY_BACKED_LANGUAGES.includes(code)
-      ? { locale: code, status: code === "ko" ? "reviewed" : "llm-drafted" }
-      : null;
+    return null;
   }
 
   function isGlossaryBackedLanguage(code, glossaryIndex) {
@@ -259,7 +242,6 @@
     MESSAGE_TYPES,
     STORAGE_KEYS,
     DEFAULT_SETTINGS,
-    GLOSSARY_BACKED_LANGUAGES,
     SUPPORTED_LANGUAGES,
     EXCLUDED_SELECTOR,
     LIMITS,

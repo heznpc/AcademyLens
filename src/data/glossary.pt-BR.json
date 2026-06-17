@@ -314,7 +314,7 @@
     },
     {
       "source": "agentic workflows",
-      "target": "fluxos de trabalho agenticos",
+      "target": "fluxos de trabalho com agentes",
       "category": "agents",
       "sources": ["academy:courses", "openai-docs:agents"],
       "note": "AI-drafted term rendering from OpenAI Academy and OpenAI developer documentation; pending X translation cross-check and community review. Source rationale: Use when Academy content discusses structured workflows with agents."

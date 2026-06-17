@@ -377,7 +377,7 @@
     },
     {
       "source": "human review",
-      "target": "menschliche Pruefung",
+      "target": "menschliche Prüfung",
       "category": "agents",
       "sources": ["openai-docs:guardrails"],
       "note": "AI-drafted term rendering from OpenAI Academy and OpenAI developer documentation; pending X translation cross-check and community review. Source rationale: Keep the human-in-the-loop approval nuance."

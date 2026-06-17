@@ -363,14 +363,14 @@
     },
     {
       "source": "guardrail",
-      "target": "lan can bảo vệ",
+      "target": "hàng rào bảo vệ",
       "category": "agents",
       "sources": ["openai-docs:guardrails", "openai-docs:observability"],
       "note": "AI-drafted term rendering from OpenAI Academy and OpenAI developer documentation; pending X translation cross-check and community review. Source rationale: Use 가드레일 for automated validation boundaries."
     },
     {
       "source": "guardrails",
-      "target": "lan can bảo vệ",
+      "target": "hàng rào bảo vệ",
       "category": "agents",
       "sources": ["openai-docs:guardrails", "openai-docs:observability"],
       "note": "AI-drafted term rendering from OpenAI Academy and OpenAI developer documentation; pending X translation cross-check and community review. Source rationale: Plural form."
@@ -426,14 +426,14 @@
     },
     {
       "source": "schema",
-      "target": "schéma",
+      "target": "schema",
       "category": "structured-output",
       "sources": ["openai-docs:structured-outputs"],
       "note": "AI-drafted term rendering from OpenAI Academy and OpenAI developer documentation; pending X translation cross-check and community review. Source rationale: Technical term for response shape."
     },
     {
       "source": "schemas",
-      "target": "schéma",
+      "target": "schema",
       "category": "structured-output",
       "sources": ["openai-docs:structured-outputs"],
       "note": "AI-drafted term rendering from OpenAI Academy and OpenAI developer documentation; pending X translation cross-check and community review. Source rationale: Plural form."

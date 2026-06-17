@@ -4,14 +4,15 @@ const { join } = require("node:path");
 const test = require("node:test");
 
 const Glossary = require("../src/lib/glossary.js");
+const { QUALITY_SMOKE_TERMS } = require("../scripts/lib/glossary-config.js");
 
 const glossaryIndex = JSON.parse(readFileSync(join(__dirname, "../src/data/glossary.index.json"), "utf8"));
 const glossary = JSON.parse(readFileSync(join(__dirname, "../src/data/glossary.ko.json"), "utf8"));
-const premiumLocales = ["de", "es", "fr", "id", "it", "ja", "ko", "pt-BR", "ru", "vi", "zh-CN", "zh-TW"];
+const premiumLocales = glossaryIndex.premiumLocales;
 
 test("registers installed premium glossaries", () => {
   assert(glossaryIndex.protectedTerms.includes("OpenAI Academy"));
-  assert.deepEqual(glossaryIndex.premiumLocales, premiumLocales);
+  assert.equal(glossaryIndex.premiumLocales.length, 12);
   assert.equal(glossaryIndex.glossaries.length, premiumLocales.length);
   assert(
     glossaryIndex.glossaries.some(
@@ -22,6 +23,17 @@ test("registers installed premium glossaries", () => {
         entry.termCount === glossary.terms.length
     )
   );
+});
+
+test("keeps locale quality smoke terms in premium glossary packs", () => {
+  for (const [locale, expectedTerms] of Object.entries(QUALITY_SMOKE_TERMS)) {
+    const pack = JSON.parse(readFileSync(join(__dirname, `../src/data/glossary.${locale}.json`), "utf8"));
+    for (const [source, target] of Object.entries(expectedTerms)) {
+      const entry = pack.terms.find((term) => term.source === source);
+      assert(entry, `${locale} missing smoke term: ${source}`);
+      assert.equal(entry.target, target);
+    }
+  }
 });
 
 test("registers twelve premium glossary packs with matching source keys", () => {

@@ -1,58 +1,8 @@
 const { readFileSync, writeFileSync } = require("node:fs");
 const { join } = require("node:path");
+const { DRAFT_NOTE, PREMIUM_LOCALE_RECORDS, PROTECTED_TERMS } = require("./lib/glossary-config.js");
 
 const ROOT = join(__dirname, "..");
-
-const PREMIUM_LOCALES = [
-  { locale: "de", language: "German", name: "German OpenAI Academy glossary", status: "llm-drafted" },
-  { locale: "es", language: "Spanish", name: "Spanish OpenAI Academy glossary", status: "llm-drafted" },
-  { locale: "fr", language: "French", name: "French OpenAI Academy glossary", status: "llm-drafted" },
-  { locale: "id", language: "Indonesian", name: "Indonesian OpenAI Academy glossary", status: "llm-drafted" },
-  { locale: "it", language: "Italian", name: "Italian OpenAI Academy glossary", status: "llm-drafted" },
-  { locale: "ja", language: "Japanese", name: "Japanese OpenAI Academy glossary", status: "llm-drafted" },
-  { locale: "ko", language: "Korean", name: "Korean OpenAI Academy glossary", status: "reviewed" },
-  {
-    locale: "pt-BR",
-    language: "Portuguese Brazil",
-    name: "Brazilian Portuguese OpenAI Academy glossary",
-    status: "llm-drafted"
-  },
-  { locale: "ru", language: "Russian", name: "Russian OpenAI Academy glossary", status: "llm-drafted" },
-  { locale: "vi", language: "Vietnamese", name: "Vietnamese OpenAI Academy glossary", status: "llm-drafted" },
-  {
-    locale: "zh-CN",
-    language: "Chinese Simplified",
-    name: "Simplified Chinese OpenAI Academy glossary",
-    status: "llm-drafted"
-  },
-  {
-    locale: "zh-TW",
-    language: "Chinese Traditional",
-    name: "Traditional Chinese OpenAI Academy glossary",
-    status: "llm-drafted"
-  }
-];
-
-const PROTECTED_TERMS = [
-  "OpenAI",
-  "OpenAI Academy",
-  "ChatGPT",
-  "GPT",
-  "GPT-5",
-  "GPT-4",
-  "LLM",
-  "API",
-  "SDK",
-  "JSON",
-  "JSON Schema",
-  "Responses API",
-  "Agents SDK",
-  "Gradual",
-  "Google Translate"
-];
-
-const DRAFT_NOTE =
-  "AI-drafted term rendering from OpenAI Academy and OpenAI developer documentation; pending X translation cross-check and community review.";
 
 const targetTerms = {
   de: {
@@ -99,7 +49,7 @@ const targetTerms = {
     handoffs: "Handoffs",
     guardrail: "Guardrail",
     guardrails: "Guardrails",
-    "human review": "menschliche Pruefung",
+    "human review": "menschliche Prüfung",
     approval: "Genehmigung",
     approvals: "Genehmigungen",
     trace: "Trace",
@@ -153,7 +103,7 @@ const targetTerms = {
     workflows: "flujos de trabajo",
     agent: "agente",
     agents: "agentes",
-    "agentic workflows": "flujos de trabajo agenticos",
+    "agentic workflows": "flujos de trabajo con agentes",
     tool: "herramienta",
     tools: "herramientas",
     "tool call": "llamada a herramienta",
@@ -164,7 +114,7 @@ const targetTerms = {
     guardrails: "barandillas",
     "human review": "revisión humana",
     approval: "aprobación",
-    approvals: "aprobaciónes",
+    approvals: "aprobaciones",
     trace: "traza",
     traces: "trazas",
     tracing: "trazado",
@@ -358,7 +308,7 @@ const targetTerms = {
     traces: "trace",
     tracing: "tracciamento",
     "structured outputs": "output strutturati",
-    schema: "schéma",
+    schema: "schema",
     schemas: "schemi",
     evaluation: "valutazione",
     evaluations: "valutazioni",
@@ -468,7 +418,7 @@ const targetTerms = {
     workflows: "fluxos de trabalho",
     agent: "agente",
     agents: "agentes",
-    "agentic workflows": "fluxos de trabalho agenticos",
+    "agentic workflows": "fluxos de trabalho com agentes",
     tool: "ferramenta",
     tools: "ferramentas",
     "tool call": "chamada de ferramenta",
@@ -601,8 +551,8 @@ const targetTerms = {
     "tool calls": "lời gọi công cụ",
     handoff: "bàn giao",
     handoffs: "bàn giao",
-    guardrail: "lan can bảo vệ",
-    guardrails: "lan can bảo vệ",
+    guardrail: "hàng rào bảo vệ",
+    guardrails: "hàng rào bảo vệ",
     "human review": "đánh giá của con người",
     approval: "phê duyệt",
     approvals: "phê duyệt",
@@ -610,8 +560,8 @@ const targetTerms = {
     traces: "vết",
     tracing: "truy vết",
     "structured outputs": "đầu ra có cấu trúc",
-    schema: "schéma",
-    schemas: "schéma",
+    schema: "schema",
+    schemas: "schema",
     evaluation: "đánh giá",
     evaluations: "đánh giá",
     eval: "eval",
@@ -797,7 +747,7 @@ function buildDraftGlossary(localeRecord, sourceGlossary) {
 const koreanGlossary = readJson("src/data/glossary.ko.json");
 const index = {
   schemaVersion: 1,
-  premiumLocales: PREMIUM_LOCALES.map((record) => record.locale),
+  premiumLocales: PREMIUM_LOCALE_RECORDS.map((record) => record.locale),
   protectedTerms: PROTECTED_TERMS,
   qaLayers: [
     {
@@ -822,7 +772,7 @@ const index = {
       notes: "Locale reviewers can improve JSON values while parity checks protect the source key set."
     }
   ],
-  glossaries: PREMIUM_LOCALES.map((record) => ({
+  glossaries: PREMIUM_LOCALE_RECORDS.map((record) => ({
     locale: record.locale,
     language: record.language,
     path: `src/data/glossary.${record.locale}.json`,
@@ -837,7 +787,7 @@ const index = {
   }))
 };
 
-for (const record of PREMIUM_LOCALES) {
+for (const record of PREMIUM_LOCALE_RECORDS) {
   if (record.locale === "ko") continue;
   writeJson(`src/data/glossary.${record.locale}.json`, buildDraftGlossary(record, koreanGlossary));
 }
@@ -857,4 +807,6 @@ const updatedKoreanGlossary = {
 writeJson("src/data/glossary.ko.json", updatedKoreanGlossary);
 writeJson("src/data/glossary.index.json", index);
 
-console.log(`Seeded ${PREMIUM_LOCALES.length} premium glossary packs with ${koreanGlossary.terms.length} terms each.`);
+console.log(
+  `Seeded ${PREMIUM_LOCALE_RECORDS.length} premium glossary packs with ${koreanGlossary.terms.length} terms each.`
+);

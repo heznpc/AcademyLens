@@ -1,6 +1,7 @@
 const { existsSync, readdirSync, readFileSync, statSync } = require("node:fs");
 const { execFileSync } = require("node:child_process");
 const { dirname, join } = require("node:path");
+const { PREMIUM_LOCALE_RECORDS } = require("./lib/glossary-config.js");
 
 const ROOT = join(__dirname, "..");
 const REQUIRED_PACKAGE_SCRIPTS = [
@@ -50,7 +51,7 @@ const REQUIRED_GITIGNORE_PATTERNS = [
   "*.har",
   "*.webm"
 ];
-const REQUIRED_PREMIUM_LOCALES = ["de", "es", "fr", "id", "it", "ja", "ko", "pt-BR", "ru", "vi", "zh-CN", "zh-TW"];
+const REQUIRED_PREMIUM_LOCALES = PREMIUM_LOCALE_RECORDS.map((record) => record.locale);
 
 function readJson(path) {
   return JSON.parse(readFileSync(join(ROOT, path), "utf8"));
