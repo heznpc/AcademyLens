@@ -412,7 +412,7 @@
     },
     {
       "source": "tracing",
-      "target": "трассировка",
+      "target": "трейсинг",
       "category": "observability",
       "sources": ["openai-docs:observability"],
       "note": "AI-drafted term rendering from OpenAI Academy and OpenAI developer documentation; pending X translation cross-check and community review."

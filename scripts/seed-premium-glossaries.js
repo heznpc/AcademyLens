@@ -495,7 +495,7 @@ const targetTerms = {
     approvals: "одобрения",
     trace: "трейс",
     traces: "трейсы",
-    tracing: "трассировка",
+    tracing: "трейсинг",
     "structured outputs": "структурированные выводы",
     schema: "схема",
     schemas: "схемы",
