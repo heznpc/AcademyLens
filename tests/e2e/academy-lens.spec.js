@@ -341,10 +341,17 @@ test.describe("AcademyLens extension E2E", () => {
       ]) {
         await harness.page.setViewportSize(viewport);
         await harness.page.waitForTimeout(150);
-        const box = await harness.page.evaluate(() => {
+        const readPanelMetrics = () => {
           const panel = document.querySelector(".academylens-root").shadowRoot.querySelector(".panel");
           const body = panel.querySelector(".body");
+          const name = panel.querySelector(".name");
+          const select = panel.querySelector("[data-language]");
+          const primary = panel.querySelector("[data-translate]");
+          const top = panel.querySelector(".top");
           const rect = panel.getBoundingClientRect();
+          const nameStyle = window.getComputedStyle(name);
+          const selectStyle = window.getComputedStyle(select);
+          const buttonStyle = window.getComputedStyle(primary);
           return {
             left: rect.left,
             top: rect.top,
@@ -353,19 +360,46 @@ test.describe("AcademyLens extension E2E", () => {
             width: rect.width,
             height: rect.height,
             collapsed: panel.dataset.collapsed,
-            bodyVisible: !body.hasAttribute("inert") && body.getAttribute("aria-hidden") !== "true"
+            bodyVisible: !body.hasAttribute("inert") && body.getAttribute("aria-hidden") !== "true",
+            nameFontSize: Number.parseFloat(nameStyle.fontSize),
+            selectFontSize: Number.parseFloat(selectStyle.fontSize),
+            buttonFontSize: Number.parseFloat(buttonStyle.fontSize),
+            topHeight: top.getBoundingClientRect().height,
+            selectHeight: select.getBoundingClientRect().height,
+            primaryHeight: primary.getBoundingClientRect().height
           };
-        });
+        };
+        const box = await harness.page.evaluate(readPanelMetrics);
         expect(box.left).toBeGreaterThanOrEqual(0);
         expect(box.top).toBeGreaterThanOrEqual(0);
         expect(box.right).toBeLessThanOrEqual(viewport.width);
         expect(box.bottom).toBeLessThanOrEqual(viewport.height);
-        expect(box.width).toBeGreaterThan(200);
+        expect(box.width).toBeGreaterThanOrEqual(viewport.width > 600 ? 360 : 330);
+        expect(box.topHeight).toBeGreaterThanOrEqual(60);
+        expect(box.nameFontSize).toBeGreaterThanOrEqual(16.5);
         expect(box.collapsed).toBe("true");
         expect(box.bodyVisible).toBe(false);
 
+        await clickPanelButton(harness.page, "[data-collapse]");
+        await harness.page.waitForTimeout(250);
+        const expandedBox = await harness.page.evaluate(readPanelMetrics);
+        expect(expandedBox.left).toBeGreaterThanOrEqual(0);
+        expect(expandedBox.top).toBeGreaterThanOrEqual(0);
+        expect(expandedBox.right).toBeLessThanOrEqual(viewport.width);
+        expect(expandedBox.bottom).toBeLessThanOrEqual(viewport.height);
+        expect(expandedBox.width).toBeGreaterThanOrEqual(viewport.width > 600 ? 420 : 330);
+        expect(expandedBox.selectFontSize).toBeGreaterThanOrEqual(14.5);
+        expect(expandedBox.buttonFontSize).toBeGreaterThanOrEqual(14.5);
+        expect(expandedBox.selectHeight).toBeGreaterThanOrEqual(46);
+        expect(expandedBox.primaryHeight).toBeGreaterThanOrEqual(46);
+        expect(expandedBox.collapsed).toBe("false");
+        expect(expandedBox.bodyVisible).toBe(true);
+
         const screenshot = await harness.page.screenshot();
         expect(screenshot.length).toBeGreaterThan(20000);
+
+        await clickPanelButton(harness.page, "[data-collapse]");
+        await harness.page.waitForTimeout(150);
       }
     } finally {
       await stopHarness(harness);
