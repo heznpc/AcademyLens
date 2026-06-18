@@ -500,6 +500,342 @@
       "category": "course-format",
       "sources": ["academy:courses"],
       "note": "AI-drafted term rendering from OpenAI Academy and OpenAI developer documentation; pending X translation cross-check and community review."
+    },
+    {
+      "source": "generative AI",
+      "target": "AI tạo sinh",
+      "category": "model-concepts",
+      "sources": ["academy:home", "openai-docs:text-generation"],
+      "note": "AI-drafted term rendering from OpenAI Academy and OpenAI developer documentation; pending X translation cross-check and community review."
+    },
+    {
+      "source": "AI literacy",
+      "target": "năng lực AI",
+      "category": "academy-learning",
+      "sources": ["academy:home", "academy:courses"],
+      "note": "AI-drafted term rendering from OpenAI Academy and OpenAI developer documentation; pending X translation cross-check and community review."
+    },
+    {
+      "source": "responsible AI",
+      "target": "AI có trách nhiệm",
+      "category": "safety",
+      "sources": ["academy:home", "openai-docs:guardrails"],
+      "note": "AI-drafted term rendering from OpenAI Academy and OpenAI developer documentation; pending X translation cross-check and community review."
+    },
+    {
+      "source": "AI assistant",
+      "target": "trợ lý AI",
+      "category": "academy-learning",
+      "sources": ["academy:home", "openai-docs:agents"],
+      "note": "AI-drafted term rendering from OpenAI Academy and OpenAI developer documentation; pending X translation cross-check and community review."
+    },
+    {
+      "source": "workplace AI",
+      "target": "AI tại nơi làm việc",
+      "category": "academy-learning",
+      "sources": ["academy:home", "academy:courses"],
+      "note": "AI-drafted term rendering from OpenAI Academy and OpenAI developer documentation; pending X translation cross-check and community review."
+    },
+    {
+      "source": "hands-on practice",
+      "target": "thực hành trực tiếp",
+      "category": "course-format",
+      "sources": ["academy:home", "academy:courses"],
+      "note": "AI-drafted term rendering from OpenAI Academy and OpenAI developer documentation; pending X translation cross-check and community review."
+    },
+    {
+      "source": "learning objective",
+      "target": "mục tiêu học tập",
+      "category": "course-format",
+      "sources": ["academy:courses"],
+      "note": "AI-drafted term rendering from OpenAI Academy and OpenAI developer documentation; pending X translation cross-check and community review."
+    },
+    {
+      "source": "lesson",
+      "target": "bài học",
+      "category": "course-format",
+      "sources": ["academy:courses"],
+      "note": "AI-drafted term rendering from OpenAI Academy and OpenAI developer documentation; pending X translation cross-check and community review."
+    },
+    {
+      "source": "module",
+      "target": "mô-đun",
+      "category": "course-format",
+      "sources": ["academy:courses"],
+      "note": "AI-drafted term rendering from OpenAI Academy and OpenAI developer documentation; pending X translation cross-check and community review."
+    },
+    {
+      "source": "system message",
+      "target": "thông điệp hệ thống",
+      "category": "prompting",
+      "sources": ["openai-docs:prompt-engineering", "openai-docs:text-generation"],
+      "note": "AI-drafted term rendering from OpenAI Academy and OpenAI developer documentation; pending X translation cross-check and community review."
+    },
+    {
+      "source": "developer message",
+      "target": "thông điệp nhà phát triển",
+      "category": "prompting",
+      "sources": ["openai-docs:prompt-engineering", "openai-docs:text-generation"],
+      "note": "AI-drafted term rendering from OpenAI Academy and OpenAI developer documentation; pending X translation cross-check and community review."
+    },
+    {
+      "source": "user message",
+      "target": "thông điệp người dùng",
+      "category": "prompting",
+      "sources": ["openai-docs:prompt-engineering", "openai-docs:text-generation"],
+      "note": "AI-drafted term rendering from OpenAI Academy and OpenAI developer documentation; pending X translation cross-check and community review."
+    },
+    {
+      "source": "few-shot prompting",
+      "target": "prompting few-shot",
+      "category": "prompting",
+      "sources": ["openai-docs:prompt-engineering"],
+      "note": "AI-drafted term rendering from OpenAI Academy and OpenAI developer documentation; pending X translation cross-check and community review."
+    },
+    {
+      "source": "examples",
+      "target": "ví dụ",
+      "category": "prompting",
+      "sources": ["openai-docs:prompt-engineering"],
+      "note": "AI-drafted term rendering from OpenAI Academy and OpenAI developer documentation; pending X translation cross-check and community review."
+    },
+    {
+      "source": "constraints",
+      "target": "ràng buộc",
+      "category": "prompting",
+      "sources": ["openai-docs:prompt-engineering", "openai-docs:structured-outputs"],
+      "note": "AI-drafted term rendering from OpenAI Academy and OpenAI developer documentation; pending X translation cross-check and community review."
+    },
+    {
+      "source": "prompt template",
+      "target": "mẫu prompt",
+      "category": "prompting",
+      "sources": ["openai-docs:prompt-engineering"],
+      "note": "AI-drafted term rendering from OpenAI Academy and OpenAI developer documentation; pending X translation cross-check and community review."
+    },
+    {
+      "source": "generative model",
+      "target": "mô hình tạo sinh",
+      "category": "model-concepts",
+      "sources": ["openai-docs:text-generation", "openai-docs:concepts"],
+      "note": "AI-drafted term rendering from OpenAI Academy and OpenAI developer documentation; pending X translation cross-check and community review."
+    },
+    {
+      "source": "reasoning",
+      "target": "suy luận",
+      "category": "model-concepts",
+      "sources": ["openai-docs:concepts", "openai-docs:text-generation"],
+      "note": "AI-drafted term rendering from OpenAI Academy and OpenAI developer documentation; pending X translation cross-check and community review."
+    },
+    {
+      "source": "reasoning model",
+      "target": "mô hình suy luận",
+      "category": "model-concepts",
+      "sources": ["openai-docs:concepts", "openai-docs:text-generation"],
+      "note": "AI-drafted term rendering from OpenAI Academy and OpenAI developer documentation; pending X translation cross-check and community review."
+    },
+    {
+      "source": "multimodal",
+      "target": "đa phương thức",
+      "category": "model-concepts",
+      "sources": ["openai-docs:concepts", "openai-docs:text-generation"],
+      "note": "AI-drafted term rendering from OpenAI Academy and OpenAI developer documentation; pending X translation cross-check and community review."
+    },
+    {
+      "source": "hallucination",
+      "target": "ảo giác",
+      "category": "safety",
+      "sources": ["academy:home", "openai-docs:evaluation"],
+      "note": "AI-drafted term rendering from OpenAI Academy and OpenAI developer documentation; pending X translation cross-check and community review."
+    },
+    {
+      "source": "grounding",
+      "target": "neo ngữ cảnh",
+      "category": "safety",
+      "sources": ["openai-docs:prompt-engineering", "openai-docs:evaluation"],
+      "note": "AI-drafted term rendering from OpenAI Academy and OpenAI developer documentation; pending X translation cross-check and community review."
+    },
+    {
+      "source": "embedding",
+      "target": "embedding",
+      "category": "model-concepts",
+      "sources": ["openai-docs:concepts"],
+      "note": "AI-drafted term rendering from OpenAI Academy and OpenAI developer documentation; pending X translation cross-check and community review."
+    },
+    {
+      "source": "embeddings",
+      "target": "embedding",
+      "category": "model-concepts",
+      "sources": ["openai-docs:concepts"],
+      "note": "AI-drafted term rendering from OpenAI Academy and OpenAI developer documentation; pending X translation cross-check and community review."
+    },
+    {
+      "source": "use case",
+      "target": "trường hợp sử dụng",
+      "category": "workflow",
+      "sources": ["academy:home", "academy:courses"],
+      "note": "AI-drafted term rendering from OpenAI Academy and OpenAI developer documentation; pending X translation cross-check and community review."
+    },
+    {
+      "source": "task decomposition",
+      "target": "phân rã nhiệm vụ",
+      "category": "workflow",
+      "sources": ["academy:home", "openai-docs:agents"],
+      "note": "AI-drafted term rendering from OpenAI Academy and OpenAI developer documentation; pending X translation cross-check and community review."
+    },
+    {
+      "source": "automation",
+      "target": "tự động hóa",
+      "category": "workflow",
+      "sources": ["academy:home", "openai-docs:agents"],
+      "note": "AI-drafted term rendering from OpenAI Academy and OpenAI developer documentation; pending X translation cross-check and community review."
+    },
+    {
+      "source": "approval workflow",
+      "target": "quy trình phê duyệt",
+      "category": "workflow",
+      "sources": ["openai-docs:guardrails"],
+      "note": "AI-drafted term rendering from OpenAI Academy and OpenAI developer documentation; pending X translation cross-check and community review."
+    },
+    {
+      "source": "review checkpoint",
+      "target": "điểm kiểm tra đánh giá",
+      "category": "review",
+      "sources": ["academy:home", "openai-docs:guardrails"],
+      "note": "AI-drafted term rendering from OpenAI Academy and OpenAI developer documentation; pending X translation cross-check and community review."
+    },
+    {
+      "source": "function calling",
+      "target": "gọi hàm",
+      "category": "agents",
+      "sources": ["openai-docs:agents", "openai-docs:text-generation"],
+      "note": "AI-drafted term rendering from OpenAI Academy and OpenAI developer documentation; pending X translation cross-check and community review."
+    },
+    {
+      "source": "function call",
+      "target": "lệnh gọi hàm",
+      "category": "agents",
+      "sources": ["openai-docs:agents", "openai-docs:text-generation"],
+      "note": "AI-drafted term rendering from OpenAI Academy and OpenAI developer documentation; pending X translation cross-check and community review."
+    },
+    {
+      "source": "tool output",
+      "target": "đầu ra công cụ",
+      "category": "agents",
+      "sources": ["openai-docs:agents"],
+      "note": "AI-drafted term rendering from OpenAI Academy and OpenAI developer documentation; pending X translation cross-check and community review."
+    },
+    {
+      "source": "handoff target",
+      "target": "đích handoff",
+      "category": "agents",
+      "sources": ["openai-docs:agent-definitions"],
+      "note": "AI-drafted term rendering from OpenAI Academy and OpenAI developer documentation; pending X translation cross-check and community review."
+    },
+    {
+      "source": "agent loop",
+      "target": "vòng lặp tác nhân",
+      "category": "agents",
+      "sources": ["openai-docs:agents"],
+      "note": "AI-drafted term rendering from OpenAI Academy and OpenAI developer documentation; pending X translation cross-check and community review."
+    },
+    {
+      "source": "JSON mode",
+      "target": "chế độ JSON",
+      "category": "structured-output",
+      "sources": ["openai-docs:structured-outputs"],
+      "note": "AI-drafted term rendering from OpenAI Academy and OpenAI developer documentation; pending X translation cross-check and community review."
+    },
+    {
+      "source": "strict schema",
+      "target": "schema nghiêm ngặt",
+      "category": "structured-output",
+      "sources": ["openai-docs:structured-outputs"],
+      "note": "AI-drafted term rendering from OpenAI Academy and OpenAI developer documentation; pending X translation cross-check and community review."
+    },
+    {
+      "source": "schema validation",
+      "target": "xác thực schema",
+      "category": "structured-output",
+      "sources": ["openai-docs:structured-outputs"],
+      "note": "AI-drafted term rendering from OpenAI Academy and OpenAI developer documentation; pending X translation cross-check and community review."
+    },
+    {
+      "source": "test set",
+      "target": "tập kiểm thử",
+      "category": "evaluation",
+      "sources": ["openai-docs:evaluation"],
+      "note": "AI-drafted term rendering from OpenAI Academy and OpenAI developer documentation; pending X translation cross-check and community review."
+    },
+    {
+      "source": "golden dataset",
+      "target": "bộ dữ liệu chuẩn",
+      "category": "evaluation",
+      "sources": ["openai-docs:evaluation"],
+      "note": "AI-drafted term rendering from OpenAI Academy and OpenAI developer documentation; pending X translation cross-check and community review."
+    },
+    {
+      "source": "rubric",
+      "target": "rubric",
+      "category": "evaluation",
+      "sources": ["openai-docs:evaluation"],
+      "note": "AI-drafted term rendering from OpenAI Academy and OpenAI developer documentation; pending X translation cross-check and community review."
+    },
+    {
+      "source": "benchmark",
+      "target": "benchmark",
+      "category": "evaluation",
+      "sources": ["openai-docs:evaluation"],
+      "note": "AI-drafted term rendering from OpenAI Academy and OpenAI developer documentation; pending X translation cross-check and community review."
+    },
+    {
+      "source": "regression test",
+      "target": "kiểm thử hồi quy",
+      "category": "evaluation",
+      "sources": ["openai-docs:evaluation"],
+      "note": "AI-drafted term rendering from OpenAI Academy and OpenAI developer documentation; pending X translation cross-check and community review."
+    },
+    {
+      "source": "privacy",
+      "target": "quyền riêng tư",
+      "category": "safety",
+      "sources": ["academy:home", "openai-docs:guardrails"],
+      "note": "AI-drafted term rendering from OpenAI Academy and OpenAI developer documentation; pending X translation cross-check and community review."
+    },
+    {
+      "source": "sensitive data",
+      "target": "dữ liệu nhạy cảm",
+      "category": "safety",
+      "sources": ["academy:home", "openai-docs:guardrails"],
+      "note": "AI-drafted term rendering from OpenAI Academy and OpenAI developer documentation; pending X translation cross-check and community review."
+    },
+    {
+      "source": "personal data",
+      "target": "dữ liệu cá nhân",
+      "category": "safety",
+      "sources": ["academy:home", "openai-docs:guardrails"],
+      "note": "AI-drafted term rendering from OpenAI Academy and OpenAI developer documentation; pending X translation cross-check and community review."
+    },
+    {
+      "source": "data retention",
+      "target": "lưu giữ dữ liệu",
+      "category": "safety",
+      "sources": ["openai-docs:guardrails"],
+      "note": "AI-drafted term rendering from OpenAI Academy and OpenAI developer documentation; pending X translation cross-check and community review."
+    },
+    {
+      "source": "content moderation",
+      "target": "kiểm duyệt nội dung",
+      "category": "safety",
+      "sources": ["openai-docs:guardrails"],
+      "note": "AI-drafted term rendering from OpenAI Academy and OpenAI developer documentation; pending X translation cross-check and community review."
+    },
+    {
+      "source": "red teaming",
+      "target": "red teaming",
+      "category": "safety",
+      "sources": ["openai-docs:evaluation", "openai-docs:guardrails"],
+      "note": "AI-drafted term rendering from OpenAI Academy and OpenAI developer documentation; pending X translation cross-check and community review."
     }
   ]
 }

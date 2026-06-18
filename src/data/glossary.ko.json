@@ -492,6 +492,342 @@
       "category": "course-format",
       "sources": ["academy:courses"],
       "note": "Plural form."
+    },
+    {
+      "source": "generative AI",
+      "target": "생성형 AI",
+      "category": "model-concepts",
+      "sources": ["academy:home", "openai-docs:text-generation"],
+      "note": "Academy and OpenAI docs frequently describe model output creation with this concept."
+    },
+    {
+      "source": "AI literacy",
+      "target": "AI 리터러시",
+      "category": "academy-learning",
+      "sources": ["academy:home", "academy:courses"],
+      "note": "Useful for Academy learning outcomes and public education content."
+    },
+    {
+      "source": "responsible AI",
+      "target": "책임 있는 AI",
+      "category": "safety",
+      "sources": ["academy:home", "openai-docs:guardrails"],
+      "note": "Keep this aligned with safety, review, and workplace practice language."
+    },
+    {
+      "source": "AI assistant",
+      "target": "AI 어시스턴트",
+      "category": "academy-learning",
+      "sources": ["academy:home", "openai-docs:agents"],
+      "note": "Common user-facing phrasing for AI-supported work."
+    },
+    {
+      "source": "workplace AI",
+      "target": "업무용 AI",
+      "category": "academy-learning",
+      "sources": ["academy:home", "academy:courses"],
+      "note": "Academy course copy emphasizes practical AI use at work."
+    },
+    {
+      "source": "hands-on practice",
+      "target": "실습",
+      "category": "course-format",
+      "sources": ["academy:home", "academy:courses"],
+      "note": "Use concise course-language rendering for practical exercises."
+    },
+    {
+      "source": "learning objective",
+      "target": "학습 목표",
+      "category": "course-format",
+      "sources": ["academy:courses"],
+      "note": "Course pages and lessons commonly frame sections through objectives."
+    },
+    {
+      "source": "lesson",
+      "target": "레슨",
+      "category": "course-format",
+      "sources": ["academy:courses"],
+      "note": "Use the common course UI term without over-translating platform chrome."
+    },
+    {
+      "source": "module",
+      "target": "모듈",
+      "category": "course-format",
+      "sources": ["academy:courses"],
+      "note": "Course structure term for grouped lessons or units."
+    },
+    {
+      "source": "system message",
+      "target": "시스템 메시지",
+      "category": "prompting",
+      "sources": ["openai-docs:prompt-engineering", "openai-docs:text-generation"],
+      "note": "OpenAI prompting docs distinguish message roles."
+    },
+    {
+      "source": "developer message",
+      "target": "개발자 메시지",
+      "category": "prompting",
+      "sources": ["openai-docs:prompt-engineering", "openai-docs:text-generation"],
+      "note": "OpenAI prompting docs distinguish message roles."
+    },
+    {
+      "source": "user message",
+      "target": "사용자 메시지",
+      "category": "prompting",
+      "sources": ["openai-docs:prompt-engineering", "openai-docs:text-generation"],
+      "note": "OpenAI prompting docs distinguish message roles."
+    },
+    {
+      "source": "few-shot prompting",
+      "target": "퓨샷 프롬프팅",
+      "category": "prompting",
+      "sources": ["openai-docs:prompt-engineering"],
+      "note": "Preserve the common prompting term while localizing the noun form."
+    },
+    {
+      "source": "examples",
+      "target": "예제",
+      "category": "prompting",
+      "sources": ["openai-docs:prompt-engineering"],
+      "note": "Prompting guidance often relies on examples as input context."
+    },
+    {
+      "source": "constraints",
+      "target": "제약 조건",
+      "category": "prompting",
+      "sources": ["openai-docs:prompt-engineering", "openai-docs:structured-outputs"],
+      "note": "Used for prompt instructions and schema-constrained outputs."
+    },
+    {
+      "source": "prompt template",
+      "target": "프롬프트 템플릿",
+      "category": "prompting",
+      "sources": ["openai-docs:prompt-engineering"],
+      "note": "Reusable prompting patterns should retain the template concept."
+    },
+    {
+      "source": "generative model",
+      "target": "생성 모델",
+      "category": "model-concepts",
+      "sources": ["openai-docs:text-generation", "openai-docs:concepts"],
+      "note": "Model concept used when explaining text and multimodal generation."
+    },
+    {
+      "source": "reasoning",
+      "target": "추론",
+      "category": "model-concepts",
+      "sources": ["openai-docs:concepts", "openai-docs:text-generation"],
+      "note": "Core model-capability term in OpenAI documentation."
+    },
+    {
+      "source": "reasoning model",
+      "target": "추론 모델",
+      "category": "model-concepts",
+      "sources": ["openai-docs:concepts", "openai-docs:text-generation"],
+      "note": "Specific model family concept used in OpenAI docs."
+    },
+    {
+      "source": "multimodal",
+      "target": "멀티모달",
+      "category": "model-concepts",
+      "sources": ["openai-docs:concepts", "openai-docs:text-generation"],
+      "note": "Keep the standard Korean transliteration for multimodal model capabilities."
+    },
+    {
+      "source": "hallucination",
+      "target": "환각",
+      "category": "safety",
+      "sources": ["academy:home", "openai-docs:evaluation"],
+      "note": "Important learner-facing risk term for reviewing outputs."
+    },
+    {
+      "source": "grounding",
+      "target": "근거 부여",
+      "category": "safety",
+      "sources": ["openai-docs:prompt-engineering", "openai-docs:evaluation"],
+      "note": "Used for making responses rely on supplied context and evidence."
+    },
+    {
+      "source": "embedding",
+      "target": "임베딩",
+      "category": "model-concepts",
+      "sources": ["openai-docs:concepts"],
+      "note": "Common OpenAI developer term that should not become a generic verb."
+    },
+    {
+      "source": "embeddings",
+      "target": "임베딩",
+      "category": "model-concepts",
+      "sources": ["openai-docs:concepts"],
+      "note": "Plural form of the vector representation term."
+    },
+    {
+      "source": "use case",
+      "target": "사용 사례",
+      "category": "workflow",
+      "sources": ["academy:home", "academy:courses"],
+      "note": "Academy workplace lessons often ask learners to identify practical use cases."
+    },
+    {
+      "source": "task decomposition",
+      "target": "작업 분해",
+      "category": "workflow",
+      "sources": ["academy:home", "openai-docs:agents"],
+      "note": "Useful workflow term when breaking work into AI-assisted steps."
+    },
+    {
+      "source": "automation",
+      "target": "자동화",
+      "category": "workflow",
+      "sources": ["academy:home", "openai-docs:agents"],
+      "note": "Workplace AI and agents content frequently covers automation."
+    },
+    {
+      "source": "approval workflow",
+      "target": "승인 워크플로",
+      "category": "workflow",
+      "sources": ["openai-docs:guardrails"],
+      "note": "Guardrails and human review content uses approval flow concepts."
+    },
+    {
+      "source": "review checkpoint",
+      "target": "검토 체크포인트",
+      "category": "review",
+      "sources": ["academy:home", "openai-docs:guardrails"],
+      "note": "Learner-facing wording for places where humans should inspect AI output."
+    },
+    {
+      "source": "function calling",
+      "target": "함수 호출",
+      "category": "agents",
+      "sources": ["openai-docs:agents", "openai-docs:text-generation"],
+      "note": "Developer-facing tool use mechanism in OpenAI docs."
+    },
+    {
+      "source": "function call",
+      "target": "함수 호출",
+      "category": "agents",
+      "sources": ["openai-docs:agents", "openai-docs:text-generation"],
+      "note": "Singular form of the function calling concept."
+    },
+    {
+      "source": "tool output",
+      "target": "도구 출력",
+      "category": "agents",
+      "sources": ["openai-docs:agents"],
+      "note": "Agent workflows pass tool results back into the model."
+    },
+    {
+      "source": "handoff target",
+      "target": "핸드오프 대상",
+      "category": "agents",
+      "sources": ["openai-docs:agent-definitions"],
+      "note": "Handoff documentation needs a stable target-language phrase."
+    },
+    {
+      "source": "agent loop",
+      "target": "에이전트 루프",
+      "category": "agents",
+      "sources": ["openai-docs:agents"],
+      "note": "Agent execution pattern for repeated model, tool, and review steps."
+    },
+    {
+      "source": "JSON mode",
+      "target": "JSON 모드",
+      "category": "structured-output",
+      "sources": ["openai-docs:structured-outputs"],
+      "note": "Specific developer feature name for JSON-compatible responses."
+    },
+    {
+      "source": "strict schema",
+      "target": "엄격한 스키마",
+      "category": "structured-output",
+      "sources": ["openai-docs:structured-outputs"],
+      "note": "Structured output docs rely on strict schema behavior."
+    },
+    {
+      "source": "schema validation",
+      "target": "스키마 검증",
+      "category": "structured-output",
+      "sources": ["openai-docs:structured-outputs"],
+      "note": "Developer docs describe validating model output against schema constraints."
+    },
+    {
+      "source": "test set",
+      "target": "테스트 세트",
+      "category": "evaluation",
+      "sources": ["openai-docs:evaluation"],
+      "note": "Evaluation workflows require a stable test data term."
+    },
+    {
+      "source": "golden dataset",
+      "target": "골든 데이터셋",
+      "category": "evaluation",
+      "sources": ["openai-docs:evaluation"],
+      "note": "Evaluation guidance often uses a trusted reference dataset."
+    },
+    {
+      "source": "rubric",
+      "target": "평가 기준",
+      "category": "evaluation",
+      "sources": ["openai-docs:evaluation"],
+      "note": "Use a learner-friendly evaluation term rather than raw transliteration."
+    },
+    {
+      "source": "benchmark",
+      "target": "벤치마크",
+      "category": "evaluation",
+      "sources": ["openai-docs:evaluation"],
+      "note": "Common evaluation term for measuring model or workflow quality."
+    },
+    {
+      "source": "regression test",
+      "target": "회귀 테스트",
+      "category": "evaluation",
+      "sources": ["openai-docs:evaluation"],
+      "note": "Evaluation workflows should catch regressions after prompt or model changes."
+    },
+    {
+      "source": "privacy",
+      "target": "개인정보 보호",
+      "category": "safety",
+      "sources": ["academy:home", "openai-docs:guardrails"],
+      "note": "Learners need clear privacy terminology around AI use."
+    },
+    {
+      "source": "sensitive data",
+      "target": "민감한 데이터",
+      "category": "safety",
+      "sources": ["academy:home", "openai-docs:guardrails"],
+      "note": "Important safety term for workplace AI use."
+    },
+    {
+      "source": "personal data",
+      "target": "개인 데이터",
+      "category": "safety",
+      "sources": ["academy:home", "openai-docs:guardrails"],
+      "note": "Privacy and governance content should keep this phrase stable."
+    },
+    {
+      "source": "data retention",
+      "target": "데이터 보존",
+      "category": "safety",
+      "sources": ["openai-docs:guardrails"],
+      "note": "Privacy-related developer and governance term."
+    },
+    {
+      "source": "content moderation",
+      "target": "콘텐츠 모더레이션",
+      "category": "safety",
+      "sources": ["openai-docs:guardrails"],
+      "note": "Safety workflows often rely on moderation concepts."
+    },
+    {
+      "source": "red teaming",
+      "target": "레드팀 평가",
+      "category": "safety",
+      "sources": ["openai-docs:evaluation", "openai-docs:guardrails"],
+      "note": "Evaluation and safety term for adversarial testing."
     }
   ],
   "status": "reviewed",

@@ -64,7 +64,7 @@ Each term must include:
 
 A `reviewed` glossary pack must have:
 
-- At least 45 terms.
+- At least 100 core OpenAI Academy/OpenAI Docs terms.
 - Academy source coverage.
 - OpenAI documentation source coverage.
 - The required core categories from `scripts/check-glossary.js`.

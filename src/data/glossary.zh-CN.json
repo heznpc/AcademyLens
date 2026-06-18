@@ -500,6 +500,342 @@
       "category": "course-format",
       "sources": ["academy:courses"],
       "note": "AI-drafted term rendering from OpenAI Academy and OpenAI developer documentation; pending X translation cross-check and community review."
+    },
+    {
+      "source": "generative AI",
+      "target": "生成式 AI",
+      "category": "model-concepts",
+      "sources": ["academy:home", "openai-docs:text-generation"],
+      "note": "AI-drafted term rendering from OpenAI Academy and OpenAI developer documentation; pending X translation cross-check and community review."
+    },
+    {
+      "source": "AI literacy",
+      "target": "AI 素养",
+      "category": "academy-learning",
+      "sources": ["academy:home", "academy:courses"],
+      "note": "AI-drafted term rendering from OpenAI Academy and OpenAI developer documentation; pending X translation cross-check and community review."
+    },
+    {
+      "source": "responsible AI",
+      "target": "负责任的 AI",
+      "category": "safety",
+      "sources": ["academy:home", "openai-docs:guardrails"],
+      "note": "AI-drafted term rendering from OpenAI Academy and OpenAI developer documentation; pending X translation cross-check and community review."
+    },
+    {
+      "source": "AI assistant",
+      "target": "AI 助手",
+      "category": "academy-learning",
+      "sources": ["academy:home", "openai-docs:agents"],
+      "note": "AI-drafted term rendering from OpenAI Academy and OpenAI developer documentation; pending X translation cross-check and community review."
+    },
+    {
+      "source": "workplace AI",
+      "target": "职场 AI",
+      "category": "academy-learning",
+      "sources": ["academy:home", "academy:courses"],
+      "note": "AI-drafted term rendering from OpenAI Academy and OpenAI developer documentation; pending X translation cross-check and community review."
+    },
+    {
+      "source": "hands-on practice",
+      "target": "动手实践",
+      "category": "course-format",
+      "sources": ["academy:home", "academy:courses"],
+      "note": "AI-drafted term rendering from OpenAI Academy and OpenAI developer documentation; pending X translation cross-check and community review."
+    },
+    {
+      "source": "learning objective",
+      "target": "学习目标",
+      "category": "course-format",
+      "sources": ["academy:courses"],
+      "note": "AI-drafted term rendering from OpenAI Academy and OpenAI developer documentation; pending X translation cross-check and community review."
+    },
+    {
+      "source": "lesson",
+      "target": "课时",
+      "category": "course-format",
+      "sources": ["academy:courses"],
+      "note": "AI-drafted term rendering from OpenAI Academy and OpenAI developer documentation; pending X translation cross-check and community review."
+    },
+    {
+      "source": "module",
+      "target": "模块",
+      "category": "course-format",
+      "sources": ["academy:courses"],
+      "note": "AI-drafted term rendering from OpenAI Academy and OpenAI developer documentation; pending X translation cross-check and community review."
+    },
+    {
+      "source": "system message",
+      "target": "系统消息",
+      "category": "prompting",
+      "sources": ["openai-docs:prompt-engineering", "openai-docs:text-generation"],
+      "note": "AI-drafted term rendering from OpenAI Academy and OpenAI developer documentation; pending X translation cross-check and community review."
+    },
+    {
+      "source": "developer message",
+      "target": "开发者消息",
+      "category": "prompting",
+      "sources": ["openai-docs:prompt-engineering", "openai-docs:text-generation"],
+      "note": "AI-drafted term rendering from OpenAI Academy and OpenAI developer documentation; pending X translation cross-check and community review."
+    },
+    {
+      "source": "user message",
+      "target": "用户消息",
+      "category": "prompting",
+      "sources": ["openai-docs:prompt-engineering", "openai-docs:text-generation"],
+      "note": "AI-drafted term rendering from OpenAI Academy and OpenAI developer documentation; pending X translation cross-check and community review."
+    },
+    {
+      "source": "few-shot prompting",
+      "target": "少样本提示",
+      "category": "prompting",
+      "sources": ["openai-docs:prompt-engineering"],
+      "note": "AI-drafted term rendering from OpenAI Academy and OpenAI developer documentation; pending X translation cross-check and community review."
+    },
+    {
+      "source": "examples",
+      "target": "示例",
+      "category": "prompting",
+      "sources": ["openai-docs:prompt-engineering"],
+      "note": "AI-drafted term rendering from OpenAI Academy and OpenAI developer documentation; pending X translation cross-check and community review."
+    },
+    {
+      "source": "constraints",
+      "target": "约束",
+      "category": "prompting",
+      "sources": ["openai-docs:prompt-engineering", "openai-docs:structured-outputs"],
+      "note": "AI-drafted term rendering from OpenAI Academy and OpenAI developer documentation; pending X translation cross-check and community review."
+    },
+    {
+      "source": "prompt template",
+      "target": "提示模板",
+      "category": "prompting",
+      "sources": ["openai-docs:prompt-engineering"],
+      "note": "AI-drafted term rendering from OpenAI Academy and OpenAI developer documentation; pending X translation cross-check and community review."
+    },
+    {
+      "source": "generative model",
+      "target": "生成模型",
+      "category": "model-concepts",
+      "sources": ["openai-docs:text-generation", "openai-docs:concepts"],
+      "note": "AI-drafted term rendering from OpenAI Academy and OpenAI developer documentation; pending X translation cross-check and community review."
+    },
+    {
+      "source": "reasoning",
+      "target": "推理",
+      "category": "model-concepts",
+      "sources": ["openai-docs:concepts", "openai-docs:text-generation"],
+      "note": "AI-drafted term rendering from OpenAI Academy and OpenAI developer documentation; pending X translation cross-check and community review."
+    },
+    {
+      "source": "reasoning model",
+      "target": "推理模型",
+      "category": "model-concepts",
+      "sources": ["openai-docs:concepts", "openai-docs:text-generation"],
+      "note": "AI-drafted term rendering from OpenAI Academy and OpenAI developer documentation; pending X translation cross-check and community review."
+    },
+    {
+      "source": "multimodal",
+      "target": "多模态",
+      "category": "model-concepts",
+      "sources": ["openai-docs:concepts", "openai-docs:text-generation"],
+      "note": "AI-drafted term rendering from OpenAI Academy and OpenAI developer documentation; pending X translation cross-check and community review."
+    },
+    {
+      "source": "hallucination",
+      "target": "幻觉",
+      "category": "safety",
+      "sources": ["academy:home", "openai-docs:evaluation"],
+      "note": "AI-drafted term rendering from OpenAI Academy and OpenAI developer documentation; pending X translation cross-check and community review."
+    },
+    {
+      "source": "grounding",
+      "target": "基于依据",
+      "category": "safety",
+      "sources": ["openai-docs:prompt-engineering", "openai-docs:evaluation"],
+      "note": "AI-drafted term rendering from OpenAI Academy and OpenAI developer documentation; pending X translation cross-check and community review."
+    },
+    {
+      "source": "embedding",
+      "target": "嵌入",
+      "category": "model-concepts",
+      "sources": ["openai-docs:concepts"],
+      "note": "AI-drafted term rendering from OpenAI Academy and OpenAI developer documentation; pending X translation cross-check and community review."
+    },
+    {
+      "source": "embeddings",
+      "target": "嵌入",
+      "category": "model-concepts",
+      "sources": ["openai-docs:concepts"],
+      "note": "AI-drafted term rendering from OpenAI Academy and OpenAI developer documentation; pending X translation cross-check and community review."
+    },
+    {
+      "source": "use case",
+      "target": "用例",
+      "category": "workflow",
+      "sources": ["academy:home", "academy:courses"],
+      "note": "AI-drafted term rendering from OpenAI Academy and OpenAI developer documentation; pending X translation cross-check and community review."
+    },
+    {
+      "source": "task decomposition",
+      "target": "任务分解",
+      "category": "workflow",
+      "sources": ["academy:home", "openai-docs:agents"],
+      "note": "AI-drafted term rendering from OpenAI Academy and OpenAI developer documentation; pending X translation cross-check and community review."
+    },
+    {
+      "source": "automation",
+      "target": "自动化",
+      "category": "workflow",
+      "sources": ["academy:home", "openai-docs:agents"],
+      "note": "AI-drafted term rendering from OpenAI Academy and OpenAI developer documentation; pending X translation cross-check and community review."
+    },
+    {
+      "source": "approval workflow",
+      "target": "审批工作流",
+      "category": "workflow",
+      "sources": ["openai-docs:guardrails"],
+      "note": "AI-drafted term rendering from OpenAI Academy and OpenAI developer documentation; pending X translation cross-check and community review."
+    },
+    {
+      "source": "review checkpoint",
+      "target": "审核检查点",
+      "category": "review",
+      "sources": ["academy:home", "openai-docs:guardrails"],
+      "note": "AI-drafted term rendering from OpenAI Academy and OpenAI developer documentation; pending X translation cross-check and community review."
+    },
+    {
+      "source": "function calling",
+      "target": "函数调用",
+      "category": "agents",
+      "sources": ["openai-docs:agents", "openai-docs:text-generation"],
+      "note": "AI-drafted term rendering from OpenAI Academy and OpenAI developer documentation; pending X translation cross-check and community review."
+    },
+    {
+      "source": "function call",
+      "target": "函数调用",
+      "category": "agents",
+      "sources": ["openai-docs:agents", "openai-docs:text-generation"],
+      "note": "AI-drafted term rendering from OpenAI Academy and OpenAI developer documentation; pending X translation cross-check and community review."
+    },
+    {
+      "source": "tool output",
+      "target": "工具输出",
+      "category": "agents",
+      "sources": ["openai-docs:agents"],
+      "note": "AI-drafted term rendering from OpenAI Academy and OpenAI developer documentation; pending X translation cross-check and community review."
+    },
+    {
+      "source": "handoff target",
+      "target": "交接目标",
+      "category": "agents",
+      "sources": ["openai-docs:agent-definitions"],
+      "note": "AI-drafted term rendering from OpenAI Academy and OpenAI developer documentation; pending X translation cross-check and community review."
+    },
+    {
+      "source": "agent loop",
+      "target": "智能体循环",
+      "category": "agents",
+      "sources": ["openai-docs:agents"],
+      "note": "AI-drafted term rendering from OpenAI Academy and OpenAI developer documentation; pending X translation cross-check and community review."
+    },
+    {
+      "source": "JSON mode",
+      "target": "JSON 模式",
+      "category": "structured-output",
+      "sources": ["openai-docs:structured-outputs"],
+      "note": "AI-drafted term rendering from OpenAI Academy and OpenAI developer documentation; pending X translation cross-check and community review."
+    },
+    {
+      "source": "strict schema",
+      "target": "严格架构",
+      "category": "structured-output",
+      "sources": ["openai-docs:structured-outputs"],
+      "note": "AI-drafted term rendering from OpenAI Academy and OpenAI developer documentation; pending X translation cross-check and community review."
+    },
+    {
+      "source": "schema validation",
+      "target": "架构验证",
+      "category": "structured-output",
+      "sources": ["openai-docs:structured-outputs"],
+      "note": "AI-drafted term rendering from OpenAI Academy and OpenAI developer documentation; pending X translation cross-check and community review."
+    },
+    {
+      "source": "test set",
+      "target": "测试集",
+      "category": "evaluation",
+      "sources": ["openai-docs:evaluation"],
+      "note": "AI-drafted term rendering from OpenAI Academy and OpenAI developer documentation; pending X translation cross-check and community review."
+    },
+    {
+      "source": "golden dataset",
+      "target": "黄金数据集",
+      "category": "evaluation",
+      "sources": ["openai-docs:evaluation"],
+      "note": "AI-drafted term rendering from OpenAI Academy and OpenAI developer documentation; pending X translation cross-check and community review."
+    },
+    {
+      "source": "rubric",
+      "target": "评分标准",
+      "category": "evaluation",
+      "sources": ["openai-docs:evaluation"],
+      "note": "AI-drafted term rendering from OpenAI Academy and OpenAI developer documentation; pending X translation cross-check and community review."
+    },
+    {
+      "source": "benchmark",
+      "target": "基准测试",
+      "category": "evaluation",
+      "sources": ["openai-docs:evaluation"],
+      "note": "AI-drafted term rendering from OpenAI Academy and OpenAI developer documentation; pending X translation cross-check and community review."
+    },
+    {
+      "source": "regression test",
+      "target": "回归测试",
+      "category": "evaluation",
+      "sources": ["openai-docs:evaluation"],
+      "note": "AI-drafted term rendering from OpenAI Academy and OpenAI developer documentation; pending X translation cross-check and community review."
+    },
+    {
+      "source": "privacy",
+      "target": "隐私",
+      "category": "safety",
+      "sources": ["academy:home", "openai-docs:guardrails"],
+      "note": "AI-drafted term rendering from OpenAI Academy and OpenAI developer documentation; pending X translation cross-check and community review."
+    },
+    {
+      "source": "sensitive data",
+      "target": "敏感数据",
+      "category": "safety",
+      "sources": ["academy:home", "openai-docs:guardrails"],
+      "note": "AI-drafted term rendering from OpenAI Academy and OpenAI developer documentation; pending X translation cross-check and community review."
+    },
+    {
+      "source": "personal data",
+      "target": "个人数据",
+      "category": "safety",
+      "sources": ["academy:home", "openai-docs:guardrails"],
+      "note": "AI-drafted term rendering from OpenAI Academy and OpenAI developer documentation; pending X translation cross-check and community review."
+    },
+    {
+      "source": "data retention",
+      "target": "数据保留",
+      "category": "safety",
+      "sources": ["openai-docs:guardrails"],
+      "note": "AI-drafted term rendering from OpenAI Academy and OpenAI developer documentation; pending X translation cross-check and community review."
+    },
+    {
+      "source": "content moderation",
+      "target": "内容审核",
+      "category": "safety",
+      "sources": ["openai-docs:guardrails"],
+      "note": "AI-drafted term rendering from OpenAI Academy and OpenAI developer documentation; pending X translation cross-check and community review."
+    },
+    {
+      "source": "red teaming",
+      "target": "红队测试",
+      "category": "safety",
+      "sources": ["openai-docs:evaluation", "openai-docs:guardrails"],
+      "note": "AI-drafted term rendering from OpenAI Academy and OpenAI developer documentation; pending X translation cross-check and community review."
     }
   ]
 }

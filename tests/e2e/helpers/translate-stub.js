@@ -26,11 +26,19 @@ const KO = new Map([
     "__AL_TERM_0__ __AL_TERM_1__는 팀이 __AL_TERM_2__를 구축하도록 돕습니다."
   ],
   ["__AL_TERM_0__ __AL_TERM_1__ examples stay readable.", "__AL_TERM_0__ __AL_TERM_1__ 예제는 읽기 쉽게 유지됩니다."],
+  [
+    "__AL_TERM_0__ __AL_TERM_1__ __AL_TERM_2__ stay readable.",
+    "__AL_TERM_0__ __AL_TERM_1__ __AL_TERM_2__는 읽기 쉽게 유지됩니다."
+  ],
   ["Advanced __AL_TERM_0__ engineering", "고급 __AL_TERM_0__ 엔지니어링"],
   ["Advanced __AL_TERM_0__", "고급 __AL_TERM_0__"],
   [
     "__AL_TERM_0__ lessons use __AL_TERM_1__ and __AL_TERM_2__ examples.",
     "__AL_TERM_0__ 강의는 __AL_TERM_1__ 및 __AL_TERM_2__ 예제를 사용합니다."
+  ],
+  [
+    "__AL_TERM_0__ lessons use __AL_TERM_1__ and __AL_TERM_2__ __AL_TERM_3__.",
+    "__AL_TERM_0__ 강의는 __AL_TERM_1__ 및 __AL_TERM_2__ __AL_TERM_3__를 사용합니다."
   ],
   [
     "__AL_TERM_0__ __AL_TERM_1__ improve __AL_TERM_2__ behavior.",

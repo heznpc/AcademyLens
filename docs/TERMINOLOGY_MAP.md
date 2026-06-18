@@ -4,7 +4,7 @@ AcademyLens is positioned around multilingual community glossaries that connect 
 
 This is not a claim of affiliation with OpenAI. The glossary uses public OpenAI Academy pages and OpenAI developer documentation as terminology references.
 
-AcademyLens ships thirteen premium glossary packs: `de`, `es`, `fr`, `hi`, `id`, `it`, `ja`, `ko`, `pt-BR`, `ru`, `vi`, `zh-CN`, and `zh-TW`. Korean is currently the first reviewed pack; the other premium packs are AI-drafted beta packs waiting for X translation cross-checks, community review, and native review. Hindi and French are first-class beta packs because OpenAI Academy already exposes India/Hindi content and French Academy events.
+AcademyLens ships thirteen premium glossary packs: `de`, `es`, `fr`, `hi`, `id`, `it`, `ja`, `ko`, `pt-BR`, `ru`, `vi`, `zh-CN`, and `zh-TW`. Each pack carries 100+ OpenAI Academy/OpenAI Docs core terms across Academy learning, prompting, model concepts, agents, structured outputs, evaluation, course format, and safety. Korean is currently the first reviewed pack; the other premium packs are AI-drafted beta packs waiting for X translation cross-checks, community review, and native review. Hindi and French are first-class beta packs because OpenAI Academy already exposes India/Hindi content and French Academy events.
 
 ## Source Set
 

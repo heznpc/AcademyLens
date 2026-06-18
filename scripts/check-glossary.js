@@ -27,6 +27,7 @@ const REQUIRED_REVIEWED_CATEGORIES = [
   "model-concepts",
   "workflow",
   "agents",
+  "safety",
   "structured-output",
   "evaluation"
 ];
@@ -36,11 +37,17 @@ const REQUIRED_REVIEWED_TERMS = [
   "review outputs",
   "repeatable ways of working",
   "agents",
+  "function calling",
   "structured outputs",
+  "json mode",
   "guardrails",
+  "privacy",
   "evals"
 ];
 const REQUIRED_PREMIUM_LOCALES = PREMIUM_LOCALE_RECORDS.map((record) => record.locale);
+const MIN_PREMIUM_TERMS = 100;
+const MIN_ACADEMY_BACKED_TERMS = 40;
+const MIN_DOCS_BACKED_TERMS = 75;
 
 function readJson(path) {
   return JSON.parse(readFileSync(join(ROOT, path), "utf8"));
@@ -134,13 +141,22 @@ function assertGlossary(record) {
     for (const required of REQUIRED_REVIEWED_TERMS) {
       assert(seenTerms.has(required), `${locale} reviewed glossary missing term: ${required}`);
     }
-    assert(glossary.terms.length >= 45, `${locale} reviewed glossary should keep at least 45 terms`);
-    assert(academyBacked >= 20, `${locale} reviewed glossary needs stronger Academy source coverage`);
-    assert(docsBacked >= 30, `${locale} reviewed glossary needs stronger OpenAI docs source coverage`);
+    assert(glossary.terms.length >= MIN_PREMIUM_TERMS, `${locale} reviewed glossary should keep at least 100 terms`);
+    assert(
+      academyBacked >= MIN_ACADEMY_BACKED_TERMS,
+      `${locale} reviewed glossary needs stronger Academy source coverage`
+    );
+    assert(
+      docsBacked >= MIN_DOCS_BACKED_TERMS,
+      `${locale} reviewed glossary needs stronger OpenAI docs source coverage`
+    );
   } else {
-    assert(glossary.terms.length >= 45, `${locale} premium draft glossary should keep at least 45 terms`);
-    assert(academyBacked >= 20, `${locale} premium draft needs Academy source coverage`);
-    assert(docsBacked >= 30, `${locale} premium draft needs OpenAI docs source coverage`);
+    assert(
+      glossary.terms.length >= MIN_PREMIUM_TERMS,
+      `${locale} premium draft glossary should keep at least 100 terms`
+    );
+    assert(academyBacked >= MIN_ACADEMY_BACKED_TERMS, `${locale} premium draft needs Academy source coverage`);
+    assert(docsBacked >= MIN_DOCS_BACKED_TERMS, `${locale} premium draft needs OpenAI docs source coverage`);
   }
 
   return { categories: categories.size, terms: glossary.terms.length, termKeys: [...seenTerms.keys()].sort() };
