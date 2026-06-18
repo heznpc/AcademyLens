@@ -836,6 +836,48 @@
       "category": "safety",
       "sources": ["openai-docs:evaluation", "openai-docs:guardrails"],
       "note": "AI-drafted term rendering from OpenAI Academy and OpenAI developer documentation; pending X translation cross-check and community review."
+    },
+    {
+      "source": "Build practical AI skills for work",
+      "target": "Praktische KI-Kompetenzen für die Arbeit aufbauen",
+      "category": "course-phrase",
+      "sources": ["academy:home", "academy:courses"],
+      "note": "AI-drafted term rendering from OpenAI Academy and OpenAI developer documentation; pending X translation cross-check and community review."
+    },
+    {
+      "source": "Learn the fundamentals of AI, large language models, and ChatGPT through hands-on practice.",
+      "target": "Lernen Sie die Grundlagen von KI, großen Sprachmodellen und ChatGPT durch praktische Übungen.",
+      "category": "course-phrase",
+      "sources": ["academy:courses"],
+      "note": "AI-drafted term rendering from OpenAI Academy and OpenAI developer documentation; pending X translation cross-check and community review."
+    },
+    {
+      "source": "This course is designed for people who are new to AI or want a stronger foundation for using AI effectively at work.",
+      "target": "Dieser Kurs richtet sich an Personen, die neu in KI sind oder eine stärkere Grundlage für den wirksamen Einsatz von KI bei der Arbeit wünschen.",
+      "category": "course-phrase",
+      "sources": ["academy:courses"],
+      "note": "AI-drafted term rendering from OpenAI Academy and OpenAI developer documentation; pending X translation cross-check and community review."
+    },
+    {
+      "source": "No technical background is required.",
+      "target": "Es sind keine technischen Vorkenntnisse erforderlich.",
+      "category": "course-phrase",
+      "sources": ["academy:courses"],
+      "note": "AI-drafted term rendering from OpenAI Academy and OpenAI developer documentation; pending X translation cross-check and community review."
+    },
+    {
+      "source": "Developed with the teams building OpenAI's models and products",
+      "target": "Entwickelt mit den Teams, die die Modelle und Produkte von OpenAI entwickeln",
+      "category": "course-phrase",
+      "sources": ["academy:courses"],
+      "note": "AI-drafted term rendering from OpenAI Academy and OpenAI developer documentation; pending X translation cross-check and community review."
+    },
+    {
+      "source": "Practice deciding what to delegate to AI while staying in control of the final work.",
+      "target": "Üben Sie zu entscheiden, was Sie an KI delegieren, während Sie die Kontrolle über die endgültige Arbeit behalten.",
+      "category": "course-phrase",
+      "sources": ["academy:courses"],
+      "note": "AI-drafted term rendering from OpenAI Academy and OpenAI developer documentation; pending X translation cross-check and community review."
     }
   ]
 }

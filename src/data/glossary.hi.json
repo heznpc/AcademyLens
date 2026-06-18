@@ -836,6 +836,48 @@
       "category": "safety",
       "sources": ["openai-docs:evaluation", "openai-docs:guardrails"],
       "note": "AI-drafted term rendering from OpenAI Academy and OpenAI developer documentation; pending X translation cross-check and community review."
+    },
+    {
+      "source": "Build practical AI skills for work",
+      "target": "काम के लिए व्यावहारिक AI कौशल बनाएँ",
+      "category": "course-phrase",
+      "sources": ["academy:home", "academy:courses"],
+      "note": "AI-drafted term rendering from OpenAI Academy and OpenAI developer documentation; pending X translation cross-check and community review."
+    },
+    {
+      "source": "Learn the fundamentals of AI, large language models, and ChatGPT through hands-on practice.",
+      "target": "व्यावहारिक अभ्यास के माध्यम से AI, बड़े भाषा मॉडल और ChatGPT की बुनियादी बातें सीखें।",
+      "category": "course-phrase",
+      "sources": ["academy:courses"],
+      "note": "AI-drafted term rendering from OpenAI Academy and OpenAI developer documentation; pending X translation cross-check and community review."
+    },
+    {
+      "source": "This course is designed for people who are new to AI or want a stronger foundation for using AI effectively at work.",
+      "target": "यह कोर्स उन लोगों के लिए है जो AI में नए हैं या काम पर AI का प्रभावी उपयोग करने के लिए मजबूत आधार चाहते हैं।",
+      "category": "course-phrase",
+      "sources": ["academy:courses"],
+      "note": "AI-drafted term rendering from OpenAI Academy and OpenAI developer documentation; pending X translation cross-check and community review."
+    },
+    {
+      "source": "No technical background is required.",
+      "target": "तकनीकी पृष्ठभूमि आवश्यक नहीं है।",
+      "category": "course-phrase",
+      "sources": ["academy:courses"],
+      "note": "AI-drafted term rendering from OpenAI Academy and OpenAI developer documentation; pending X translation cross-check and community review."
+    },
+    {
+      "source": "Developed with the teams building OpenAI's models and products",
+      "target": "OpenAI के मॉडल और उत्पाद बनाने वाली टीमों के साथ विकसित",
+      "category": "course-phrase",
+      "sources": ["academy:courses"],
+      "note": "AI-drafted term rendering from OpenAI Academy and OpenAI developer documentation; pending X translation cross-check and community review."
+    },
+    {
+      "source": "Practice deciding what to delegate to AI while staying in control of the final work.",
+      "target": "अंतिम काम पर नियंत्रण बनाए रखते हुए यह तय करने का अभ्यास करें कि AI को क्या सौंपना है।",
+      "category": "course-phrase",
+      "sources": ["academy:courses"],
+      "note": "AI-drafted term rendering from OpenAI Academy and OpenAI developer documentation; pending X translation cross-check and community review."
     }
   ]
 }

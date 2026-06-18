@@ -55,6 +55,8 @@ AcademyLens uses multiple evidence layers, each with a different job:
 
 X translation is not treated as an official OpenAI translation. It is a practical signal for how public machine translation renders OpenAI terminology in the wild.
 
+Reviewers can generate locale-specific audit packets with `npm run glossary:audit`; see [GLOSSARY_AUDIT.md](GLOSSARY_AUDIT.md) and [X_TRANSLATION_CHECK.md](X_TRANSLATION_CHECK.md).
+
 ## Why This Matters
 
 Generic page translators can translate words, but they do not know that OpenAI Academy repeatedly teaches a pathway from clear instructions and relevant context to review points, repeatable workflows, agents, guardrails, and evaluations. AcademyLens should make that path read consistently in every contributed language pack.

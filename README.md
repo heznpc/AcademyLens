@@ -142,6 +142,15 @@ Regenerate the current premium draft packs from the maintained seed:
 npm run glossary:seed
 ```
 
+Generate reviewer packets and run over-translation smoke checks:
+
+```bash
+npm run glossary:audit
+npm run check:glossary-overreach
+```
+
+See [docs/GLOSSARY_AUDIT.md](docs/GLOSSARY_AUDIT.md) and [docs/X_TRANSLATION_CHECK.md](docs/X_TRANSLATION_CHECK.md).
+
 Capture a sanitized Academy DOM fixture from a Playwright profile:
 
 ```bash

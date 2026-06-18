@@ -77,6 +77,7 @@
       "popup.languageNoteDraft": "AI-drafted terminology corrections are enabled. Community review is welcome.",
       "popup.languageNoteMachine":
         "Machine translation with protected terms. A reviewed glossary is not installed for this language yet.",
+      "popup.languageTermCount": "{count}+ terminology corrections.",
       "panel.autoTranslate": "Auto",
       "notice.unofficial": DISCLAIMER,
       "status.ready": "Ready on OpenAI Academy.",
@@ -106,6 +107,7 @@
       "popup.languageNoteGlossary": "이 언어에는 검토된 커뮤니티 용어 사전 보정이 적용됩니다.",
       "popup.languageNoteDraft": "AI 초안 용어 사전 보정이 적용됩니다. 커뮤니티 검수를 기다리고 있습니다.",
       "popup.languageNoteMachine": "기계번역과 보호 용어만 적용됩니다. 이 언어의 용어 사전은 아직 없습니다.",
+      "popup.languageTermCount": "{count}개 이상의 용어 보정.",
       "panel.autoTranslate": "자동 번역",
       "notice.unofficial": "비공식 확장 프로그램이며 OpenAI와 제휴되어 있지 않습니다.",
       "status.ready": "OpenAI Academy에서 사용할 준비가 됐습니다.",
@@ -232,7 +234,12 @@
   function getLanguageSupportMessage(code, locale, glossaryIndex) {
     const record = getGlossaryRecord(code, glossaryIndex);
     if (!record) return getMessage("popup.languageNoteMachine", locale);
-    return getMessage(record.status === "reviewed" ? "popup.languageNoteGlossary" : "popup.languageNoteDraft", locale);
+    const note = getMessage(
+      record.status === "reviewed" ? "popup.languageNoteGlossary" : "popup.languageNoteDraft",
+      locale
+    );
+    if (!record.termCount) return note;
+    return `${note} ${getMessage("popup.languageTermCount", locale, { count: record.termCount })}`;
   }
 
   return Object.freeze({

@@ -109,11 +109,21 @@ A practical draft workflow:
 6. Preserve official product/API names exactly.
 7. Run `npm run check:glossary`.
 8. Add an E2E or unit fixture if the pack changes expected placeholder behavior.
+9. Run `npm run glossary:audit -- --locale=<locale>` and attach the relevant review notes to the PR.
 
 Regenerate the current premium draft packs from the maintained seed:
 
 ```bash
 npm run glossary:seed
 ```
+
+Before requesting review:
+
+```bash
+npm run check:glossary-overreach
+npm run glossary:audit -- --locale=ko
+```
+
+For public machine-translation evidence from X, follow [X_TRANSLATION_CHECK.md](X_TRANSLATION_CHECK.md). X output is a signal, not an official source.
 
 The useful contribution is not just translation. It is consistent terminology across lessons, docs concepts, and OpenAI product names.

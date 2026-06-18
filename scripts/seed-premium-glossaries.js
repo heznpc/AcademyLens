@@ -1099,6 +1099,50 @@ const SOURCE_TERM_ADDITIONS = Object.freeze([
     category: "safety",
     sources: ["openai-docs:evaluation", "openai-docs:guardrails"],
     note: "Evaluation and safety term for adversarial testing."
+  },
+  {
+    source: "Build practical AI skills for work",
+    target: "업무를 위한 실용 AI 기술 구축",
+    category: "course-phrase",
+    sources: ["academy:home", "academy:courses"],
+    note: "High-visibility Academy course headline that benefits from exact phrase correction."
+  },
+  {
+    source: "Learn the fundamentals of AI, large language models, and ChatGPT through hands-on practice.",
+    target: "실습을 통해 AI, 대규모 언어 모델, ChatGPT의 기본기를 배웁니다.",
+    category: "course-phrase",
+    sources: ["academy:courses"],
+    note: "OpenAI Academy course overview phrase with multiple protected and technical terms."
+  },
+  {
+    source:
+      "This course is designed for people who are new to AI or want a stronger foundation for using AI effectively at work.",
+    target:
+      "이 과정은 AI가 처음이거나 업무에서 AI를 효과적으로 사용하기 위한 탄탄한 기초를 원하는 사람을 위해 설계되었습니다.",
+    category: "course-phrase",
+    sources: ["academy:courses"],
+    note: "Learner-audience phrase from Academy course detail content."
+  },
+  {
+    source: "No technical background is required.",
+    target: "기술적 배경지식은 필요하지 않습니다.",
+    category: "course-phrase",
+    sources: ["academy:courses"],
+    note: "Common Academy accessibility phrase for non-technical learners."
+  },
+  {
+    source: "Developed with the teams building OpenAI's models and products",
+    target: "OpenAI의 모델과 제품을 만드는 팀들과 함께 개발",
+    category: "course-phrase",
+    sources: ["academy:courses"],
+    note: "Course provenance phrase where OpenAI must remain protected and readable."
+  },
+  {
+    source: "Practice deciding what to delegate to AI while staying in control of the final work.",
+    target: "최종 결과물을 직접 통제하면서 AI에 무엇을 위임할지 결정하는 연습을 합니다.",
+    category: "course-phrase",
+    sources: ["academy:courses"],
+    note: "Academy exercise phrase about delegation and human control."
   }
 ]);
 
@@ -1151,7 +1195,17 @@ const expansionTargetTerms = {
     "personal data": "personenbezogene Daten",
     "data retention": "Datenaufbewahrung",
     "content moderation": "Inhaltsmoderation",
-    "red teaming": "Red Teaming"
+    "red teaming": "Red Teaming",
+    "Build practical AI skills for work": "Praktische KI-Kompetenzen für die Arbeit aufbauen",
+    "Learn the fundamentals of AI, large language models, and ChatGPT through hands-on practice.":
+      "Lernen Sie die Grundlagen von KI, großen Sprachmodellen und ChatGPT durch praktische Übungen.",
+    "This course is designed for people who are new to AI or want a stronger foundation for using AI effectively at work.":
+      "Dieser Kurs richtet sich an Personen, die neu in KI sind oder eine stärkere Grundlage für den wirksamen Einsatz von KI bei der Arbeit wünschen.",
+    "No technical background is required.": "Es sind keine technischen Vorkenntnisse erforderlich.",
+    "Developed with the teams building OpenAI's models and products":
+      "Entwickelt mit den Teams, die die Modelle und Produkte von OpenAI entwickeln",
+    "Practice deciding what to delegate to AI while staying in control of the final work.":
+      "Üben Sie zu entscheiden, was Sie an KI delegieren, während Sie die Kontrolle über die endgültige Arbeit behalten."
   },
   es: {
     "generative AI": "IA generativa",
@@ -1201,7 +1255,17 @@ const expansionTargetTerms = {
     "personal data": "datos personales",
     "data retention": "retención de datos",
     "content moderation": "moderación de contenido",
-    "red teaming": "red teaming"
+    "red teaming": "red teaming",
+    "Build practical AI skills for work": "Desarrolla habilidades prácticas de IA para el trabajo",
+    "Learn the fundamentals of AI, large language models, and ChatGPT through hands-on practice.":
+      "Aprende los fundamentos de la IA, los modelos de lenguaje grandes y ChatGPT mediante práctica guiada.",
+    "This course is designed for people who are new to AI or want a stronger foundation for using AI effectively at work.":
+      "Este curso está diseñado para personas nuevas en IA o que quieren una base más sólida para usar la IA eficazmente en el trabajo.",
+    "No technical background is required.": "No se requiere formación técnica.",
+    "Developed with the teams building OpenAI's models and products":
+      "Desarrollado con los equipos que crean los modelos y productos de OpenAI",
+    "Practice deciding what to delegate to AI while staying in control of the final work.":
+      "Practica decidir qué delegar a la IA mientras mantienes el control del trabajo final."
   },
   fr: {
     "generative AI": "IA générative",
@@ -1251,7 +1315,17 @@ const expansionTargetTerms = {
     "personal data": "données personnelles",
     "data retention": "conservation des données",
     "content moderation": "modération de contenu",
-    "red teaming": "red teaming"
+    "red teaming": "red teaming",
+    "Build practical AI skills for work": "Développer des compétences pratiques en IA pour le travail",
+    "Learn the fundamentals of AI, large language models, and ChatGPT through hands-on practice.":
+      "Apprenez les fondamentaux de l'IA, des grands modèles de langage et de ChatGPT grâce à une pratique concrète.",
+    "This course is designed for people who are new to AI or want a stronger foundation for using AI effectively at work.":
+      "Ce cours est conçu pour les personnes qui découvrent l'IA ou souhaitent renforcer leurs bases pour utiliser l'IA efficacement au travail.",
+    "No technical background is required.": "Aucun bagage technique n'est requis.",
+    "Developed with the teams building OpenAI's models and products":
+      "Développé avec les équipes qui créent les modèles et produits d'OpenAI",
+    "Practice deciding what to delegate to AI while staying in control of the final work.":
+      "Entraînez-vous à décider quoi déléguer à l'IA tout en gardant le contrôle du travail final."
   },
   hi: {
     "generative AI": "जनरेटिव AI",
@@ -1301,7 +1375,17 @@ const expansionTargetTerms = {
     "personal data": "व्यक्तिगत डेटा",
     "data retention": "डेटा प्रतिधारण",
     "content moderation": "सामग्री मॉडरेशन",
-    "red teaming": "रेड टीमिंग"
+    "red teaming": "रेड टीमिंग",
+    "Build practical AI skills for work": "काम के लिए व्यावहारिक AI कौशल बनाएँ",
+    "Learn the fundamentals of AI, large language models, and ChatGPT through hands-on practice.":
+      "व्यावहारिक अभ्यास के माध्यम से AI, बड़े भाषा मॉडल और ChatGPT की बुनियादी बातें सीखें।",
+    "This course is designed for people who are new to AI or want a stronger foundation for using AI effectively at work.":
+      "यह कोर्स उन लोगों के लिए है जो AI में नए हैं या काम पर AI का प्रभावी उपयोग करने के लिए मजबूत आधार चाहते हैं।",
+    "No technical background is required.": "तकनीकी पृष्ठभूमि आवश्यक नहीं है।",
+    "Developed with the teams building OpenAI's models and products":
+      "OpenAI के मॉडल और उत्पाद बनाने वाली टीमों के साथ विकसित",
+    "Practice deciding what to delegate to AI while staying in control of the final work.":
+      "अंतिम काम पर नियंत्रण बनाए रखते हुए यह तय करने का अभ्यास करें कि AI को क्या सौंपना है।"
   },
   id: {
     "generative AI": "AI generatif",
@@ -1351,7 +1435,17 @@ const expansionTargetTerms = {
     "personal data": "data pribadi",
     "data retention": "retensi data",
     "content moderation": "moderasi konten",
-    "red teaming": "red teaming"
+    "red teaming": "red teaming",
+    "Build practical AI skills for work": "Bangun keterampilan AI praktis untuk bekerja",
+    "Learn the fundamentals of AI, large language models, and ChatGPT through hands-on practice.":
+      "Pelajari dasar-dasar AI, model bahasa besar, dan ChatGPT melalui praktik langsung.",
+    "This course is designed for people who are new to AI or want a stronger foundation for using AI effectively at work.":
+      "Kursus ini dirancang untuk orang yang baru mengenal AI atau ingin fondasi yang lebih kuat untuk menggunakan AI secara efektif di tempat kerja.",
+    "No technical background is required.": "Latar belakang teknis tidak diperlukan.",
+    "Developed with the teams building OpenAI's models and products":
+      "Dikembangkan bersama tim yang membangun model dan produk OpenAI",
+    "Practice deciding what to delegate to AI while staying in control of the final work.":
+      "Berlatih memutuskan apa yang akan didelegasikan ke AI sambil tetap mengendalikan hasil akhir."
   },
   it: {
     "generative AI": "IA generativa",
@@ -1401,7 +1495,17 @@ const expansionTargetTerms = {
     "personal data": "dati personali",
     "data retention": "conservazione dei dati",
     "content moderation": "moderazione dei contenuti",
-    "red teaming": "red teaming"
+    "red teaming": "red teaming",
+    "Build practical AI skills for work": "Sviluppa competenze pratiche di IA per il lavoro",
+    "Learn the fundamentals of AI, large language models, and ChatGPT through hands-on practice.":
+      "Impara le basi dell'IA, dei modelli linguistici di grandi dimensioni e di ChatGPT attraverso pratica guidata.",
+    "This course is designed for people who are new to AI or want a stronger foundation for using AI effectively at work.":
+      "Questo corso è pensato per chi è nuovo all'IA o vuole una base più solida per usare l'IA in modo efficace al lavoro.",
+    "No technical background is required.": "Non è richiesta alcuna preparazione tecnica.",
+    "Developed with the teams building OpenAI's models and products":
+      "Sviluppato con i team che costruiscono i modelli e i prodotti di OpenAI",
+    "Practice deciding what to delegate to AI while staying in control of the final work.":
+      "Esercitati a decidere cosa delegare all'IA mantenendo il controllo del lavoro finale."
   },
   ja: {
     "generative AI": "生成AI",
@@ -1451,7 +1555,17 @@ const expansionTargetTerms = {
     "personal data": "個人データ",
     "data retention": "データ保持",
     "content moderation": "コンテンツモデレーション",
-    "red teaming": "レッドチーミング"
+    "red teaming": "レッドチーミング",
+    "Build practical AI skills for work": "仕事に役立つ実践的なAIスキルを身につける",
+    "Learn the fundamentals of AI, large language models, and ChatGPT through hands-on practice.":
+      "ハンズオン演習を通じて、AI、大規模言語モデル、ChatGPTの基礎を学びます。",
+    "This course is designed for people who are new to AI or want a stronger foundation for using AI effectively at work.":
+      "このコースは、AIが初めての人や、仕事でAIを効果的に使うための基礎を強化したい人向けです。",
+    "No technical background is required.": "技術的なバックグラウンドは不要です。",
+    "Developed with the teams building OpenAI's models and products":
+      "OpenAIのモデルと製品を構築するチームとともに開発",
+    "Practice deciding what to delegate to AI while staying in control of the final work.":
+      "最終成果物のコントロールを保ちながら、AIに何を委任するかを判断する練習をします。"
   },
   "pt-BR": {
     "generative AI": "IA generativa",
@@ -1501,7 +1615,17 @@ const expansionTargetTerms = {
     "personal data": "dados pessoais",
     "data retention": "retenção de dados",
     "content moderation": "moderação de conteúdo",
-    "red teaming": "red teaming"
+    "red teaming": "red teaming",
+    "Build practical AI skills for work": "Desenvolva habilidades práticas de IA para o trabalho",
+    "Learn the fundamentals of AI, large language models, and ChatGPT through hands-on practice.":
+      "Aprenda os fundamentos de IA, modelos de linguagem grandes e ChatGPT por meio de prática mão na massa.",
+    "This course is designed for people who are new to AI or want a stronger foundation for using AI effectively at work.":
+      "Este curso foi criado para pessoas que estão começando em IA ou querem uma base mais forte para usar IA com eficácia no trabalho.",
+    "No technical background is required.": "Não é necessário ter formação técnica.",
+    "Developed with the teams building OpenAI's models and products":
+      "Desenvolvido com as equipes que constroem os modelos e produtos da OpenAI",
+    "Practice deciding what to delegate to AI while staying in control of the final work.":
+      "Pratique decidir o que delegar à IA enquanto mantém o controle do trabalho final."
   },
   ru: {
     "generative AI": "генеративный ИИ",
@@ -1551,7 +1675,17 @@ const expansionTargetTerms = {
     "personal data": "персональные данные",
     "data retention": "хранение данных",
     "content moderation": "модерация контента",
-    "red teaming": "red teaming"
+    "red teaming": "red teaming",
+    "Build practical AI skills for work": "Развивайте практические навыки ИИ для работы",
+    "Learn the fundamentals of AI, large language models, and ChatGPT through hands-on practice.":
+      "Изучите основы ИИ, больших языковых моделей и ChatGPT через практические упражнения.",
+    "This course is designed for people who are new to AI or want a stronger foundation for using AI effectively at work.":
+      "Этот курс предназначен для тех, кто только знакомится с ИИ или хочет укрепить основу для эффективного использования ИИ в работе.",
+    "No technical background is required.": "Техническая подготовка не требуется.",
+    "Developed with the teams building OpenAI's models and products":
+      "Разработано вместе с командами, создающими модели и продукты OpenAI",
+    "Practice deciding what to delegate to AI while staying in control of the final work.":
+      "Практикуйтесь решать, что делегировать ИИ, сохраняя контроль над итоговой работой."
   },
   vi: {
     "generative AI": "AI tạo sinh",
@@ -1601,7 +1735,17 @@ const expansionTargetTerms = {
     "personal data": "dữ liệu cá nhân",
     "data retention": "lưu giữ dữ liệu",
     "content moderation": "kiểm duyệt nội dung",
-    "red teaming": "red teaming"
+    "red teaming": "red teaming",
+    "Build practical AI skills for work": "Xây dựng kỹ năng AI thực tiễn cho công việc",
+    "Learn the fundamentals of AI, large language models, and ChatGPT through hands-on practice.":
+      "Tìm hiểu nền tảng của AI, mô hình ngôn ngữ lớn và ChatGPT thông qua thực hành trực tiếp.",
+    "This course is designed for people who are new to AI or want a stronger foundation for using AI effectively at work.":
+      "Khóa học này dành cho người mới với AI hoặc muốn có nền tảng vững hơn để sử dụng AI hiệu quả trong công việc.",
+    "No technical background is required.": "Không yêu cầu nền tảng kỹ thuật.",
+    "Developed with the teams building OpenAI's models and products":
+      "Được phát triển cùng các nhóm xây dựng mô hình và sản phẩm của OpenAI",
+    "Practice deciding what to delegate to AI while staying in control of the final work.":
+      "Thực hành quyết định việc gì nên giao cho AI trong khi vẫn kiểm soát kết quả cuối cùng."
   },
   "zh-CN": {
     "generative AI": "生成式 AI",
@@ -1651,7 +1795,16 @@ const expansionTargetTerms = {
     "personal data": "个人数据",
     "data retention": "数据保留",
     "content moderation": "内容审核",
-    "red teaming": "红队测试"
+    "red teaming": "红队测试",
+    "Build practical AI skills for work": "构建工作所需的实用 AI 技能",
+    "Learn the fundamentals of AI, large language models, and ChatGPT through hands-on practice.":
+      "通过动手实践学习 AI、大语言模型和 ChatGPT 的基础知识。",
+    "This course is designed for people who are new to AI or want a stronger foundation for using AI effectively at work.":
+      "本课程面向 AI 新手，或希望为在工作中有效使用 AI 打下更坚实基础的人。",
+    "No technical background is required.": "不需要技术背景。",
+    "Developed with the teams building OpenAI's models and products": "由构建 OpenAI 模型和产品的团队共同开发",
+    "Practice deciding what to delegate to AI while staying in control of the final work.":
+      "练习判断哪些工作可以交给 AI，同时保持对最终成果的控制。"
   },
   "zh-TW": {
     "generative AI": "生成式 AI",
@@ -1701,7 +1854,16 @@ const expansionTargetTerms = {
     "personal data": "個人資料",
     "data retention": "資料保留",
     "content moderation": "內容審核",
-    "red teaming": "紅隊測試"
+    "red teaming": "紅隊測試",
+    "Build practical AI skills for work": "建立工作所需的實用 AI 技能",
+    "Learn the fundamentals of AI, large language models, and ChatGPT through hands-on practice.":
+      "透過動手實作學習 AI、大型語言模型和 ChatGPT 的基礎知識。",
+    "This course is designed for people who are new to AI or want a stronger foundation for using AI effectively at work.":
+      "本課程適合 AI 新手，或希望為在工作中有效使用 AI 打下更穩固基礎的人。",
+    "No technical background is required.": "不需要技術背景。",
+    "Developed with the teams building OpenAI's models and products": "由打造 OpenAI 模型與產品的團隊共同開發",
+    "Practice deciding what to delegate to AI while staying in control of the final work.":
+      "練習判斷哪些工作可以交給 AI，同時掌控最終成果。"
   }
 };
 

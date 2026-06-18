@@ -49,7 +49,9 @@ test("language support messages distinguish glossary-backed languages", () => {
   assert.equal(Constants.isGlossaryBackedLanguage("hi", glossaryIndex), true);
   assert.equal(Constants.isGlossaryBackedLanguage("ja", glossaryIndex), true);
   assert.match(Constants.getLanguageSupportMessage("ko", "ko-KR", glossaryIndex), /용어 사전/);
+  assert.match(Constants.getLanguageSupportMessage("ko", "ko-KR", glossaryIndex), /115개/);
   assert.match(Constants.getLanguageSupportMessage("hi", "ko-KR", glossaryIndex), /AI 초안/);
+  assert.match(Constants.getLanguageSupportMessage("hi", "en-US", glossaryIndex), /115\+ terminology corrections/);
   assert.match(Constants.getLanguageSupportMessage("ja", "ko-KR", glossaryIndex), /AI 초안/);
   assert.match(Constants.getLanguageSupportMessage("ar", "ko-KR", glossaryIndex), /기계번역/);
 });

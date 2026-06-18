@@ -836,6 +836,48 @@
       "category": "safety",
       "sources": ["openai-docs:evaluation", "openai-docs:guardrails"],
       "note": "AI-drafted term rendering from OpenAI Academy and OpenAI developer documentation; pending X translation cross-check and community review."
+    },
+    {
+      "source": "Build practical AI skills for work",
+      "target": "Xây dựng kỹ năng AI thực tiễn cho công việc",
+      "category": "course-phrase",
+      "sources": ["academy:home", "academy:courses"],
+      "note": "AI-drafted term rendering from OpenAI Academy and OpenAI developer documentation; pending X translation cross-check and community review."
+    },
+    {
+      "source": "Learn the fundamentals of AI, large language models, and ChatGPT through hands-on practice.",
+      "target": "Tìm hiểu nền tảng của AI, mô hình ngôn ngữ lớn và ChatGPT thông qua thực hành trực tiếp.",
+      "category": "course-phrase",
+      "sources": ["academy:courses"],
+      "note": "AI-drafted term rendering from OpenAI Academy and OpenAI developer documentation; pending X translation cross-check and community review."
+    },
+    {
+      "source": "This course is designed for people who are new to AI or want a stronger foundation for using AI effectively at work.",
+      "target": "Khóa học này dành cho người mới với AI hoặc muốn có nền tảng vững hơn để sử dụng AI hiệu quả trong công việc.",
+      "category": "course-phrase",
+      "sources": ["academy:courses"],
+      "note": "AI-drafted term rendering from OpenAI Academy and OpenAI developer documentation; pending X translation cross-check and community review."
+    },
+    {
+      "source": "No technical background is required.",
+      "target": "Không yêu cầu nền tảng kỹ thuật.",
+      "category": "course-phrase",
+      "sources": ["academy:courses"],
+      "note": "AI-drafted term rendering from OpenAI Academy and OpenAI developer documentation; pending X translation cross-check and community review."
+    },
+    {
+      "source": "Developed with the teams building OpenAI's models and products",
+      "target": "Được phát triển cùng các nhóm xây dựng mô hình và sản phẩm của OpenAI",
+      "category": "course-phrase",
+      "sources": ["academy:courses"],
+      "note": "AI-drafted term rendering from OpenAI Academy and OpenAI developer documentation; pending X translation cross-check and community review."
+    },
+    {
+      "source": "Practice deciding what to delegate to AI while staying in control of the final work.",
+      "target": "Thực hành quyết định việc gì nên giao cho AI trong khi vẫn kiểm soát kết quả cuối cùng.",
+      "category": "course-phrase",
+      "sources": ["academy:courses"],
+      "note": "AI-drafted term rendering from OpenAI Academy and OpenAI developer documentation; pending X translation cross-check and community review."
     }
   ]
 }

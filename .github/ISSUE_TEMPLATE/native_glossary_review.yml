@@ -1,0 +1,72 @@
+name: Native Glossary Review
+description: Review one AcademyLens glossary pack as a fluent or native speaker.
+title: "Native review: [locale]"
+labels: ["i18n", "glossary", "native-review"]
+body:
+  - type: dropdown
+    id: language
+    attributes:
+      label: Language
+      options:
+        - German (de)
+        - Spanish (es)
+        - French (fr)
+        - Hindi (hi)
+        - Indonesian (id)
+        - Italian (it)
+        - Japanese (ja)
+        - Korean (ko)
+        - Portuguese Brazil (pt-BR)
+        - Russian (ru)
+        - Vietnamese (vi)
+        - Chinese Simplified (zh-CN)
+        - Chinese Traditional (zh-TW)
+    validations:
+      required: true
+  - type: dropdown
+    id: fluency
+    attributes:
+      label: Review Basis
+      options:
+        - Native speaker
+        - Near-native or professional fluency
+        - Fluent technical user
+        - AI-assisted audit with manual review
+    validations:
+      required: true
+  - type: textarea
+    id: packet
+    attributes:
+      label: Audit Packet Used
+      description: Paste the command or packet path you reviewed.
+      placeholder: npm run glossary:audit -- --locale=ja
+    validations:
+      required: true
+  - type: textarea
+    id: findings
+    attributes:
+      label: Findings
+      description: List terms that are wrong, unnatural, too broad, or should stay English.
+      placeholder: |
+        source:
+        current target:
+        recommended target:
+        reason:
+    validations:
+      required: true
+  - type: textarea
+    id: x-check
+    attributes:
+      label: Optional X Translation Cross-Check
+      description: Include links and notes only when they support the review. X is not an official OpenAI translation source.
+  - type: checkboxes
+    id: checks
+    attributes:
+      label: Checks
+      options:
+        - label: I preserved protected terms such as OpenAI, ChatGPT, GPT, API, SDK, JSON, Responses API, Agents SDK, Gradual, and Google Translate.
+          required: true
+        - label: I flagged any single-word terms that might over-apply in normal course prose.
+          required: true
+        - label: I understand this does not imply affiliation with OpenAI.
+          required: true

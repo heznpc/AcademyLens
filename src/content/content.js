@@ -640,6 +640,14 @@
       .filter((item) => item.normalized);
   }
 
+  function directGlossaryTranslation(prepared) {
+    if (!prepared || !prepared.text || !Array.isArray(prepared.placeholders)) return "";
+    const token = prepared.text.trim();
+    if (!/^__AL_TERM_\d+__$/.test(token)) return "";
+    const placeholder = prepared.placeholders.find((item) => item.token === token);
+    return placeholder ? placeholder.value : "";
+  }
+
   async function translatePage(options = {}) {
     const generation = bumpGeneration();
     const targetLanguage = state.settings.targetLanguage;
@@ -667,31 +675,39 @@
 
     const unique = new Map();
     const preparedByOriginal = new Map();
+    const directByOriginal = new Map();
     for (const candidate of candidates) {
       if (unique.has(candidate.normalized)) continue;
       const prepared = Glossary.prepareForTranslation(candidate.normalized, glossary, targetLanguage);
-      unique.set(candidate.normalized, prepared.text);
       preparedByOriginal.set(candidate.normalized, prepared);
+      const direct = directGlossaryTranslation(prepared);
+      if (direct) {
+        directByOriginal.set(candidate.normalized, direct);
+        continue;
+      }
+      unique.set(candidate.normalized, prepared.text);
     }
 
-    setStatus(message("status.translating", { count: unique.size }));
-    setProgress(15);
-    setBusy(true, generation);
-    let response;
-    try {
-      response = await sendMessage({
-        type: C.MESSAGE_TYPES.TRANSLATE_BATCH,
-        targetLanguage,
-        texts: [...unique.values()]
-      });
-    } catch (error) {
-      if (isCurrentGeneration(generation, targetLanguage, pageUrl)) {
-        setProgress(0);
-        setStatus(error.message || message("status.failed"), "error");
+    let response = { ok: true, translated: {} };
+    if (unique.size > 0) {
+      setStatus(message("status.translating", { count: unique.size }));
+      setProgress(15);
+      setBusy(true, generation);
+      try {
+        response = await sendMessage({
+          type: C.MESSAGE_TYPES.TRANSLATE_BATCH,
+          targetLanguage,
+          texts: [...unique.values()]
+        });
+      } catch (error) {
+        if (isCurrentGeneration(generation, targetLanguage, pageUrl)) {
+          setProgress(0);
+          setStatus(error.message || message("status.failed"), "error");
+        }
+        return { applied: 0, failed: 1, childFrameCount };
+      } finally {
+        setBusy(false, generation);
       }
-      return { applied: 0, failed: 1, childFrameCount };
-    } finally {
-      setBusy(false, generation);
     }
 
     if (!isCurrentGeneration(generation, targetLanguage, pageUrl)) return;
@@ -709,10 +725,11 @@
       if (!candidate.node || !candidate.node.isConnected) continue;
 
       const prepared = preparedByOriginal.get(candidate.normalized);
-      const rawTranslation = response.translated[prepared.text];
-      if (!rawTranslation) continue;
+      const directTranslation = directByOriginal.get(candidate.normalized);
+      const rawTranslation = directTranslation ? "" : response.translated[prepared.text];
+      if (!directTranslation && !rawTranslation) continue;
 
-      const translated = Glossary.restoreProtectedTerms(rawTranslation, prepared.placeholders);
+      const translated = directTranslation || Glossary.restoreProtectedTerms(rawTranslation, prepared.placeholders);
       if (!translated || translated === candidate.normalized) continue;
 
       const record = {

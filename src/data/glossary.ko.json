@@ -828,6 +828,48 @@
       "category": "safety",
       "sources": ["openai-docs:evaluation", "openai-docs:guardrails"],
       "note": "Evaluation and safety term for adversarial testing."
+    },
+    {
+      "source": "Build practical AI skills for work",
+      "target": "업무를 위한 실용 AI 기술 구축",
+      "category": "course-phrase",
+      "sources": ["academy:home", "academy:courses"],
+      "note": "High-visibility Academy course headline that benefits from exact phrase correction."
+    },
+    {
+      "source": "Learn the fundamentals of AI, large language models, and ChatGPT through hands-on practice.",
+      "target": "실습을 통해 AI, 대규모 언어 모델, ChatGPT의 기본기를 배웁니다.",
+      "category": "course-phrase",
+      "sources": ["academy:courses"],
+      "note": "OpenAI Academy course overview phrase with multiple protected and technical terms."
+    },
+    {
+      "source": "This course is designed for people who are new to AI or want a stronger foundation for using AI effectively at work.",
+      "target": "이 과정은 AI가 처음이거나 업무에서 AI를 효과적으로 사용하기 위한 탄탄한 기초를 원하는 사람을 위해 설계되었습니다.",
+      "category": "course-phrase",
+      "sources": ["academy:courses"],
+      "note": "Learner-audience phrase from Academy course detail content."
+    },
+    {
+      "source": "No technical background is required.",
+      "target": "기술적 배경지식은 필요하지 않습니다.",
+      "category": "course-phrase",
+      "sources": ["academy:courses"],
+      "note": "Common Academy accessibility phrase for non-technical learners."
+    },
+    {
+      "source": "Developed with the teams building OpenAI's models and products",
+      "target": "OpenAI의 모델과 제품을 만드는 팀들과 함께 개발",
+      "category": "course-phrase",
+      "sources": ["academy:courses"],
+      "note": "Course provenance phrase where OpenAI must remain protected and readable."
+    },
+    {
+      "source": "Practice deciding what to delegate to AI while staying in control of the final work.",
+      "target": "최종 결과물을 직접 통제하면서 AI에 무엇을 위임할지 결정하는 연습을 합니다.",
+      "category": "course-phrase",
+      "sources": ["academy:courses"],
+      "note": "Academy exercise phrase about delegation and human control."
     }
   ],
   "status": "reviewed",

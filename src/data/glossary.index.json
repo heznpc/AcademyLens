@@ -46,7 +46,7 @@
       "language": "German",
       "path": "src/data/glossary.de.json",
       "status": "llm-drafted",
-      "termCount": 109,
+      "termCount": 115,
       "officialAlignment": "partial",
       "xTranslationCheck": "pending",
       "notes": "AI-drafted premium glossary seed. Needs X translation cross-check, community review, and native review before reviewed status."
@@ -56,7 +56,7 @@
       "language": "Spanish",
       "path": "src/data/glossary.es.json",
       "status": "llm-drafted",
-      "termCount": 109,
+      "termCount": 115,
       "officialAlignment": "partial",
       "xTranslationCheck": "pending",
       "notes": "AI-drafted premium glossary seed. Needs X translation cross-check, community review, and native review before reviewed status."
@@ -66,7 +66,7 @@
       "language": "French",
       "path": "src/data/glossary.fr.json",
       "status": "llm-drafted",
-      "termCount": 109,
+      "termCount": 115,
       "officialAlignment": "partial",
       "xTranslationCheck": "pending",
       "notes": "AI-drafted premium glossary seed. Needs X translation cross-check, community review, and native review before reviewed status."
@@ -76,7 +76,7 @@
       "language": "Hindi",
       "path": "src/data/glossary.hi.json",
       "status": "llm-drafted",
-      "termCount": 109,
+      "termCount": 115,
       "officialAlignment": "partial",
       "xTranslationCheck": "pending",
       "notes": "AI-drafted premium glossary seed. Needs X translation cross-check, community review, and native review before reviewed status."
@@ -86,7 +86,7 @@
       "language": "Indonesian",
       "path": "src/data/glossary.id.json",
       "status": "llm-drafted",
-      "termCount": 109,
+      "termCount": 115,
       "officialAlignment": "partial",
       "xTranslationCheck": "pending",
       "notes": "AI-drafted premium glossary seed. Needs X translation cross-check, community review, and native review before reviewed status."
@@ -96,7 +96,7 @@
       "language": "Italian",
       "path": "src/data/glossary.it.json",
       "status": "llm-drafted",
-      "termCount": 109,
+      "termCount": 115,
       "officialAlignment": "partial",
       "xTranslationCheck": "pending",
       "notes": "AI-drafted premium glossary seed. Needs X translation cross-check, community review, and native review before reviewed status."
@@ -106,7 +106,7 @@
       "language": "Japanese",
       "path": "src/data/glossary.ja.json",
       "status": "llm-drafted",
-      "termCount": 109,
+      "termCount": 115,
       "officialAlignment": "partial",
       "xTranslationCheck": "pending",
       "notes": "AI-drafted premium glossary seed. Needs X translation cross-check, community review, and native review before reviewed status."
@@ -116,7 +116,7 @@
       "language": "Korean",
       "path": "src/data/glossary.ko.json",
       "status": "reviewed",
-      "termCount": 109,
+      "termCount": 115,
       "officialAlignment": "partial",
       "xTranslationCheck": "pending",
       "notes": "First reviewed community glossary built from OpenAI Academy course language and OpenAI developer docs."
@@ -126,7 +126,7 @@
       "language": "Portuguese Brazil",
       "path": "src/data/glossary.pt-BR.json",
       "status": "llm-drafted",
-      "termCount": 109,
+      "termCount": 115,
       "officialAlignment": "partial",
       "xTranslationCheck": "pending",
       "notes": "AI-drafted premium glossary seed. Needs X translation cross-check, community review, and native review before reviewed status."
@@ -136,7 +136,7 @@
       "language": "Russian",
       "path": "src/data/glossary.ru.json",
       "status": "llm-drafted",
-      "termCount": 109,
+      "termCount": 115,
       "officialAlignment": "partial",
       "xTranslationCheck": "pending",
       "notes": "AI-drafted premium glossary seed. Needs X translation cross-check, community review, and native review before reviewed status."
@@ -146,7 +146,7 @@
       "language": "Vietnamese",
       "path": "src/data/glossary.vi.json",
       "status": "llm-drafted",
-      "termCount": 109,
+      "termCount": 115,
       "officialAlignment": "partial",
       "xTranslationCheck": "pending",
       "notes": "AI-drafted premium glossary seed. Needs X translation cross-check, community review, and native review before reviewed status."
@@ -156,7 +156,7 @@
       "language": "Chinese Simplified",
       "path": "src/data/glossary.zh-CN.json",
       "status": "llm-drafted",
-      "termCount": 109,
+      "termCount": 115,
       "officialAlignment": "partial",
       "xTranslationCheck": "pending",
       "notes": "AI-drafted premium glossary seed. Needs X translation cross-check, community review, and native review before reviewed status."
@@ -166,7 +166,7 @@
       "language": "Chinese Traditional",
       "path": "src/data/glossary.zh-TW.json",
       "status": "llm-drafted",
-      "termCount": 109,
+      "termCount": 115,
       "officialAlignment": "partial",
       "xTranslationCheck": "pending",
       "notes": "AI-drafted premium glossary seed. Needs X translation cross-check, community review, and native review before reviewed status."
