@@ -12,7 +12,7 @@ const premiumLocales = glossaryIndex.premiumLocales;
 
 test("registers installed premium glossaries", () => {
   assert(glossaryIndex.protectedTerms.includes("OpenAI Academy"));
-  assert.equal(glossaryIndex.premiumLocales.length, 12);
+  assert.equal(glossaryIndex.premiumLocales.length, 13);
   assert.equal(glossaryIndex.glossaries.length, premiumLocales.length);
   assert(
     glossaryIndex.glossaries.some(
@@ -36,7 +36,7 @@ test("keeps locale quality smoke terms in premium glossary packs", () => {
   }
 });
 
-test("registers twelve premium glossary packs with matching source keys", () => {
+test("registers premium glossary packs with matching source keys", () => {
   const baseline = new Set(glossary.terms.map((entry) => entry.source));
 
   for (const locale of premiumLocales) {

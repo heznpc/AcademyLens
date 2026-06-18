@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "premiumLocales": ["de", "es", "fr", "id", "it", "ja", "ko", "pt-BR", "ru", "vi", "zh-CN", "zh-TW"],
+  "premiumLocales": ["de", "es", "fr", "hi", "id", "it", "ja", "ko", "pt-BR", "ru", "vi", "zh-CN", "zh-TW"],
   "protectedTerms": [
     "OpenAI",
     "OpenAI Academy",
@@ -65,6 +65,16 @@
       "locale": "fr",
       "language": "French",
       "path": "src/data/glossary.fr.json",
+      "status": "llm-drafted",
+      "termCount": 61,
+      "officialAlignment": "partial",
+      "xTranslationCheck": "pending",
+      "notes": "AI-drafted premium glossary seed. Needs X translation cross-check, community review, and native review before reviewed status."
+    },
+    {
+      "locale": "hi",
+      "language": "Hindi",
+      "path": "src/data/glossary.hi.json",
       "status": "llm-drafted",
       "termCount": 61,
       "officialAlignment": "partial",

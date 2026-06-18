@@ -36,6 +36,31 @@
     return /[A-Za-z]/.test(value);
   }
 
+  const TARGET_SCRIPT_GUARDS = Object.freeze({
+    ko: Object.freeze({ pattern: /[\u3131-\uD7A3]/g, minChars: 2 }),
+    ja: Object.freeze({ pattern: /[\u3040-\u30FF\u3400-\u9FFF]/g, minChars: 2 }),
+    "zh-CN": Object.freeze({ pattern: /[\u3400-\u9FFF]/g, minChars: 2 }),
+    "zh-TW": Object.freeze({ pattern: /[\u3400-\u9FFF]/g, minChars: 2 }),
+    ru: Object.freeze({ pattern: /[\u0400-\u04FF]/g, minChars: 3 }),
+    hi: Object.freeze({ pattern: /[\u0900-\u097F]/g, minChars: 3 }),
+    ar: Object.freeze({ pattern: /[\u0600-\u06FF]/g, minChars: 3 }),
+    th: Object.freeze({ pattern: /[\u0E00-\u0E7F]/g, minChars: 3 }),
+    bn: Object.freeze({ pattern: /[\u0980-\u09FF]/g, minChars: 3 }),
+    iw: Object.freeze({ pattern: /[\u0590-\u05FF]/g, minChars: 3 })
+  });
+
+  function countPatternMatches(value, pattern) {
+    pattern.lastIndex = 0;
+    const matches = String(value).match(pattern);
+    return matches ? matches.length : 0;
+  }
+
+  function containsTargetLanguageScript(value, targetLanguage) {
+    const guard = TARGET_SCRIPT_GUARDS[targetLanguage];
+    if (!guard) return false;
+    return countPatternMatches(value, guard.pattern) >= guard.minChars;
+  }
+
   function isMostlyPunctuation(value) {
     const text = normalizeWhitespace(value);
     return !text || /^[\d\s()[\]{}.,:;!?'"`~@#$%^&*+=/\\|<>_-]+$/.test(text);
@@ -107,7 +132,7 @@
     const limit = maxLength || 1200;
 
     if (targetLanguage === "en") return false;
-    if (targetLanguage === "ko" && /[\u3131-\uD7A3]/.test(text)) return false;
+    if (containsTargetLanguageScript(text, targetLanguage)) return false;
     if (text.length < 2 || text.length > limit) return false;
     if (!hasLatinLetters(text)) return false;
     if (isMostlyPunctuation(text)) return false;
@@ -184,6 +209,7 @@
     applyTranslatedText,
     normalizeWhitespace,
     hasLatinLetters,
+    containsTargetLanguageScript,
     isMostlyPunctuation,
     isUrlLike,
     isPlatformControlText,

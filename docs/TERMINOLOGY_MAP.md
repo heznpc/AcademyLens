@@ -4,7 +4,7 @@ AcademyLens is positioned around multilingual community glossaries that connect 
 
 This is not a claim of affiliation with OpenAI. The glossary uses public OpenAI Academy pages and OpenAI developer documentation as terminology references.
 
-AcademyLens ships twelve premium glossary packs: `de`, `es`, `fr`, `id`, `it`, `ja`, `ko`, `pt-BR`, `ru`, `vi`, `zh-CN`, and `zh-TW`. Korean is currently the first reviewed pack; the other premium packs are AI-drafted beta packs waiting for X translation cross-checks, community review, and native review.
+AcademyLens ships thirteen premium glossary packs: `de`, `es`, `fr`, `hi`, `id`, `it`, `ja`, `ko`, `pt-BR`, `ru`, `vi`, `zh-CN`, and `zh-TW`. Korean is currently the first reviewed pack; the other premium packs are AI-drafted beta packs waiting for X translation cross-checks, community review, and native review. Hindi and French are first-class beta packs because OpenAI Academy already exposes India/Hindi content and French Academy events.
 
 ## Source Set
 
@@ -47,7 +47,7 @@ AcademyLens uses multiple evidence layers, each with a different job:
 
 | Layer                     | Role                                                                  |
 | ------------------------- | --------------------------------------------------------------------- |
-| AI-assisted draft         | Create the first consistent 12-language terminology map.              |
+| AI-assisted draft         | Create the first consistent multilingual terminology map.             |
 | Google Translate baseline | Find terms where runtime machine translation likely needs help.       |
 | X translation check       | Cross-check public, user-facing machine translations of OpenAI posts. |
 | Official docs alignment   | Use official OpenAI English docs as canonical source anchors.         |

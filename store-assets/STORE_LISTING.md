@@ -27,7 +27,7 @@ Features:
 - Avoid translating Gradual progress, certificate, quiz, and account controls.
 - Keep translation settings in Chrome storage.
 
-AcademyLens includes twelve premium glossary packs: German, Spanish, French, Indonesian, Italian, Japanese, Korean, Brazilian Portuguese, Russian, Vietnamese, Simplified Chinese, and Traditional Chinese. Korean is the first reviewed pack; the other premium packs are AI-drafted beta glossaries that need X translation cross-checks, community review, and native review. Other languages use machine translation with protected-term preservation.
+AcademyLens includes thirteen premium glossary packs: German, Spanish, French, Hindi, Indonesian, Italian, Japanese, Korean, Brazilian Portuguese, Russian, Vietnamese, Simplified Chinese, and Traditional Chinese. Korean is the first reviewed pack; the other premium packs are AI-drafted beta glossaries that need X translation cross-checks, community review, and native review. Other languages use machine translation with protected-term preservation.
 
 AcademyLens does not manage enrollment, progress, certificates, accounts, or OpenAI Academy settings.
 

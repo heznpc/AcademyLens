@@ -2,6 +2,7 @@ const PREMIUM_LOCALE_RECORDS = Object.freeze([
   Object.freeze({ locale: "de", language: "German", name: "German OpenAI Academy glossary", status: "llm-drafted" }),
   Object.freeze({ locale: "es", language: "Spanish", name: "Spanish OpenAI Academy glossary", status: "llm-drafted" }),
   Object.freeze({ locale: "fr", language: "French", name: "French OpenAI Academy glossary", status: "llm-drafted" }),
+  Object.freeze({ locale: "hi", language: "Hindi", name: "Hindi OpenAI Academy glossary", status: "llm-drafted" }),
   Object.freeze({
     locale: "id",
     language: "Indonesian",
@@ -87,6 +88,12 @@ const QUALITY_SMOKE_TERMS = Object.freeze({
     "clear instructions": "instructions claires",
     schema: "schéma",
     "structured outputs": "sorties structurées"
+  }),
+  hi: Object.freeze({
+    guardrails: "गार्डरेल",
+    "human review": "मानवीय समीक्षा",
+    prompt: "प्रॉम्प्ट",
+    "structured outputs": "संरचित आउटपुट"
   }),
   id: Object.freeze({
     "agentic workflows": "alur kerja agentik",

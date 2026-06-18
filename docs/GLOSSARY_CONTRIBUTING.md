@@ -11,6 +11,7 @@ The extension can translate every supported target language through machine tran
 | `de`    | llm-drafted | `src/data/glossary.de.json`    | Needs community/native review |
 | `es`    | llm-drafted | `src/data/glossary.es.json`    | Needs community/native review |
 | `fr`    | llm-drafted | `src/data/glossary.fr.json`    | Needs community/native review |
+| `hi`    | llm-drafted | `src/data/glossary.hi.json`    | Needs community/native review |
 | `id`    | llm-drafted | `src/data/glossary.id.json`    | Needs community/native review |
 | `it`    | llm-drafted | `src/data/glossary.it.json`    | Needs community/native review |
 | `ja`    | llm-drafted | `src/data/glossary.ja.json`    | Needs community/native review |
@@ -109,7 +110,7 @@ A practical draft workflow:
 7. Run `npm run check:glossary`.
 8. Add an E2E or unit fixture if the pack changes expected placeholder behavior.
 
-Regenerate the current twelve premium draft packs from the maintained seed:
+Regenerate the current premium draft packs from the maintained seed:
 
 ```bash
 npm run glossary:seed

@@ -14,6 +14,7 @@ test("language labels use native names regardless of UI locale", () => {
   assert.equal(Constants.getLanguageLabel("zh-TW", "ko-KR"), "中文(繁體)");
   assert.equal(Constants.getLanguageLabel("es", "en-US"), "Español");
   assert.equal(Constants.getLanguageLabel("pt-BR", "en-US"), "Português (BR)");
+  assert.equal(Constants.getLanguageLabel("hi", "en-US"), "हिन्दी");
   assert.equal(Constants.getLanguageLabel("iw", "ko-KR"), "עברית");
 });
 
@@ -45,8 +46,10 @@ test("UI messages are localized for Korean browsers", () => {
 test("language support messages distinguish glossary-backed languages", () => {
   assert.equal(Constants.isGlossaryBackedLanguage("ko"), false);
   assert.equal(Constants.isGlossaryBackedLanguage("ko", glossaryIndex), true);
+  assert.equal(Constants.isGlossaryBackedLanguage("hi", glossaryIndex), true);
   assert.equal(Constants.isGlossaryBackedLanguage("ja", glossaryIndex), true);
   assert.match(Constants.getLanguageSupportMessage("ko", "ko-KR", glossaryIndex), /용어 사전/);
+  assert.match(Constants.getLanguageSupportMessage("hi", "ko-KR", glossaryIndex), /AI 초안/);
   assert.match(Constants.getLanguageSupportMessage("ja", "ko-KR", glossaryIndex), /AI 초안/);
   assert.match(Constants.getLanguageSupportMessage("ar", "ko-KR", glossaryIndex), /기계번역/);
 });

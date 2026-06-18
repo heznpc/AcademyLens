@@ -1,0 +1,505 @@
+{
+  "schemaVersion": 1,
+  "locale": "hi",
+  "name": "Hindi OpenAI Academy glossary",
+  "status": "llm-drafted",
+  "sourceCatalog": {
+    "academy:courses": {
+      "title": "OpenAI Academy Courses",
+      "url": "https://academy.openai.com/pages/courses"
+    },
+    "academy:home": {
+      "title": "OpenAI Academy",
+      "url": "https://academy.openai.com/"
+    },
+    "openai-docs:prompt-engineering": {
+      "title": "Prompt engineering",
+      "url": "https://developers.openai.com/api/docs/guides/prompt-engineering"
+    },
+    "openai-docs:concepts": {
+      "title": "Key concepts",
+      "url": "https://developers.openai.com/api/docs/concepts"
+    },
+    "openai-docs:text-generation": {
+      "title": "Text generation",
+      "url": "https://developers.openai.com/api/docs/guides/text"
+    },
+    "openai-docs:structured-outputs": {
+      "title": "Structured model outputs",
+      "url": "https://developers.openai.com/api/docs/guides/structured-outputs"
+    },
+    "openai-docs:agents": {
+      "title": "Agents SDK",
+      "url": "https://developers.openai.com/api/docs/guides/agents"
+    },
+    "openai-docs:agent-definitions": {
+      "title": "Agent definitions",
+      "url": "https://developers.openai.com/api/docs/guides/agents/define-agents"
+    },
+    "openai-docs:guardrails": {
+      "title": "Guardrails and human review",
+      "url": "https://developers.openai.com/api/docs/guides/agents/guardrails-approvals"
+    },
+    "openai-docs:observability": {
+      "title": "Integrations and observability",
+      "url": "https://developers.openai.com/api/docs/guides/agents/integrations-observability"
+    },
+    "openai-docs:evaluation": {
+      "title": "Evaluation best practices",
+      "url": "https://developers.openai.com/api/docs/guides/evaluation-best-practices"
+    }
+  },
+  "protectedTerms": [
+    "OpenAI",
+    "OpenAI Academy",
+    "ChatGPT",
+    "GPT",
+    "GPT-5",
+    "GPT-4",
+    "LLM",
+    "API",
+    "SDK",
+    "JSON",
+    "JSON Schema",
+    "Responses API",
+    "Agents SDK",
+    "Gradual",
+    "Google Translate"
+  ],
+  "qaSignals": {
+    "draftMethod": "AI-assisted terminology draft",
+    "officialAlignment": "partial",
+    "googleTranslateBaseline": "pending",
+    "xTranslationCheck": "pending",
+    "communityReview": "open"
+  },
+  "terms": [
+    {
+      "source": "artificial intelligence",
+      "target": "कृत्रिम बुद्धिमत्ता",
+      "category": "academy-learning",
+      "sources": ["academy:home", "academy:courses"],
+      "note": "AI-drafted term rendering from OpenAI Academy and OpenAI developer documentation; pending X translation cross-check and community review."
+    },
+    {
+      "source": "AI fluency",
+      "target": "AI साक्षरता",
+      "category": "academy-learning",
+      "sources": ["academy:courses"],
+      "note": "AI-drafted term rendering from OpenAI Academy and OpenAI developer documentation; pending X translation cross-check and community review."
+    },
+    {
+      "source": "large language model",
+      "target": "बड़ा भाषा मॉडल",
+      "category": "model-concepts",
+      "sources": ["academy:home", "openai-docs:text-generation"],
+      "note": "AI-drafted term rendering from OpenAI Academy and OpenAI developer documentation; pending X translation cross-check and community review."
+    },
+    {
+      "source": "large language models",
+      "target": "बड़े भाषा मॉडल",
+      "category": "model-concepts",
+      "sources": ["academy:home", "openai-docs:text-generation"],
+      "note": "AI-drafted term rendering from OpenAI Academy and OpenAI developer documentation; pending X translation cross-check and community review."
+    },
+    {
+      "source": "model",
+      "target": "मॉडल",
+      "category": "model-concepts",
+      "sources": ["openai-docs:concepts", "openai-docs:text-generation"],
+      "note": "AI-drafted term rendering from OpenAI Academy and OpenAI developer documentation; pending X translation cross-check and community review."
+    },
+    {
+      "source": "models",
+      "target": "मॉडल",
+      "category": "model-concepts",
+      "sources": ["openai-docs:concepts", "openai-docs:text-generation"],
+      "note": "AI-drafted term rendering from OpenAI Academy and OpenAI developer documentation; pending X translation cross-check and community review."
+    },
+    {
+      "source": "token",
+      "target": "टोकन",
+      "category": "model-concepts",
+      "sources": ["openai-docs:concepts"],
+      "note": "AI-drafted term rendering from OpenAI Academy and OpenAI developer documentation; pending X translation cross-check and community review."
+    },
+    {
+      "source": "tokens",
+      "target": "टोकन",
+      "category": "model-concepts",
+      "sources": ["openai-docs:concepts"],
+      "note": "AI-drafted term rendering from OpenAI Academy and OpenAI developer documentation; pending X translation cross-check and community review."
+    },
+    {
+      "source": "context length",
+      "target": "संदर्भ लंबाई",
+      "category": "model-concepts",
+      "sources": ["openai-docs:concepts"],
+      "note": "AI-drafted term rendering from OpenAI Academy and OpenAI developer documentation; pending X translation cross-check and community review."
+    },
+    {
+      "source": "prompt engineering",
+      "target": "प्रॉम्प्ट इंजीनियरिंग",
+      "category": "prompting",
+      "sources": ["openai-docs:prompt-engineering"],
+      "note": "AI-drafted term rendering from OpenAI Academy and OpenAI developer documentation; pending X translation cross-check and community review."
+    },
+    {
+      "source": "prompt",
+      "target": "प्रॉम्प्ट",
+      "category": "prompting",
+      "sources": ["academy:home", "openai-docs:prompt-engineering", "openai-docs:text-generation"],
+      "note": "AI-drafted term rendering from OpenAI Academy and OpenAI developer documentation; pending X translation cross-check and community review."
+    },
+    {
+      "source": "prompts",
+      "target": "प्रॉम्प्ट",
+      "category": "prompting",
+      "sources": ["academy:courses", "openai-docs:prompt-engineering", "openai-docs:text-generation"],
+      "note": "AI-drafted term rendering from OpenAI Academy and OpenAI developer documentation; pending X translation cross-check and community review."
+    },
+    {
+      "source": "prompting",
+      "target": "प्रॉम्प्टिंग",
+      "category": "prompting",
+      "sources": ["openai-docs:prompt-engineering"],
+      "note": "AI-drafted term rendering from OpenAI Academy and OpenAI developer documentation; pending X translation cross-check and community review."
+    },
+    {
+      "source": "instruction",
+      "target": "निर्देश",
+      "category": "prompting",
+      "sources": ["academy:home", "openai-docs:prompt-engineering"],
+      "note": "AI-drafted term rendering from OpenAI Academy and OpenAI developer documentation; pending X translation cross-check and community review."
+    },
+    {
+      "source": "instructions",
+      "target": "निर्देश",
+      "category": "prompting",
+      "sources": ["academy:home", "openai-docs:prompt-engineering"],
+      "note": "AI-drafted term rendering from OpenAI Academy and OpenAI developer documentation; pending X translation cross-check and community review."
+    },
+    {
+      "source": "clear instructions",
+      "target": "स्पष्ट निर्देश",
+      "category": "prompting",
+      "sources": ["academy:home", "academy:courses", "openai-docs:prompt-engineering"],
+      "note": "AI-drafted term rendering from OpenAI Academy and OpenAI developer documentation; pending X translation cross-check and community review."
+    },
+    {
+      "source": "context",
+      "target": "संदर्भ",
+      "category": "prompting",
+      "sources": ["academy:home", "academy:courses", "openai-docs:prompt-engineering"],
+      "note": "AI-drafted term rendering from OpenAI Academy and OpenAI developer documentation; pending X translation cross-check and community review."
+    },
+    {
+      "source": "useful context",
+      "target": "उपयोगी संदर्भ",
+      "category": "prompting",
+      "sources": ["academy:home"],
+      "note": "AI-drafted term rendering from OpenAI Academy and OpenAI developer documentation; pending X translation cross-check and community review."
+    },
+    {
+      "source": "relevant context",
+      "target": "प्रासंगिक संदर्भ",
+      "category": "prompting",
+      "sources": ["academy:courses"],
+      "note": "AI-drafted term rendering from OpenAI Academy and OpenAI developer documentation; pending X translation cross-check and community review."
+    },
+    {
+      "source": "output",
+      "target": "आउटपुट",
+      "category": "review",
+      "sources": ["academy:home", "openai-docs:text-generation"],
+      "note": "AI-drafted term rendering from OpenAI Academy and OpenAI developer documentation; pending X translation cross-check and community review."
+    },
+    {
+      "source": "outputs",
+      "target": "आउटपुट",
+      "category": "review",
+      "sources": ["academy:home", "academy:courses", "openai-docs:text-generation"],
+      "note": "AI-drafted term rendering from OpenAI Academy and OpenAI developer documentation; pending X translation cross-check and community review."
+    },
+    {
+      "source": "review outputs",
+      "target": "आउटपुट की समीक्षा करें",
+      "category": "review",
+      "sources": ["academy:home", "academy:courses"],
+      "note": "AI-drafted term rendering from OpenAI Academy and OpenAI developer documentation; pending X translation cross-check and community review."
+    },
+    {
+      "source": "reviewing outputs",
+      "target": "आउटपुट की समीक्षा",
+      "category": "review",
+      "sources": ["academy:home"],
+      "note": "AI-drafted term rendering from OpenAI Academy and OpenAI developer documentation; pending X translation cross-check and community review."
+    },
+    {
+      "source": "review point",
+      "target": "समीक्षा बिंदु",
+      "category": "review",
+      "sources": ["academy:home"],
+      "note": "AI-drafted term rendering from OpenAI Academy and OpenAI developer documentation; pending X translation cross-check and community review."
+    },
+    {
+      "source": "review points",
+      "target": "समीक्षा बिंदु",
+      "category": "review",
+      "sources": ["academy:home"],
+      "note": "AI-drafted term rendering from OpenAI Academy and OpenAI developer documentation; pending X translation cross-check and community review."
+    },
+    {
+      "source": "responsibly",
+      "target": "जिम्मेदारी से",
+      "category": "review",
+      "sources": ["academy:home", "academy:courses"],
+      "note": "AI-drafted term rendering from OpenAI Academy and OpenAI developer documentation; pending X translation cross-check and community review."
+    },
+    {
+      "source": "delegate",
+      "target": "सौंपना",
+      "category": "academy-learning",
+      "sources": ["academy:courses"],
+      "note": "AI-drafted term rendering from OpenAI Academy and OpenAI developer documentation; pending X translation cross-check and community review."
+    },
+    {
+      "source": "staying in control",
+      "target": "नियंत्रण बनाए रखना",
+      "category": "academy-learning",
+      "sources": ["academy:courses"],
+      "note": "AI-drafted term rendering from OpenAI Academy and OpenAI developer documentation; pending X translation cross-check and community review."
+    },
+    {
+      "source": "repeatable",
+      "target": "दोहराने योग्य",
+      "category": "workflow",
+      "sources": ["academy:courses"],
+      "note": "AI-drafted term rendering from OpenAI Academy and OpenAI developer documentation; pending X translation cross-check and community review."
+    },
+    {
+      "source": "repeatable ways of working",
+      "target": "काम करने के दोहराने योग्य तरीके",
+      "category": "workflow",
+      "sources": ["academy:courses"],
+      "note": "AI-drafted term rendering from OpenAI Academy and OpenAI developer documentation; pending X translation cross-check and community review."
+    },
+    {
+      "source": "workflow",
+      "target": "वर्कफ़्लो",
+      "category": "workflow",
+      "sources": ["academy:courses", "openai-docs:agents"],
+      "note": "AI-drafted term rendering from OpenAI Academy and OpenAI developer documentation; pending X translation cross-check and community review."
+    },
+    {
+      "source": "workflows",
+      "target": "वर्कफ़्लो",
+      "category": "workflow",
+      "sources": ["academy:courses", "openai-docs:agents"],
+      "note": "AI-drafted term rendering from OpenAI Academy and OpenAI developer documentation; pending X translation cross-check and community review."
+    },
+    {
+      "source": "agent",
+      "target": "एजेंट",
+      "category": "agents",
+      "sources": ["academy:courses", "openai-docs:agents", "openai-docs:agent-definitions"],
+      "note": "AI-drafted term rendering from OpenAI Academy and OpenAI developer documentation; pending X translation cross-check and community review."
+    },
+    {
+      "source": "agents",
+      "target": "एजेंट",
+      "category": "agents",
+      "sources": ["academy:courses", "openai-docs:agents", "openai-docs:agent-definitions"],
+      "note": "AI-drafted term rendering from OpenAI Academy and OpenAI developer documentation; pending X translation cross-check and community review."
+    },
+    {
+      "source": "agentic workflows",
+      "target": "एजेंटिक वर्कफ़्लो",
+      "category": "agents",
+      "sources": ["academy:courses", "openai-docs:agents"],
+      "note": "AI-drafted term rendering from OpenAI Academy and OpenAI developer documentation; pending X translation cross-check and community review."
+    },
+    {
+      "source": "tool",
+      "target": "टूल",
+      "category": "agents",
+      "sources": ["openai-docs:agents", "openai-docs:agent-definitions"],
+      "note": "AI-drafted term rendering from OpenAI Academy and OpenAI developer documentation; pending X translation cross-check and community review."
+    },
+    {
+      "source": "tools",
+      "target": "टूल",
+      "category": "agents",
+      "sources": ["openai-docs:agents", "openai-docs:agent-definitions"],
+      "note": "AI-drafted term rendering from OpenAI Academy and OpenAI developer documentation; pending X translation cross-check and community review."
+    },
+    {
+      "source": "tool call",
+      "target": "टूल कॉल",
+      "category": "agents",
+      "sources": ["openai-docs:observability"],
+      "note": "AI-drafted term rendering from OpenAI Academy and OpenAI developer documentation; pending X translation cross-check and community review."
+    },
+    {
+      "source": "tool calls",
+      "target": "टूल कॉल",
+      "category": "agents",
+      "sources": ["openai-docs:observability"],
+      "note": "AI-drafted term rendering from OpenAI Academy and OpenAI developer documentation; pending X translation cross-check and community review."
+    },
+    {
+      "source": "handoff",
+      "target": "हैंडऑफ़",
+      "category": "agents",
+      "sources": ["openai-docs:agent-definitions", "openai-docs:observability"],
+      "note": "AI-drafted term rendering from OpenAI Academy and OpenAI developer documentation; pending X translation cross-check and community review."
+    },
+    {
+      "source": "handoffs",
+      "target": "हैंडऑफ़",
+      "category": "agents",
+      "sources": ["openai-docs:agent-definitions", "openai-docs:observability"],
+      "note": "AI-drafted term rendering from OpenAI Academy and OpenAI developer documentation; pending X translation cross-check and community review."
+    },
+    {
+      "source": "guardrail",
+      "target": "गार्डरेल",
+      "category": "agents",
+      "sources": ["openai-docs:guardrails", "openai-docs:observability"],
+      "note": "AI-drafted term rendering from OpenAI Academy and OpenAI developer documentation; pending X translation cross-check and community review."
+    },
+    {
+      "source": "guardrails",
+      "target": "गार्डरेल",
+      "category": "agents",
+      "sources": ["openai-docs:guardrails", "openai-docs:observability"],
+      "note": "AI-drafted term rendering from OpenAI Academy and OpenAI developer documentation; pending X translation cross-check and community review."
+    },
+    {
+      "source": "human review",
+      "target": "मानवीय समीक्षा",
+      "category": "agents",
+      "sources": ["openai-docs:guardrails"],
+      "note": "AI-drafted term rendering from OpenAI Academy and OpenAI developer documentation; pending X translation cross-check and community review."
+    },
+    {
+      "source": "approval",
+      "target": "स्वीकृति",
+      "category": "agents",
+      "sources": ["openai-docs:guardrails"],
+      "note": "AI-drafted term rendering from OpenAI Academy and OpenAI developer documentation; pending X translation cross-check and community review."
+    },
+    {
+      "source": "approvals",
+      "target": "स्वीकृतियाँ",
+      "category": "agents",
+      "sources": ["openai-docs:guardrails"],
+      "note": "AI-drafted term rendering from OpenAI Academy and OpenAI developer documentation; pending X translation cross-check and community review."
+    },
+    {
+      "source": "trace",
+      "target": "ट्रेस",
+      "category": "observability",
+      "sources": ["openai-docs:observability"],
+      "note": "AI-drafted term rendering from OpenAI Academy and OpenAI developer documentation; pending X translation cross-check and community review."
+    },
+    {
+      "source": "traces",
+      "target": "ट्रेस",
+      "category": "observability",
+      "sources": ["openai-docs:observability"],
+      "note": "AI-drafted term rendering from OpenAI Academy and OpenAI developer documentation; pending X translation cross-check and community review."
+    },
+    {
+      "source": "tracing",
+      "target": "ट्रेसिंग",
+      "category": "observability",
+      "sources": ["openai-docs:observability"],
+      "note": "AI-drafted term rendering from OpenAI Academy and OpenAI developer documentation; pending X translation cross-check and community review."
+    },
+    {
+      "source": "structured outputs",
+      "target": "संरचित आउटपुट",
+      "category": "structured-output",
+      "sources": ["openai-docs:structured-outputs", "openai-docs:text-generation"],
+      "note": "AI-drafted term rendering from OpenAI Academy and OpenAI developer documentation; pending X translation cross-check and community review."
+    },
+    {
+      "source": "schema",
+      "target": "स्कीमा",
+      "category": "structured-output",
+      "sources": ["openai-docs:structured-outputs"],
+      "note": "AI-drafted term rendering from OpenAI Academy and OpenAI developer documentation; pending X translation cross-check and community review."
+    },
+    {
+      "source": "schemas",
+      "target": "स्कीमा",
+      "category": "structured-output",
+      "sources": ["openai-docs:structured-outputs"],
+      "note": "AI-drafted term rendering from OpenAI Academy and OpenAI developer documentation; pending X translation cross-check and community review."
+    },
+    {
+      "source": "evaluation",
+      "target": "मूल्यांकन",
+      "category": "evaluation",
+      "sources": ["openai-docs:evaluation"],
+      "note": "AI-drafted term rendering from OpenAI Academy and OpenAI developer documentation; pending X translation cross-check and community review."
+    },
+    {
+      "source": "evaluations",
+      "target": "मूल्यांकन",
+      "category": "evaluation",
+      "sources": ["openai-docs:evaluation"],
+      "note": "AI-drafted term rendering from OpenAI Academy and OpenAI developer documentation; pending X translation cross-check and community review."
+    },
+    {
+      "source": "eval",
+      "target": "eval",
+      "category": "evaluation",
+      "sources": ["openai-docs:evaluation"],
+      "note": "AI-drafted term rendering from OpenAI Academy and OpenAI developer documentation; pending X translation cross-check and community review."
+    },
+    {
+      "source": "evals",
+      "target": "evals",
+      "category": "evaluation",
+      "sources": ["openai-docs:evaluation"],
+      "note": "AI-drafted term rendering from OpenAI Academy and OpenAI developer documentation; pending X translation cross-check and community review."
+    },
+    {
+      "source": "grader",
+      "target": "ग्रेडर",
+      "category": "evaluation",
+      "sources": ["openai-docs:evaluation"],
+      "note": "AI-drafted term rendering from OpenAI Academy and OpenAI developer documentation; pending X translation cross-check and community review."
+    },
+    {
+      "source": "graders",
+      "target": "ग्रेडर",
+      "category": "evaluation",
+      "sources": ["openai-docs:evaluation"],
+      "note": "AI-drafted term rendering from OpenAI Academy and OpenAI developer documentation; pending X translation cross-check and community review."
+    },
+    {
+      "source": "self-paced",
+      "target": "अपनी गति से",
+      "category": "course-format",
+      "sources": ["academy:home"],
+      "note": "AI-drafted term rendering from OpenAI Academy and OpenAI developer documentation; pending X translation cross-check and community review."
+    },
+    {
+      "source": "course completion certificate",
+      "target": "कोर्स पूरा करने का प्रमाणपत्र",
+      "category": "course-format",
+      "sources": ["academy:courses"],
+      "note": "AI-drafted term rendering from OpenAI Academy and OpenAI developer documentation; pending X translation cross-check and community review."
+    },
+    {
+      "source": "course completion certificates",
+      "target": "कोर्स पूरा करने के प्रमाणपत्र",
+      "category": "course-format",
+      "sources": ["academy:courses"],
+      "note": "AI-drafted term rendering from OpenAI Academy and OpenAI developer documentation; pending X translation cross-check and community review."
+    }
+  ]
+}
