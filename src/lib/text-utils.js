@@ -61,6 +61,20 @@
     return countPatternMatches(value, guard.pattern) >= guard.minChars;
   }
 
+  function normalizeLanguageCode(value) {
+    return String(value || "")
+      .trim()
+      .toLowerCase()
+      .replace("_", "-");
+  }
+
+  function languageMatchesTarget(language, targetLanguage) {
+    const source = normalizeLanguageCode(language);
+    const target = normalizeLanguageCode(targetLanguage);
+    if (!source || !target) return false;
+    return source === target || source.split("-")[0] === target.split("-")[0];
+  }
+
   function isMostlyPunctuation(value) {
     const text = normalizeWhitespace(value);
     return !text || /^[\d\s()[\]{}.,:;!?'"`~@#$%^&*+=/\\|<>_-]+$/.test(text);
@@ -127,11 +141,12 @@
     ].some((pattern) => pattern.test(text));
   }
 
-  function shouldTranslateText(value, targetLanguage, maxLength) {
+  function shouldTranslateText(value, targetLanguage, maxLength, element) {
     const text = normalizeWhitespace(value);
     const limit = maxLength || 1200;
 
     if (targetLanguage === "en") return false;
+    if (element && languageMatchesTarget(element.closest("[lang]")?.getAttribute("lang"), targetLanguage)) return false;
     if (containsTargetLanguageScript(text, targetLanguage)) return false;
     if (text.length < 2 || text.length > limit) return false;
     if (!hasLatinLetters(text)) return false;
@@ -187,7 +202,7 @@
         if (!parent) return NodeFilter.FILTER_REJECT;
         if (isExcludedElement(parent)) return NodeFilter.FILTER_REJECT;
         if (!isElementVisible(parent)) return NodeFilter.FILTER_REJECT;
-        if (!shouldTranslateText(node.textContent, settings.targetLanguage, settings.maxTextLength)) {
+        if (!shouldTranslateText(node.textContent, settings.targetLanguage, settings.maxTextLength, parent)) {
           return NodeFilter.FILTER_REJECT;
         }
         return NodeFilter.FILTER_ACCEPT;
@@ -209,6 +224,7 @@
     applyTranslatedText,
     normalizeWhitespace,
     hasLatinLetters,
+    languageMatchesTarget,
     containsTargetLanguageScript,
     isMostlyPunctuation,
     isUrlLike,

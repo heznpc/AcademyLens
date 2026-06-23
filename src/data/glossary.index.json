@@ -115,11 +115,11 @@
       "locale": "ko",
       "language": "Korean",
       "path": "src/data/glossary.ko.json",
-      "status": "reviewed",
+      "status": "community-reviewed",
       "termCount": 115,
       "officialAlignment": "partial",
       "xTranslationCheck": "pending",
-      "notes": "First reviewed community glossary built from OpenAI Academy course language and OpenAI developer docs."
+      "notes": "First community-reviewed glossary built from OpenAI Academy course language and OpenAI developer docs."
     },
     {
       "locale": "pt-BR",

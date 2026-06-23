@@ -18,7 +18,9 @@ function hasFlag(name) {
 async function main() {
   const url = argValue("--url", "https://academy.openai.com/pages/courses");
   const out = resolve(argValue("--out", join(os.tmpdir(), "academylens-captured-page.html")));
-  const profile = resolve(argValue("--profile", join(ROOT, ".chrome-profile")));
+  const profile = resolve(
+    argValue("--profile", process.env.ACADEMYLENS_CAPTURE_PROFILE || join(os.tmpdir(), "academylens-capture-profile"))
+  );
   const channel = argValue("--channel", process.env.E2E_BROWSER_CHANNEL || "chromium");
   const timeout = Number(argValue("--timeout", "45000"));
   const fixtureDir = resolve(join(ROOT, "tests/fixtures"));

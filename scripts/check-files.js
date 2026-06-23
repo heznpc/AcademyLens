@@ -1,6 +1,7 @@
 const { existsSync, readdirSync, readFileSync, statSync } = require("node:fs");
 const { execFileSync } = require("node:child_process");
 const { dirname, join } = require("node:path");
+const { collectEntries } = require("./build-zip.js");
 const { PREMIUM_LOCALE_RECORDS } = require("./lib/glossary-config.js");
 
 const ROOT = join(__dirname, "..");
@@ -67,6 +68,14 @@ const REQUIRED_OPEN_SOURCE_FILES = [
   ".github/workflows/ci.yml",
   ".github/dependabot.yml"
 ];
+const REQUIRED_ZIP_ENTRIES = [
+  "LICENSE",
+  "PRIVACY_POLICY.md",
+  "README.md",
+  "manifest.json",
+  "src/content/content.js",
+  "src/background/background.js"
+];
 
 function readJson(path) {
   return JSON.parse(readFileSync(join(ROOT, path), "utf8"));
@@ -113,6 +122,7 @@ for (const script of REQUIRED_PACKAGE_SCRIPTS) {
 for (const file of REQUIRED_OPEN_SOURCE_FILES) {
   assertFile(file);
 }
+assert(!existsSync(join(ROOT, ".chrome-profile")), ".chrome-profile must not live inside the repository");
 
 const gitignore = readFileSync(join(ROOT, ".gitignore"), "utf8")
   .split(/\r?\n/)
@@ -202,6 +212,16 @@ for (const file of positioningFiles) {
 const zipPath = join(ROOT, "dist", "academy-lens.zip");
 if (existsSync(zipPath)) {
   assert(statSync(zipPath).size > 1000, "Build zip exists but looks too small");
+  const zipSource = readFileSync(zipPath);
+  for (const entry of REQUIRED_ZIP_ENTRIES) {
+    assert(zipSource.includes(Buffer.from(entry)), `Build zip is missing required entry: ${entry}`);
+  }
+  assert(!zipSource.includes(Buffer.from(".DS_Store")), "Build zip must not include .DS_Store");
+}
+
+const zipEntries = collectEntries().map((entry) => entry.entry);
+for (const entry of REQUIRED_ZIP_ENTRIES) {
+  assert(zipEntries.includes(entry), `Zip build inputs are missing required entry: ${entry}`);
 }
 
 console.log("file checks ok");

@@ -73,7 +73,8 @@
       "field.targetLanguage": "Target language",
       "popup.description": "Translate OpenAI Academy course content in your language.",
       "popup.autoTranslate": "Auto-translate new course text",
-      "popup.languageNoteGlossary": "Reviewed community glossary corrections are enabled for this language.",
+      "popup.languageNoteGlossary": "Reviewed terminology corrections are enabled for this language.",
+      "popup.languageNoteCommunity": "Community-reviewed terminology corrections are enabled for this language.",
       "popup.languageNoteDraft": "AI-drafted terminology corrections are enabled. Community review is welcome.",
       "popup.languageNoteMachine":
         "Machine translation with protected terms. A reviewed glossary is not installed for this language yet.",
@@ -104,7 +105,8 @@
       "field.targetLanguage": "번역할 언어",
       "popup.description": "OpenAI Academy 강의 내용을 원하는 언어로 번역합니다.",
       "popup.autoTranslate": "새 강의 텍스트 자동 번역",
-      "popup.languageNoteGlossary": "이 언어에는 검토된 커뮤니티 용어 사전 보정이 적용됩니다.",
+      "popup.languageNoteGlossary": "이 언어에는 검토 완료된 용어 보정이 적용됩니다.",
+      "popup.languageNoteCommunity": "이 언어에는 커뮤니티 검토를 거친 용어 보정이 적용됩니다.",
       "popup.languageNoteDraft": "AI 초안 용어 사전 보정이 적용됩니다. 커뮤니티 검수를 기다리고 있습니다.",
       "popup.languageNoteMachine": "기계번역과 보호 용어만 적용됩니다. 이 언어의 용어 사전은 아직 없습니다.",
       "popup.languageTermCount": "{count}개 이상의 용어 보정.",
@@ -234,10 +236,13 @@
   function getLanguageSupportMessage(code, locale, glossaryIndex) {
     const record = getGlossaryRecord(code, glossaryIndex);
     if (!record) return getMessage("popup.languageNoteMachine", locale);
-    const note = getMessage(
-      record.status === "reviewed" ? "popup.languageNoteGlossary" : "popup.languageNoteDraft",
-      locale
-    );
+    const statusMessageKey =
+      record.status === "reviewed" || record.status === "native-reviewed"
+        ? "popup.languageNoteGlossary"
+        : record.status === "community-reviewed"
+          ? "popup.languageNoteCommunity"
+          : "popup.languageNoteDraft";
+    const note = getMessage(statusMessageKey, locale);
     if (!record.termCount) return note;
     return `${note} ${getMessage("popup.languageTermCount", locale, { count: record.termCount })}`;
   }

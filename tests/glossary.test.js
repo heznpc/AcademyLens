@@ -19,7 +19,7 @@ test("registers installed premium glossaries", () => {
       (entry) =>
         entry.locale === "ko" &&
         entry.path === "src/data/glossary.ko.json" &&
-        entry.status === "reviewed" &&
+        entry.status === "community-reviewed" &&
         entry.termCount === glossary.terms.length
     )
   );
@@ -43,7 +43,7 @@ test("registers premium glossary packs with matching source keys", () => {
     const record = glossaryIndex.glossaries.find((entry) => entry.locale === locale);
     assert(record, `missing ${locale} registry entry`);
     assert.equal(record.termCount, glossary.terms.length);
-    assert(["llm-drafted", "reviewed"].includes(record.status));
+    assert(["llm-drafted", "community-reviewed", "reviewed"].includes(record.status));
     assert(record.xTranslationCheck);
 
     const pack = JSON.parse(readFileSync(join(__dirname, `../src/data/glossary.${locale}.json`), "utf8"));
@@ -108,6 +108,23 @@ test("prepares installed glossary terms as target-language placeholders", () => 
 
   const restored = Glossary.restoreProtectedTerms(prepared.text, prepared.placeholders);
   assert.equal(restored, "인공지능 워크플로 use OpenAI Academy 프롬프트 with 명확한 지시.");
+});
+
+test("prefers exact course phrases before protected term masking", () => {
+  const original = "Learn the fundamentals of AI, large language models, and ChatGPT through hands-on practice.";
+  const prepared = Glossary.prepareForTranslation(original, glossary, "ko");
+  const restored = Glossary.restoreProtectedTerms(prepared.text, prepared.placeholders);
+
+  assert.equal(restored, "실습을 통해 AI, 대규모 언어 모델, ChatGPT의 기본기를 배웁니다.");
+  assert.equal(prepared.text, "__AL_TERM_0__");
+});
+
+test("does not replace single-word terms inside hyphenated compounds", () => {
+  const original = "Use model-specific and tool-calling examples with schema-first design.";
+  const prepared = Glossary.prepareForTranslation(original, glossary, "ko");
+  const restored = Glossary.restoreProtectedTerms(prepared.text, prepared.placeholders);
+
+  assert.equal(restored, "Use model-specific and tool-calling 예제 with schema-first design.");
 });
 
 test("prepares common plural course terms for reviewed glossary correction", () => {

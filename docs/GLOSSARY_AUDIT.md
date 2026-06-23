@@ -32,7 +32,7 @@ Each packet includes:
 - `llm-audited`: A second AI review pass has been applied and recorded.
 - `community-reviewed`: Reviewed by a contributor with language knowledge.
 - `native-reviewed`: Reviewed by a native or near-native speaker.
-- `reviewed`: Current Korean pack status; source-backed and manually reviewed, but still open to community corrections.
+- `reviewed`: Final project-maintainer status after review evidence is complete; community-reviewed packs remain below this level until pending QA signals are closed.
 
 ## Over-Translation Smoke Check
 

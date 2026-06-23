@@ -16,7 +16,7 @@ function response(status, translated) {
   };
 }
 
-function loadBackground(fetchImpl) {
+function loadBackground(fetchImpl, options = {}) {
   const listeners = [];
   const storage = {};
   const context = {
@@ -36,6 +36,7 @@ function loadBackground(fetchImpl) {
             return { [keys]: storage[keys] };
           },
           async set(values) {
+            if (options.failStorageSet) throw new Error("storage unavailable");
             Object.assign(storage, values);
           }
         }
@@ -108,6 +109,24 @@ test("background translation returns partial success with per-text errors", asyn
   assert.equal(result.stats.failed, 1);
 });
 
+test("background translation does not retry non-retryable HTTP failures", async () => {
+  let calls = 0;
+  const { send } = loadBackground(async () => {
+    calls += 1;
+    return response(404);
+  });
+
+  const result = await send({
+    type: "ACADEMYLENS_TRANSLATE_BATCH",
+    targetLanguage: "ko",
+    texts: ["Missing text"]
+  });
+
+  assert.equal(result.ok, false);
+  assert.equal(result.stats.failed, 1);
+  assert.equal(calls, 1);
+});
+
 test("background translation dedupes in-flight requests across batches", async () => {
   let calls = 0;
   let release;
@@ -162,4 +181,55 @@ test("background translation limits concurrent remote fetches", async () => {
   assert.equal(result.ok, true);
   assert.equal(calls, 12);
   assert(maxActive <= 5, `expected max concurrency <= 5, got ${maxActive}`);
+});
+
+test("background translation merges concurrent cache writes", async () => {
+  let release;
+  const blocker = new Promise((resolveBlocker) => {
+    release = resolveBlocker;
+  });
+  const { send, storage } = loadBackground(async (url) => {
+    const text = new URL(url).searchParams.get("q");
+    if (text === "First text") await blocker;
+    return response(200, `${text} translated`);
+  });
+
+  const first = send({
+    type: "ACADEMYLENS_TRANSLATE_BATCH",
+    targetLanguage: "ko",
+    texts: ["First text"]
+  });
+  await new Promise((resolve) => setTimeout(resolve, 10));
+  const second = send({
+    type: "ACADEMYLENS_TRANSLATE_BATCH",
+    targetLanguage: "ko",
+    texts: ["Second text"]
+  });
+  release();
+  await Promise.all([first, second]);
+
+  const originals = Object.values(storage["academylens.translationCache.v1"])
+    .map((entry) => entry.original)
+    .sort();
+  assert.deepEqual(originals, ["First text", "Second text"]);
+});
+
+test("background translation returns fetched translations when cache persistence fails", async () => {
+  const { send } = loadBackground(
+    async (url) => {
+      const text = new URL(url).searchParams.get("q");
+      return response(200, `${text} translated`);
+    },
+    { failStorageSet: true }
+  );
+
+  const result = await send({
+    type: "ACADEMYLENS_TRANSLATE_BATCH",
+    targetLanguage: "ko",
+    texts: ["Good text"]
+  });
+
+  assert.equal(result.ok, true);
+  assert.equal(result.translated["Good text"], "Good text translated");
+  assert.equal(result.stats.cachePersistFailed, true);
 });

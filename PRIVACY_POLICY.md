@@ -10,7 +10,7 @@ AcademyLens does not collect, sell, rent, or transfer personal data to the exten
 
 ## Data Processed By The Extension
 
-When you translate page text, the extension sends selected visible text from `academy.openai.com` to Google Translate through `translate.googleapis.com`. The extension sends only text selected by its DOM filtering logic, not enrollment, progress, certificate, account, or credential data.
+When you translate page text, the extension sends selected visible text from `academy.openai.com` to Google Translate through `translate.googleapis.com`. The DOM filtering logic is designed to avoid platform chrome such as enrollment, progress, certificate, account, form, navigation, and credential UI. Because OpenAI Academy and Gradual page markup can change, avoid translating pages that contain sensitive personal content.
 
 ## Data Stored Locally
 

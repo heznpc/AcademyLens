@@ -27,6 +27,10 @@ const KO = new Map([
   ],
   ["__AL_TERM_0__ __AL_TERM_1__ examples stay readable.", "__AL_TERM_0__ __AL_TERM_1__ 예제는 읽기 쉽게 유지됩니다."],
   [
+    "__AL_TERM_1__ __AL_TERM_2__ __AL_TERM_0__ stay readable.",
+    "__AL_TERM_1__ __AL_TERM_2__ __AL_TERM_0__는 읽기 쉽게 유지됩니다."
+  ],
+  [
     "__AL_TERM_0__ __AL_TERM_1__ __AL_TERM_2__ stay readable.",
     "__AL_TERM_0__ __AL_TERM_1__ __AL_TERM_2__는 읽기 쉽게 유지됩니다."
   ],
@@ -35,6 +39,10 @@ const KO = new Map([
   [
     "__AL_TERM_0__ lessons use __AL_TERM_1__ and __AL_TERM_2__ examples.",
     "__AL_TERM_0__ 강의는 __AL_TERM_1__ 및 __AL_TERM_2__ 예제를 사용합니다."
+  ],
+  [
+    "__AL_TERM_1__ lessons use __AL_TERM_2__ and __AL_TERM_3__ __AL_TERM_0__.",
+    "__AL_TERM_1__ 강의는 __AL_TERM_2__ 및 __AL_TERM_3__ __AL_TERM_0__를 사용합니다."
   ],
   [
     "__AL_TERM_0__ lessons use __AL_TERM_1__ and __AL_TERM_2__ __AL_TERM_3__.",
@@ -65,9 +73,14 @@ const KO = new Map([
     "__AL_TERM_0__은 팀이 __AL_TERM_2__을 __AL_TERM_1__ 평가하도록 돕습니다."
   ],
   [
+    "Set clear __AL_TERM_0__ before using __AL_TERM_1__.",
+    "__AL_TERM_1__를 사용하기 전에 명확한 __AL_TERM_0__를 설정하세요."
+  ],
+  [
     "Set clear __AL_TERM_1__ before using __AL_TERM_0__.",
     "__AL_TERM_0__를 사용하기 전에 명확한 __AL_TERM_1__를 설정하세요."
   ],
+  ["Use __AL_TERM_0__ safely.", "__AL_TERM_0__를 안전하게 사용하세요."],
   [
     "Reusable __AL_TERM_0__ help __AL_TERM_1__ follow boundaries.",
     "재사용 가능한 __AL_TERM_0__는 __AL_TERM_1__가 경계를 따르도록 돕습니다."

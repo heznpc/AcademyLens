@@ -25,7 +25,7 @@
 
   function termRegex(term, flags) {
     const source = escapeRegExp(term);
-    return new RegExp(`(^|[^A-Za-z0-9_])(${source})(?=$|[^A-Za-z0-9_])`, flags);
+    return new RegExp(`(^|[^A-Za-z0-9_'’-])(${source})(?=$|[^A-Za-z0-9_'’-])`, flags);
   }
 
   function maskProtectedTerms(text, terms) {
@@ -79,10 +79,9 @@
 
   function prepareForTranslation(text, glossary, targetLanguage) {
     const normalized = normalizeGlossary(glossary || {});
-    const protectedResult = maskProtectedTerms(text, normalized.protectedTerms);
 
     if (targetLanguage !== normalized.locale || normalized.terms.length === 0) {
-      return protectedResult;
+      return maskProtectedTerms(text, normalized.protectedTerms);
     }
 
     const termEntries = normalized.terms
@@ -90,7 +89,12 @@
       .sort((a, b) => b.source.length - a.source.length || a.source.localeCompare(b.source))
       .map((entry) => ({ source: entry.source, value: entry.target }));
 
-    return maskTermValues(protectedResult.text, termEntries, protectedResult.placeholders);
+    const termResult = maskTermValues(text, termEntries);
+    return maskTermValues(
+      termResult.text,
+      sortTermsForMasking(normalized.protectedTerms).map((term) => ({ source: term, value: term })),
+      termResult.placeholders
+    );
   }
 
   return Object.freeze({

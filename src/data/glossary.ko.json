@@ -872,12 +872,12 @@
       "note": "Academy exercise phrase about delegation and human control."
     }
   ],
-  "status": "reviewed",
+  "status": "community-reviewed",
   "qaSignals": {
     "draftMethod": "AI-assisted terminology draft with manual Korean review",
     "officialAlignment": "partial",
     "googleTranslateBaseline": "checked for protected OpenAI/AI terminology",
     "xTranslationCheck": "pending",
-    "communityReview": "open"
+    "communityReview": "maintainer-reviewed"
   }
 }

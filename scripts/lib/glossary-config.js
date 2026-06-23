@@ -16,7 +16,12 @@ const PREMIUM_LOCALE_RECORDS = Object.freeze([
     name: "Japanese OpenAI Academy glossary",
     status: "llm-drafted"
   }),
-  Object.freeze({ locale: "ko", language: "Korean", name: "Korean OpenAI Academy glossary", status: "reviewed" }),
+  Object.freeze({
+    locale: "ko",
+    language: "Korean",
+    name: "Korean OpenAI Academy glossary",
+    status: "community-reviewed"
+  }),
   Object.freeze({
     locale: "pt-BR",
     language: "Portuguese Brazil",

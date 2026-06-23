@@ -28,7 +28,7 @@ function patchAcademyUrlGate(extensionPath) {
 
 function makePatchedExtension() {
   const extensionPath = fs.mkdtempSync(path.join(os.tmpdir(), "academylens-e2e-ext-"));
-  for (const entry of ["manifest.json", "assets", "src", "README.md", "PRIVACY_POLICY.md"]) {
+  for (const entry of ["manifest.json", "assets", "src", "README.md", "PRIVACY_POLICY.md", "LICENSE"]) {
     fs.cpSync(path.join(ROOT, entry), path.join(extensionPath, entry), { recursive: true });
   }
 
@@ -61,7 +61,10 @@ async function launchExtension() {
     ]
   });
 
-  const [serviceWorker] = context.serviceWorkers();
+  let [serviceWorker] = context.serviceWorkers();
+  if (!serviceWorker) {
+    serviceWorker = await context.waitForEvent("serviceworker", { timeout: 5000 }).catch(() => null);
+  }
 
   return {
     context,

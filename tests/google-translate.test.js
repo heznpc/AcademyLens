@@ -8,7 +8,7 @@ test("buildGoogleTranslateUrl targets Google Translate without credentials", () 
 
   assert.equal(url.origin, "https://translate.googleapis.com");
   assert.equal(url.searchParams.get("client"), "gtx");
-  assert.equal(url.searchParams.get("sl"), "en");
+  assert.equal(url.searchParams.get("sl"), "auto");
   assert.equal(url.searchParams.get("tl"), "ko");
   assert.equal(url.searchParams.get("q"), "AI Foundations");
 });

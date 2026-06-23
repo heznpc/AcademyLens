@@ -11,7 +11,7 @@
   function buildGoogleTranslateUrl(text, targetLanguage) {
     const url = new URL("https://translate.googleapis.com/translate_a/single");
     url.searchParams.set("client", "gtx");
-    url.searchParams.set("sl", "en");
+    url.searchParams.set("sl", "auto");
     url.searchParams.set("tl", targetLanguage || "ko");
     url.searchParams.set("dt", "t");
     url.searchParams.set("q", text);

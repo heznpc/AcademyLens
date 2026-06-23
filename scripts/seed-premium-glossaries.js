@@ -1981,8 +1981,8 @@ const index = {
     officialAlignment: record.locale === "ko" ? "partial" : "partial",
     xTranslationCheck: "pending",
     notes:
-      record.status === "reviewed"
-        ? "First reviewed community glossary built from OpenAI Academy course language and OpenAI developer docs."
+      record.status === "community-reviewed"
+        ? "First community-reviewed glossary built from OpenAI Academy course language and OpenAI developer docs."
         : "AI-drafted premium glossary seed. Needs X translation cross-check, community review, and native review before reviewed status."
   }))
 };
@@ -1995,13 +1995,13 @@ for (const record of PREMIUM_LOCALE_RECORDS) {
 const updatedKoreanGlossary = {
   schemaVersion: 1,
   ...koreanGlossary,
-  status: "reviewed",
+  status: "community-reviewed",
   qaSignals: {
     draftMethod: "AI-assisted terminology draft with manual Korean review",
     officialAlignment: "partial",
     googleTranslateBaseline: "checked for protected OpenAI/AI terminology",
     xTranslationCheck: "pending",
-    communityReview: "open"
+    communityReview: "maintainer-reviewed"
   }
 };
 writeJson("src/data/glossary.ko.json", updatedKoreanGlossary);

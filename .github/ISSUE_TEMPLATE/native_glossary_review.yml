@@ -31,7 +31,6 @@ body:
         - Native speaker
         - Near-native or professional fluency
         - Fluent technical user
-        - AI-assisted audit with manual review
     validations:
       required: true
   - type: textarea

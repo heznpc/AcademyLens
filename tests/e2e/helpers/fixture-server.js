@@ -12,6 +12,7 @@ const PAGES = {
           <p id="protected">OpenAI Academy courses use ChatGPT and GPT-5.</p>
           <p id="terms">Artificial intelligence workflows help teams build agents.</p>
           <p id="technical">JSON API examples stay readable.</p>
+          <p id="inline">Use <strong>ChatGPT</strong> safely.</p>
           <button id="start-course">Start course</button>
           <pre id="code">const message = "Do not translate code";</pre>
         </main>
@@ -89,6 +90,29 @@ const PAGES = {
             src="/api/courses/ai-foundations-juzjs/scorm-proxy/courses/oaiacademy/demo/scormdriver/indexAPI.html"
           ></iframe>
         </main>
+	      </body>
+	    </html>`,
+  "/learn/ai-foundations-juzjs/lessons-delayed": `<!doctype html>
+    <html>
+      <head><meta charset="utf-8"><title>AcademyLens Delayed SCORM Shell Fixture</title></head>
+      <body>
+        <header id="gradual-topbar">
+          <a href="/home">Home</a>
+          <span>/</span>
+          <span>Study Room</span>
+        </header>
+        <main id="delayed-frame-root"></main>
+        <script>
+          setTimeout(() => {
+            document.querySelector("#delayed-frame-root").innerHTML = [
+              '<iframe',
+              ' id="scorm-driver"',
+              ' title="AI Foundations"',
+              ' src="/api/courses/ai-foundations-juzjs/scorm-proxy/courses/oaiacademy/demo/scormdriver/indexAPI.html"',
+              '></iframe>'
+            ].join('');
+          }, 350);
+        </script>
       </body>
     </html>`,
   "/api/courses/ai-foundations-juzjs/scorm-proxy/courses/oaiacademy/demo/scormdriver/indexAPI.html": `<!doctype html>

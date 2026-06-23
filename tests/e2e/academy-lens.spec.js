@@ -112,7 +112,7 @@ test.describe("AcademyLens extension E2E", () => {
         "Português (BR)"
       ]);
       expect(snapshot.actionButtons).toEqual(["번역", "원문 복원"]);
-      expect(snapshot.note).toContain("용어 사전");
+      expect(snapshot.note).toContain("용어");
     } finally {
       await stopHarness(harness);
     }
@@ -148,6 +148,7 @@ test.describe("AcademyLens extension E2E", () => {
         "인공지능 워크플로는 팀이 에이전트를 구축하도록 돕습니다."
       );
       await expect(harness.page.locator("#technical")).toHaveText("JSON API 예제는 읽기 쉽게 유지됩니다.");
+      await expect(harness.page.locator("#inline")).toHaveText("ChatGPT를 안전하게 사용하세요.");
       await expect(harness.page.locator("#gradual-topbar")).toHaveText("Courses Search Account");
       await expect(harness.page.locator("#code")).toContainText("Do not translate code");
 
@@ -165,6 +166,9 @@ test.describe("AcademyLens extension E2E", () => {
       await expandPanel(harness.page);
       await clickPanelButton(harness.page, "[data-translate]");
       await expect(harness.page.locator("#title")).toHaveText("업무를 위한 실용 AI 기술 구축");
+      await expect(harness.page.locator("#protected")).toHaveText(
+        "OpenAI Academy 강의는 ChatGPT와 GPT-5를 사용합니다."
+      );
       const firstPassCalls = harness.calls.length;
       expect(firstPassCalls).toBeGreaterThan(0);
 
@@ -173,6 +177,9 @@ test.describe("AcademyLens extension E2E", () => {
 
       await clickPanelButton(harness.page, "[data-translate]");
       await expect(harness.page.locator("#title")).toHaveText("업무를 위한 실용 AI 기술 구축");
+      await expect(harness.page.locator("#protected")).toHaveText(
+        "OpenAI Academy 강의는 ChatGPT와 GPT-5를 사용합니다."
+      );
       expect(harness.calls.length).toBe(firstPassCalls);
     } finally {
       await stopHarness(harness);
@@ -195,6 +202,24 @@ test.describe("AcademyLens extension E2E", () => {
     }
   });
 
+  test("restore does not overwrite Academy text that changed in place after translation", async () => {
+    const harness = await startHarness();
+    try {
+      await expandPanel(harness.page);
+      await clickPanelButton(harness.page, "[data-translate]");
+      await expect(harness.page.locator("#title")).toHaveText("업무를 위한 실용 AI 기술 구축");
+
+      await harness.page.evaluate(() => {
+        document.querySelector("#title").firstChild.textContent = "Updated Academy lesson";
+      });
+      await clickPanelButton(harness.page, "[data-restore]");
+
+      await expect(harness.page.locator("#title")).toHaveText("Updated Academy lesson");
+    } finally {
+      await stopHarness(harness);
+    }
+  });
+
   test("resets progress after translation failure", async () => {
     const harness = await startHarness({ failAll: true });
     try {
@@ -208,7 +233,8 @@ test.describe("AcademyLens extension E2E", () => {
         .toMatch(/실패|failed/i);
       const progress = await panelProgress(harness.page);
       expect(progress.value).toBe("0");
-      await expect(harness.page.locator("#title")).toHaveText("Build practical AI skills for work");
+      await expect(harness.page.locator("#title")).toHaveText("업무를 위한 실용 AI 기술 구축");
+      await expect(harness.page.locator("#protected")).toHaveText("OpenAI Academy courses use ChatGPT and GPT-5.");
     } finally {
       await stopHarness(harness);
     }
@@ -228,6 +254,23 @@ test.describe("AcademyLens extension E2E", () => {
       await harness.page.waitForTimeout(700);
       await expect(harness.page.locator("#title")).toHaveText("업무를 위한 실용 AI 기술 구축");
       await expect(harness.page.locator("#title")).not.toContainText("仕事");
+    } finally {
+      await stopHarness(harness);
+    }
+  });
+
+  test("popup settings live-sync to the open Academy page", async () => {
+    const harness = await startHarness();
+    try {
+      await expandPanel(harness.page);
+      const popup = await harness.ext.context.newPage();
+      await popup.goto(`chrome-extension://${harness.ext.extensionId}/src/popup/popup.html`);
+      await popup.selectOption("#targetLanguage", "ja");
+      await popup.close();
+
+      await expect.poll(async () => (await panelSnapshot(harness.page)).selected).toBe("ja");
+      await clickPanelButton(harness.page, "[data-translate]");
+      await expect(harness.page.locator("#title")).toHaveText("仕事に役立つ実践的なAIスキルを身につける");
     } finally {
       await stopHarness(harness);
     }
@@ -304,6 +347,22 @@ test.describe("AcademyLens extension E2E", () => {
       await expect(scormFrame.locator("#scorm-title")).toHaveText("AI Foundations");
       await expect(scormFrame.locator("#scorm-body")).toHaveText(
         "This course is designed to build foundations for using AI and ChatGPT safely."
+      );
+    } finally {
+      await stopHarness(harness);
+    }
+  });
+
+  test("translates late-loading nested SCORM frames after an early Translate click", async () => {
+    const harness = await startHarness({ path: "/learn/ai-foundations-juzjs/lessons-delayed" });
+    try {
+      await expandPanel(harness.page);
+      await clickPanelButton(harness.page, "[data-translate]");
+      const scormFrame = await waitForFrame(harness.page, /scormcontent\/index\.html/);
+
+      await expect(scormFrame.locator("#scorm-title")).toHaveText("AI 기초");
+      await expect(scormFrame.locator("#scorm-body")).toHaveText(
+        "이 과정은 AI와 ChatGPT를 안전하게 사용하기 위한 기반을 구축하도록 설계되었습니다."
       );
     } finally {
       await stopHarness(harness);
@@ -401,6 +460,27 @@ test.describe("AcademyLens extension E2E", () => {
         await clickPanelButton(harness.page, "[data-collapse]");
         await harness.page.waitForTimeout(150);
       }
+    } finally {
+      await stopHarness(harness);
+    }
+  });
+
+  test("translates more than one background batch in a single pass", async () => {
+    const harness = await startHarness();
+    try {
+      await harness.page.evaluate(() => {
+        const main = document.querySelector("#lesson-main");
+        main.innerHTML = Array.from(
+          { length: 45 },
+          (_, index) => `<p id="chunk-${index}">Chunked translation sample ${index}</p>`
+        ).join("");
+      });
+      await expandPanel(harness.page);
+      await clickPanelButton(harness.page, "[data-translate]");
+
+      await expect(harness.page.locator("#chunk-0")).toHaveText("[ko] Chunked translation sample 0");
+      await expect(harness.page.locator("#chunk-44")).toHaveText("[ko] Chunked translation sample 44");
+      expect(harness.calls.filter((call) => call.text.startsWith("Chunked translation sample")).length).toBe(45);
     } finally {
       await stopHarness(harness);
     }

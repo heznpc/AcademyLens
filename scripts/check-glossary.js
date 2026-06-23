@@ -101,6 +101,19 @@ function assertGlossary(record) {
   assert(glossary.qaSignals && typeof glossary.qaSignals === "object", `${locale} glossary missing qaSignals`);
   assert(glossary.qaSignals.xTranslationCheck, `${locale} glossary missing X translation QA signal`);
   assert(glossary.qaSignals.communityReview, `${locale} glossary missing community review signal`);
+  if (record.status === "reviewed") {
+    assert(record.officialAlignment === "complete", `${locale} reviewed registry needs complete official alignment`);
+    assert(record.xTranslationCheck !== "pending", `${locale} reviewed registry needs completed X translation status`);
+    assert(
+      glossary.qaSignals.officialAlignment === "complete",
+      `${locale} reviewed glossary needs complete official alignment`
+    );
+    assert(
+      glossary.qaSignals.xTranslationCheck !== "pending",
+      `${locale} reviewed glossary needs completed X translation check`
+    );
+    assert(glossary.qaSignals.communityReview !== "open", `${locale} reviewed glossary needs closed community review`);
+  }
 
   const sourceIds = new Set(Object.keys(glossary.sourceCatalog));
   for (const [id, source] of Object.entries(glossary.sourceCatalog)) {
