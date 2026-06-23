@@ -47,14 +47,34 @@ async function main() {
 
     const snapshot = await page.evaluate(() => {
       const clone = document.documentElement.cloneNode(true);
-      for (const selector of ["script", "style", "noscript", "svg", "canvas", "iframe"]) {
+      for (const selector of ["script", "style", "noscript", "svg", "canvas", "iframe", "picture", "source", "img"]) {
         for (const node of clone.querySelectorAll(selector)) node.remove();
+      }
+      for (const node of clone.querySelectorAll(".academylens-root, [data-academylens-root]")) {
+        node.remove();
+      }
+      for (const selector of [
+        "[aria-label*='account' i]",
+        "[aria-label*='profile' i]",
+        "[aria-label*='user' i]",
+        "[data-testid*='account' i]",
+        "[data-testid*='profile' i]",
+        "[data-testid*='user' i]",
+        "[class*='account' i]",
+        "[class*='profile' i]",
+        "[class*='avatar' i]"
+      ]) {
+        for (const node of clone.querySelectorAll(selector)) {
+          node.textContent = "[redacted account]";
+        }
       }
       for (const node of clone.querySelectorAll("*")) {
         for (const attribute of Array.from(node.attributes)) {
           const name = attribute.name.toLowerCase();
           if (["href", "src", "srcset", "action", "poster", "integrity", "nonce"].includes(name)) {
             node.setAttribute(attribute.name, "");
+          } else if (name === "alt") {
+            node.setAttribute(attribute.name, "[redacted image]");
           } else if (/token|secret|session|auth|email|name|avatar|picture/i.test(name)) {
             node.setAttribute(attribute.name, "[redacted]");
           } else if (attribute.value) {

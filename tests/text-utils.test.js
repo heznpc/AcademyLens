@@ -50,6 +50,7 @@ test("skips Gradual platform control phrases", () => {
   assert.equal(Text.shouldTranslateText("Code of Conduct", "ko"), false);
   assert.equal(Text.shouldTranslateText("Your Privacy Choices", "ko"), false);
   assert.equal(Text.shouldTranslateText("Switch language", "ko"), false);
+  assert.equal(Text.shouldTranslateText("Start learning", "ko"), false);
   assert.equal(Text.shouldTranslateText("Build practical AI skills for work", "ko"), true);
 });
 

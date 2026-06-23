@@ -1,5 +1,33 @@
 const KO = new Map([
   ["AI Foundations", "AI 기초"],
+  ["OpenAI Academy Courses", "OpenAI Academy 강좌"],
+  ["__AL_TERM_0__ Courses", "__AL_TERM_0__ 강좌"],
+  ["Earn your OpenAI Course Completion Certificates", "OpenAI 과정 수료증을 받으세요"],
+  ["Earn your __AL_TERM_0__ Course Completion Certificates", "__AL_TERM_0__ 과정 수료증을 받으세요"],
+  ["Earn your __AL_TERM_1__ __AL_TERM_0__", "__AL_TERM_1__ __AL_TERM_0__을 받으세요"],
+  ["Great for people new to AI", "AI가 처음인 사람에게 적합"],
+  ["Build practical skills for working with AI", "AI로 일하기 위한 실용 기술 구축"],
+  ["Great for people who have some AI experience", "AI 경험이 어느 정도 있는 사람에게 적합"],
+  ["Prompt Engineering", "프롬프트 엔지니어링"],
+  [
+    "Practice writing clear instructions, context, and review criteria.",
+    "명확한 지시, 컨텍스트, 검토 기준 작성을 연습하세요."
+  ],
+  ["Great for people who use AI at work", "업무에서 AI를 사용하는 사람에게 적합"],
+  ["Building with Agents", "에이전트로 구축하기"],
+  ["Building with __AL_TERM_0__", "__AL_TERM_0__로 구축하기"],
+  [
+    "Learn how workflows, tools, and __AL_TERM_0__ help teams use __AL_TERM_1__ responsibly.",
+    "__AL_TERM_0__, 도구, __AL_TERM_1__가 팀의 책임 있는 AI 사용을 어떻게 돕는지 학습하세요."
+  ],
+  [
+    "Learn how workflows, tools, and review steps help teams use agents responsibly.",
+    "워크플로, 도구, 검토 단계가 팀의 책임 있는 에이전트 사용을 어떻게 돕는지 학습하세요."
+  ],
+  [
+    "Learn how __AL_TERM_1__, __AL_TERM_3__, and review steps help teams use __AL_TERM_2__ __AL_TERM_0__.",
+    "__AL_TERM_1__, __AL_TERM_3__, 검토 단계가 팀의 __AL_TERM_0__ __AL_TERM_2__ 사용을 어떻게 돕는지 학습하세요."
+  ],
   ["Reflection", "회고"],
   ["1.1 Welcome to AI Foundations", "1.1 AI 기초에 오신 것을 환영합니다"],
   ["Welcome to the course.", "강의에 오신 것을 환영합니다."],

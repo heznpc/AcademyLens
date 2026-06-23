@@ -13,6 +13,7 @@ const REQUIRED_PACKAGE_SCRIPTS = [
   "format:check",
   "node-check",
   "capture:academy",
+  "store:screenshots",
   "glossary:audit",
   "glossary:seed",
   "glossary:status",
@@ -187,21 +188,29 @@ for (const locale of REQUIRED_PREMIUM_LOCALES) {
 }
 assertFile("tests/fixtures/gradual-study-room-fragment.html");
 assertFile("tests/fixtures/gradual-live-lesson-shell.html");
+assertFile("tests/fixtures/openai-academy-logged-in-courses.html");
 assertFile("src/lib/ai-review-bridge.js");
+assertFile("src/lib/browser-translator.js");
 assertFile("docs/GLOSSARY_CONTRIBUTING.md");
 assertFile("docs/QUALITY_ROADMAP.md");
 assertFile("docs/RELEASE_CHECKLIST.md");
 assertFile("docs/TECH_STACK_REVIEW.md");
 
-const publicCourseFixture = "tests/fixtures/openai-academy-public-course.html";
-assertFile(publicCourseFixture);
-const publicCourseFixtureSource = readFileSync(join(ROOT, publicCourseFixture), "utf8");
-assert(publicCourseFixtureSource.length < 10000, "Public Academy course fixture should stay sanitized and small");
-assert(!/<script[^>]+src=/i.test(publicCourseFixtureSource), "Public Academy fixture must not include remote scripts");
-assert(
-  !/sentry-trace|baggage|__CF\$cv|_buildManifest/i.test(publicCourseFixtureSource),
-  "Public Academy fixture must not include live runtime telemetry metadata"
-);
+function assertSanitizedFixture(path, options = {}) {
+  assertFile(path);
+  const source = readFileSync(join(ROOT, path), "utf8");
+  if (options.maxBytes) assert(source.length < options.maxBytes, `${path} should stay sanitized and small`);
+  assert(!/<script[^>]+src=/i.test(source), `${path} must not include remote scripts`);
+  assert(!/https?:\/\//i.test(source), `${path} must not include remote URLs`);
+  assert(!/[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}/i.test(source), `${path} must not include email addresses`);
+  assert(
+    !/sentry-trace|baggage|__CF\$cv|_buildManifest|session|token|secret|auth/i.test(source),
+    `${path} must not include live runtime telemetry or credential metadata`
+  );
+}
+
+assertSanitizedFixture("tests/fixtures/openai-academy-public-course.html", { maxBytes: 10000 });
+assertSanitizedFixture("tests/fixtures/openai-academy-logged-in-courses.html", { maxBytes: 20000 });
 
 const runtimeFiles = ["manifest.json", ...listFiles("src", (path) => /\.(js|html|json)$/i.test(path))];
 for (const file of runtimeFiles) {

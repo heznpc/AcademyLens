@@ -8,8 +8,10 @@ const Text = require("../src/lib/text-utils.js");
 const ROOT = join(__dirname, "..");
 const FIXTURES = [
   "tests/fixtures/openai-academy-public-course.html",
+  "tests/fixtures/openai-academy-logged-in-courses.html",
   "tests/fixtures/gradual-course-fragment.html",
-  "tests/fixtures/gradual-study-room-fragment.html"
+  "tests/fixtures/gradual-study-room-fragment.html",
+  "tests/fixtures/gradual-live-lesson-shell.html"
 ];
 const SAMPLE_TEXTS = [
   "JSON API examples stay readable.",
