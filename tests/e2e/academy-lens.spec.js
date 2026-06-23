@@ -1,4 +1,5 @@
 const { test, expect } = require("@playwright/test");
+const manifest = require("../../manifest.json");
 const { closeExtension, launchExtension } = require("./helpers/extension");
 const { startFixtureServer, stopFixtureServer } = require("./helpers/fixture-server");
 const { registerTranslateStub } = require("./helpers/translate-stub");
@@ -432,6 +433,7 @@ test.describe("AcademyLens extension E2E", () => {
         await harness.page.waitForTimeout(150);
         const readPanelMetrics = () => {
           const panel = document.querySelector(".academylens-root").shadowRoot.querySelector(".panel");
+          const host = document.querySelector(".academylens-root");
           const body = panel.querySelector(".body");
           const name = panel.querySelector(".name");
           const select = panel.querySelector("[data-language]");
@@ -448,6 +450,8 @@ test.describe("AcademyLens extension E2E", () => {
             bottom: rect.bottom,
             width: rect.width,
             height: rect.height,
+            hostVersion: host.dataset.version,
+            panelVersion: panel.dataset.version,
             collapsed: panel.dataset.collapsed,
             bodyVisible: !body.hasAttribute("inert") && body.getAttribute("aria-hidden") !== "true",
             nameFontSize: Number.parseFloat(nameStyle.fontSize),
@@ -463,9 +467,11 @@ test.describe("AcademyLens extension E2E", () => {
         expect(box.top).toBeGreaterThanOrEqual(0);
         expect(box.right).toBeLessThanOrEqual(viewport.width);
         expect(box.bottom).toBeLessThanOrEqual(viewport.height);
-        expect(box.width).toBeGreaterThanOrEqual(viewport.width > 600 ? 360 : 330);
-        expect(box.topHeight).toBeGreaterThanOrEqual(60);
-        expect(box.nameFontSize).toBeGreaterThanOrEqual(16.5);
+        expect(box.width).toBeGreaterThanOrEqual(viewport.width > 600 ? 420 : 330);
+        expect(box.hostVersion).toBe(manifest.version);
+        expect(box.panelVersion).toBe(manifest.version);
+        expect(box.topHeight).toBeGreaterThanOrEqual(68);
+        expect(box.nameFontSize).toBeGreaterThanOrEqual(17.5);
         expect(box.collapsed).toBe("true");
         expect(box.bodyVisible).toBe(false);
 
@@ -476,11 +482,11 @@ test.describe("AcademyLens extension E2E", () => {
         expect(expandedBox.top).toBeGreaterThanOrEqual(0);
         expect(expandedBox.right).toBeLessThanOrEqual(viewport.width);
         expect(expandedBox.bottom).toBeLessThanOrEqual(viewport.height);
-        expect(expandedBox.width).toBeGreaterThanOrEqual(viewport.width > 600 ? 420 : 330);
-        expect(expandedBox.selectFontSize).toBeGreaterThanOrEqual(14.5);
-        expect(expandedBox.buttonFontSize).toBeGreaterThanOrEqual(14.5);
-        expect(expandedBox.selectHeight).toBeGreaterThanOrEqual(46);
-        expect(expandedBox.primaryHeight).toBeGreaterThanOrEqual(46);
+        expect(expandedBox.width).toBeGreaterThanOrEqual(viewport.width > 600 ? 480 : 330);
+        expect(expandedBox.selectFontSize).toBeGreaterThanOrEqual(15.5);
+        expect(expandedBox.buttonFontSize).toBeGreaterThanOrEqual(15.5);
+        expect(expandedBox.selectHeight).toBeGreaterThanOrEqual(50);
+        expect(expandedBox.primaryHeight).toBeGreaterThanOrEqual(50);
         expect(expandedBox.collapsed).toBe("false");
         expect(expandedBox.bodyVisible).toBe(true);
 
