@@ -1,0 +1,61 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="academy-lens-fixture" content="sanitized logged-in courses page fixture" />
+    <title>OpenAI Academy</title>
+  </head>
+  <body>
+    <header id="gradual-topbar" data-testid="topbar">
+      <a href="/home" aria-label="OpenAI Academy">OpenAI Academy</a>
+      <button aria-label="Search">Search</button>
+      <input type="search" placeholder="Search" />
+      <button aria-label="Notifications">Notifications</button>
+      <button aria-label="User options menu">Account</button>
+    </header>
+    <aside id="gradual-sidebar" role="navigation" aria-label="sidebar-menus">
+      <a href="/home">Home</a>
+      <a href="/home/events">Events</a>
+      <a href="/pages/courses?linkMenu=Courses">Courses</a>
+      <a href="/home/content">Content</a>
+      <a href="/home/clubs">Communities</a>
+      <a href="/public/collections/whats-new">What's new</a>
+      <button aria-label="Expand menu">Work</button>
+      <a href="/public/clubs/small-business">Small business</a>
+      <a href="/public/clubs/nonprofits">Nonprofits</a>
+      <a href="/public/clubs/government">Government</a>
+      <a href="/public/clubs/news-organizations">News organizations</a>
+      <a href="/help">Help</a>
+      <a href="/powered-by-gradual">Powered by Gradual</a>
+    </aside>
+    <main>
+      <section data-testid="courses-hero">
+        <h1>OpenAI Academy Courses</h1>
+        <p>Earn your OpenAI Course Completion Certificates</p>
+      </section>
+      <section aria-label="Courses">
+        <article data-testid="course-card">
+          <img alt="" />
+          <p>Great for people new to AI</p>
+          <h2>AI Foundations</h2>
+          <p>Build practical skills for working with AI</p>
+          <a href="/public/courses/ai-foundations">Start learning</a>
+        </article>
+        <article data-testid="course-card">
+          <img alt="" />
+          <p>Great for people who have some AI experience</p>
+          <h2>Prompt Engineering</h2>
+          <p>Practice writing clear instructions, context, and review criteria.</p>
+          <a href="/public/courses/prompt-engineering">Start learning</a>
+        </article>
+        <article data-testid="course-card">
+          <img alt="" />
+          <p>Great for people who use AI at work</p>
+          <h2>Building with Agents</h2>
+          <p>Learn how workflows, tools, and review steps help teams use agents responsibly.</p>
+          <a href="/public/courses/building-with-agents">Start learning</a>
+        </article>
+      </section>
+    </main>
+  </body>
+</html>

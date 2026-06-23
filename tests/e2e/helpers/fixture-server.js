@@ -1,6 +1,59 @@
 const http = require("node:http");
 
 const PAGES = {
+  "/logged-in-courses": `<!doctype html>
+    <html>
+      <head><meta charset="utf-8"><title>AcademyLens Logged-in Courses Fixture</title></head>
+      <body>
+        <header id="gradual-topbar" data-testid="topbar">
+          <a href="/home">OpenAI Academy</a>
+          <button>Search</button>
+          <input type="search" placeholder="Search" />
+          <button>Notifications</button>
+          <button data-testid="account-menu">Account</button>
+        </header>
+        <aside id="gradual-sidebar" role="navigation" aria-label="sidebar-menus">
+          <a href="/home">Home</a>
+          <a href="/home/events">Events</a>
+          <a href="/pages/courses?linkMenu=Courses">Courses</a>
+          <a href="/home/content">Content</a>
+          <a href="/home/clubs">Communities</a>
+          <a href="/public/collections/whats-new">What's new</a>
+          <a href="/public/clubs/small-business">Small business</a>
+          <a href="/public/clubs/nonprofits">Nonprofits</a>
+          <a href="/public/clubs/government">Government</a>
+          <a href="/public/clubs/news-organizations">News organizations</a>
+          <a href="/help">Help</a>
+          <a href="https://www.gradual.com">Powered by Gradual</a>
+        </aside>
+        <main>
+          <section data-testid="courses-hero">
+            <h1 id="courses-title">OpenAI Academy Courses</h1>
+            <p id="courses-subtitle">Earn your OpenAI Course Completion Certificates</p>
+          </section>
+          <section aria-label="Courses">
+            <article data-testid="course-card">
+              <p id="course-fit-1">Great for people new to AI</p>
+              <h2 id="course-title-1">AI Foundations</h2>
+              <p id="course-summary-1">Build practical skills for working with AI</p>
+              <a id="course-cta-1" href="/public/courses/ai-foundations">Start learning</a>
+            </article>
+            <article data-testid="course-card">
+              <p id="course-fit-2">Great for people who have some AI experience</p>
+              <h2 id="course-title-2">Prompt Engineering</h2>
+              <p id="course-summary-2">Practice writing clear instructions, context, and review criteria.</p>
+              <a id="course-cta-2" href="/public/courses/prompt-engineering">Start learning</a>
+            </article>
+            <article data-testid="course-card">
+              <p id="course-fit-3">Great for people who use AI at work</p>
+              <h2 id="course-title-3">Building with Agents</h2>
+              <p id="course-summary-3">Learn how workflows, tools, and review steps help teams use agents responsibly.</p>
+              <a id="course-cta-3" href="/public/courses/building-with-agents">Start learning</a>
+            </article>
+          </section>
+        </main>
+      </body>
+    </html>`,
   "/course": `<!doctype html>
     <html>
       <head><meta charset="utf-8"><title>AcademyLens Course Fixture</title></head>

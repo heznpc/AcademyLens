@@ -42,6 +42,7 @@ AcademyLens is not ready for Chrome Web Store submission just because the build 
 
 ## Store Assets
 
+- Generate a local screenshot pass with `npm run store:screenshots`, then review the output under `dist/store-screenshots/`.
 - Capture screenshots from a reviewed build, not from a dirty workspace.
 - Avoid screenshots with account names, profile photos, notifications, certificates, or private course progress.
 - Show the floating panel on real Academy-style course content.

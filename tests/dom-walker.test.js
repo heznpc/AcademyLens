@@ -103,6 +103,40 @@ test("actual OpenAI Academy public course fixture is recognized without translat
   });
 });
 
+test("logged-in OpenAI Academy courses fixture translates course cards but skips account chrome", () => {
+  const html = readFileSync(join(__dirname, "fixtures/openai-academy-logged-in-courses.html"), "utf8");
+
+  assert.match(html, /academy-lens-fixture/);
+  assert.match(html, /id="gradual-topbar"/);
+  assert.match(html, /id="gradual-sidebar"/);
+  assert(!/<script[^>]+src=/i.test(html));
+  assert(!/sentry-trace|baggage|__CF\$cv|_buildManifest/i.test(html));
+
+  withDom(html, (document) => {
+    const nodes = Text.collectTranslatableTextNodes(document.body, {
+      targetLanguage: "ko",
+      maxNodes: 120,
+      maxTextLength: 1200
+    });
+    const values = nodes.map((node) => Text.normalizeWhitespace(node.textContent));
+
+    assert(values.includes("OpenAI Academy Courses"));
+    assert(values.includes("AI Foundations"));
+    assert(values.includes("Build practical skills for working with AI"));
+    assert(values.includes("Prompt Engineering"));
+    assert(values.includes("Practice writing clear instructions, context, and review criteria."));
+    assert(values.includes("Building with Agents"));
+    assert(values.includes("Learn how workflows, tools, and review steps help teams use agents responsibly."));
+    assert(!values.includes("Search"));
+    assert(!values.includes("Notifications"));
+    assert(!values.includes("Account"));
+    assert(!values.includes("Home"));
+    assert(!values.includes("Courses"));
+    assert(!values.includes("Powered by Gradual"));
+    assert(!values.includes("Start learning"));
+  });
+});
+
 test("logged-in study-room fixture translates lesson text but skips platform controls", () => {
   const html = readFileSync(join(__dirname, "fixtures/gradual-study-room-fragment.html"), "utf8");
 

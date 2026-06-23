@@ -106,6 +106,7 @@
       /^show table of contents$/i,
       /^exit course$/i,
       /^start quiz$/i,
+      /^start learning$/i,
       /^submit$/i,
       /^next$/i,
       /^back$/i,

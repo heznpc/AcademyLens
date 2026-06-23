@@ -131,6 +131,7 @@ npm run check:glossary
 npm run check:files
 npm run test:e2e
 npm run build:zip
+npm run store:screenshots
 ```
 
 The strict all-in-one gate is:
@@ -171,6 +172,14 @@ npm run capture:academy -- --url https://academy.openai.com/pages/courses --out 
 ```
 
 To intentionally save a reviewed, sanitized capture under `tests/fixtures`, pass `--allow-fixture-write`.
+
+Generate local store screenshot drafts from the sanitized Academy-style fixture:
+
+```bash
+npm run store:screenshots
+```
+
+The screenshots are written to `dist/store-screenshots/`, which is intentionally ignored.
 
 ## Open Source
 

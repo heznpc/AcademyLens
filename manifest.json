@@ -26,6 +26,7 @@
       "js": [
         "src/lib/constants.js",
         "src/lib/cache.js",
+        "src/lib/browser-translator.js",
         "src/lib/google-translate.js",
         "src/lib/glossary.js",
         "src/lib/text-utils.js",

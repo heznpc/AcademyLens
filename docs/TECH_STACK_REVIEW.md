@@ -13,7 +13,7 @@ AcademyLens should keep the current MV3, frontend-only, no-server architecture f
 | Google Cloud Translation API                         | Reject for default runtime                  | Official path requires project setup plus API key or credentials, which conflicts with no-key/no-server.                                                                                              |
 | Remote Puter.js/GPT script                           | Reject for runtime                          | Remote hosted code risk is too high for Chrome Web Store review. Keep only disabled bridge skeleton.                                                                                                  |
 | OpenAI API from extension                            | Reject for default runtime                  | It requires user/developer key handling or a server. That conflicts with the no-key, no-server product principle.                                                                                     |
-| Browser-native Translator API                        | Watch / optional future provider            | Promising no-key/on-device direction, but availability, user-activation, and browser support constraints make it unsuitable as the only default today.                                                |
+| Browser-native Translator API                        | Probe only / optional future provider       | The content script now feature-detects availability for UI diagnostics, but availability, user-activation, and browser support constraints make it unsuitable as the only default today.              |
 | Local offline translation model bundled in extension | Reject for now                              | Bundle size, language coverage, performance, and CWS review complexity are not worth it for this product stage.                                                                                       |
 | Server-side translation proxy                        | Reject for now                              | Better control, but changes privacy posture and creates an operating cost/backend trust surface.                                                                                                      |
 
@@ -29,13 +29,13 @@ AcademyLens should keep the current MV3, frontend-only, no-server architecture f
 
 ## Accepted Follow-Up
 
-Do not add a large provider abstraction yet. Add a small provider seam only when there is a second provider implementation or an executable feature-detection spike. Until then, keep the current direct modules and tests, and make the CWS risk explicit in docs.
+Do not add a large provider abstraction yet. Keep the current feature-detection probe small: it may report browser-native Translator availability in the panel, but Google Translate remains the active runtime provider until a second provider has real fallback, privacy copy, and E2E coverage.
 
 ## Future Experiment Shape
 
 If browser-native Translator APIs become broadly available for extension content scripts:
 
-1. Add a feature-detected provider behind an advanced setting or experiment flag.
+1. Promote the existing feature-detection probe into a provider behind an advanced setting or experiment flag.
 2. Keep Google Translate as fallback until coverage and quality are proven.
 3. Add UI for model-download/availability state when required by the browser.
 4. Add privacy copy for browser-managed language packs.

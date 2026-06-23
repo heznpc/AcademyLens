@@ -325,6 +325,29 @@ test.describe("AcademyLens extension E2E", () => {
     }
   });
 
+  test("translates logged-in courses page cards without touching Gradual navigation or CTAs", async () => {
+    const harness = await startHarness({ path: "/logged-in-courses" });
+    try {
+      await expandPanel(harness.page);
+      await clickPanelButton(harness.page, "[data-translate]");
+
+      await expect(harness.page.locator("#courses-title")).toHaveText("OpenAI Academy 강좌");
+      await expect(harness.page.locator("#courses-subtitle")).toHaveText("OpenAI 과정 수료증을 받으세요");
+      await expect(harness.page.locator("#course-fit-1")).toHaveText("AI가 처음인 사람에게 적합");
+      await expect(harness.page.locator("#course-title-1")).toHaveText("AI 기초");
+      await expect(harness.page.locator("#course-summary-1")).toHaveText("AI로 일하기 위한 실용 기술 구축");
+      await expect(harness.page.locator("#course-title-2")).toHaveText("프롬프트 엔지니어링");
+      await expect(harness.page.locator("#course-title-3")).toHaveText("에이전트로 구축하기");
+      await expect(harness.page.locator("#course-cta-1")).toHaveText("Start learning");
+      await expect(harness.page.locator("#gradual-sidebar")).toContainText("Home");
+      await expect(harness.page.locator("#gradual-sidebar")).toContainText("Courses");
+      await expect(harness.page.locator("#gradual-topbar")).toContainText("Search");
+      await expect(harness.page.locator("#gradual-topbar")).toContainText("Account");
+    } finally {
+      await stopHarness(harness);
+    }
+  });
+
   test("translates live lesson shell text without touching Gradual state surfaces", async () => {
     const harness = await startHarness({ path: "/live-lesson-shell" });
     try {
@@ -452,6 +475,7 @@ test.describe("AcademyLens extension E2E", () => {
             height: rect.height,
             hostVersion: host.dataset.version,
             panelVersion: panel.dataset.version,
+            browserTranslatorStatus: host.dataset.browserTranslator,
             collapsed: panel.dataset.collapsed,
             bodyVisible: !body.hasAttribute("inert") && body.getAttribute("aria-hidden") !== "true",
             nameFontSize: Number.parseFloat(nameStyle.fontSize),
@@ -470,6 +494,9 @@ test.describe("AcademyLens extension E2E", () => {
         expect(box.width).toBeGreaterThanOrEqual(viewport.width > 600 ? 420 : 330);
         expect(box.hostVersion).toBe(manifest.version);
         expect(box.panelVersion).toBe(manifest.version);
+        expect(["checking", "unsupported", "unavailable", "available", "downloadable", "downloading"]).toContain(
+          box.browserTranslatorStatus
+        );
         expect(box.topHeight).toBeGreaterThanOrEqual(68);
         expect(box.nameFontSize).toBeGreaterThanOrEqual(17.5);
         expect(box.collapsed).toBe("true");

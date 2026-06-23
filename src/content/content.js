@@ -3,6 +3,7 @@
 
   const C = globalThis.AcademyLensConstants;
   const Cache = globalThis.AcademyLensCache;
+  const BrowserTranslator = globalThis.AcademyLensBrowserTranslator;
   const GoogleTranslate = globalThis.AcademyLensGoogleTranslate;
   const Glossary = globalThis.AcademyLensGlossary;
   const Text = globalThis.AcademyLensTextUtils;
@@ -29,6 +30,7 @@
     placementSettleTimers: [],
     latestFrameCommand: null,
     handledFrameMessages: new Set(),
+    browserTranslatorStatus: "unchecked",
     collapsed: false,
     collapseUserSet: false
   };
@@ -117,6 +119,35 @@
     } catch {
       return "dev";
     }
+  }
+
+  function setBrowserTranslatorStatus(status) {
+    state.browserTranslatorStatus = status || "unknown";
+    if (state.panel) state.panel.dataset.browserTranslator = state.browserTranslatorStatus;
+    if (!state.shadow) return;
+    const panel = state.shadow.querySelector(".panel");
+    if (panel) panel.dataset.browserTranslator = state.browserTranslatorStatus;
+  }
+
+  async function refreshBrowserTranslatorStatus() {
+    if (!isTopFrame || !BrowserTranslator || typeof BrowserTranslator.availability !== "function") {
+      setBrowserTranslatorStatus("unsupported");
+      return;
+    }
+
+    const targetLanguage = state.settings.targetLanguage;
+    if (!targetLanguage || targetLanguage === "en") {
+      setBrowserTranslatorStatus("unavailable");
+      return;
+    }
+
+    setBrowserTranslatorStatus("checking");
+    const result = await BrowserTranslator.availability({
+      sourceLanguage: "en",
+      targetLanguage
+    });
+    if (targetLanguage !== state.settings.targetLanguage) return;
+    setBrowserTranslatorStatus(result.status);
   }
 
   function sendMessage(message, timeoutMs = 30000) {
@@ -505,6 +536,7 @@
     const host = document.createElement("div");
     host.className = "academylens-root";
     host.dataset.version = extensionVersion();
+    host.dataset.browserTranslator = state.browserTranslatorStatus;
     host.setAttribute("aria-label", message("panel.aria"));
     const shadow = host.attachShadow({ mode: "open" });
     shadow.innerHTML = `
@@ -729,7 +761,7 @@
           }
         }
       </style>
-      <section class="panel" data-collapsed="true" data-version="${extensionVersion()}">
+      <section class="panel" data-collapsed="true" data-version="${extensionVersion()}" data-browser-translator="${state.browserTranslatorStatus}">
         <div class="top">
           <div class="name">AcademyLens</div>
           <div class="top-actions">
@@ -772,6 +804,7 @@
     language.addEventListener("change", async () => {
       await applySettings({ targetLanguage: language.value }, { skipAutoTranslate: true });
       await chrome.storage.local.set({ [C.STORAGE_KEYS.SETTINGS]: state.settings });
+      refreshBrowserTranslatorStatus();
       if (state.settings.autoTranslate && state.settings.targetLanguage !== "en") {
         scheduleAutoTranslate(250);
       }
@@ -801,6 +834,7 @@
       const panel = shadow.querySelector(".panel");
       if (panel) panel.dataset.mounted = "true";
     });
+    refreshBrowserTranslatorStatus();
   }
 
   function currentRecords() {
@@ -1220,6 +1254,7 @@
     }
 
     if (previousLanguage !== state.settings.targetLanguage) {
+      refreshBrowserTranslatorStatus();
       bumpGeneration();
       restorePage({ bump: false, silent: true });
       try {
