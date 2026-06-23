@@ -29,6 +29,7 @@ AcademyLens is an unofficial Chrome extension for learners using OpenAI Academy.
 - [Why Separate From SkillBridge?](#why-separate-from-skillbridge)
 - [Technical Shape](#technical-shape)
 - [Built For Academy Pages](#built-for-academy-pages)
+- [Quality And Release Readiness](#quality-and-release-readiness)
 - [Planned v1.1](#planned-v11)
 - [Development](#development)
 - [Glossary Contributions](#glossary-contributions)
@@ -44,12 +45,12 @@ AcademyLens is an unofficial Chrome extension for learners using OpenAI Academy.
 - Applies installed premium glossaries built from OpenAI Academy course language and OpenAI documentation terminology before machine translation.
 - Uses native language names in the language picker.
 - Shows whether the selected language has a reviewed glossary, an AI-drafted beta glossary, or machine translation with protected terms.
-- Uses Google Translate for fast page translation.
+- Uses Google Translate for the current fast translation runtime while browser-native translation providers are evaluated.
 - Guards against late translation responses after Restore, language switches, and Gradual/Next.js route changes.
 - Does not modify enrollment, progress tracking, certificates, account state, or Gradual platform data.
 - Does not load remote AI scripts.
 
-AcademyLens now ships thirteen premium glossary packs for `de`, `es`, `fr`, `hi`, `id`, `it`, `ja`, `ko`, `pt-BR`, `ru`, `vi`, `zh-CN`, and `zh-TW`, with 100+ OpenAI Academy/OpenAI Docs core terms in each pack. Korean is the first community-reviewed pack; the other premium packs are AI-drafted beta glossaries waiting for X translation cross-checks, community review, and native review. Hindi and French are prioritized because OpenAI Academy already exposes India/Hindi content and French Academy events. Languages outside the premium set still use machine translation plus protected-term preservation. See [docs/TERMINOLOGY_MAP.md](docs/TERMINOLOGY_MAP.md) and [docs/GLOSSARY_CONTRIBUTING.md](docs/GLOSSARY_CONTRIBUTING.md).
+AcademyLens now ships thirteen premium glossary packs for `de`, `es`, `fr`, `hi`, `id`, `it`, `ja`, `ko`, `pt-BR`, `ru`, `vi`, `zh-CN`, and `zh-TW`, with 100+ OpenAI Academy/OpenAI Docs core terms in each pack. Korean is the first community-reviewed pack; the other premium packs are AI-drafted beta glossaries waiting for X translation cross-checks, community review, and native review. Hindi and French are prioritized because OpenAI Academy already exposes India/Hindi content and French Academy events. Languages outside the premium set still use machine translation plus protected-term preservation. See [docs/TERMINOLOGY_MAP.md](docs/TERMINOLOGY_MAP.md), [docs/GLOSSARY_CONTRIBUTING.md](docs/GLOSSARY_CONTRIBUTING.md), and [docs/QUALITY_ROADMAP.md](docs/QUALITY_ROADMAP.md).
 
 ## Installation
 
@@ -85,11 +86,17 @@ AcademyLens is a separate project because OpenAI Academy has a different product
 - Content script for OpenAI Academy DOM translation
 - Background service worker for translation requests and cache
 
+The current build uses a Google Translate web endpoint for fast translation. Chrome Web Store submission is blocked until the final provider/privacy posture is reviewed. Browser-native Translator APIs are tracked as a future provider candidate, but not treated as a universal default yet. See [docs/TECH_STACK_REVIEW.md](docs/TECH_STACK_REVIEW.md).
+
 OpenAI Academy is hosted through Gradual for course enrollment, progress tracking, and course-completion certificates. AcademyLens intentionally stays outside those flows and works only with visible page text.
 
 ## Built For Academy Pages
 
 AcademyLens is designed around OpenAI Academy course-page patterns and tested against Gradual-style course, study-room, and lesson DOM structures. It translates visible lesson content while avoiding navigation, progress, certificates, quizzes, and account controls.
+
+## Quality And Release Readiness
+
+AcademyLens is an open-source beta. It should not be treated as Chrome Web Store-ready until live Academy DOM QA, glossary review evidence, provider/privacy review, and release assets are all closed. See [docs/QUALITY_ROADMAP.md](docs/QUALITY_ROADMAP.md), [docs/TECH_STACK_REVIEW.md](docs/TECH_STACK_REVIEW.md), and [docs/RELEASE_CHECKLIST.md](docs/RELEASE_CHECKLIST.md).
 
 ## Planned v1.1
 
@@ -140,6 +147,12 @@ Regenerate the current premium draft packs from the maintained seed:
 
 ```bash
 npm run glossary:seed
+```
+
+Check current glossary review status:
+
+```bash
+npm run glossary:status
 ```
 
 Generate reviewer packets and run over-translation smoke checks:

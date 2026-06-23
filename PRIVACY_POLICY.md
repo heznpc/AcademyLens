@@ -10,7 +10,7 @@ AcademyLens does not collect, sell, rent, or transfer personal data to the exten
 
 ## Data Processed By The Extension
 
-When you translate page text, the extension sends selected visible text from `academy.openai.com` to Google Translate through `translate.googleapis.com`. The DOM filtering logic is designed to avoid platform chrome such as enrollment, progress, certificate, account, form, navigation, and credential UI. Because OpenAI Academy and Gradual page markup can change, avoid translating pages that contain sensitive personal content.
+When you translate page text, the extension sends selected visible text from `academy.openai.com` to Google Translate through `translate.googleapis.com`. If auto-translate is enabled, newly rendered visible lesson text can be translated automatically after page changes. The DOM filtering logic is designed to avoid platform chrome such as enrollment, progress, certificate, account, form, navigation, and credential UI. Because OpenAI Academy and Gradual page markup can change, avoid translating pages that contain sensitive personal content.
 
 ## Data Stored Locally
 
@@ -18,7 +18,9 @@ AcademyLens stores settings and a local translation cache in Chrome extension st
 
 - target language
 - auto-translate preference
-- cached translation text
+- cached original visible text
+- cached translated text
+- target language, creation time, and last-access time for cache entries
 
 Bundled glossary files are stored inside the extension package. They do not require a network request to AcademyLens or any AcademyLens server.
 
@@ -36,10 +38,10 @@ Bundled glossary files are stored inside the extension package. They do not requ
 
 ## Third Parties
 
-AcademyLens uses:
+AcademyLens currently uses:
 
 - Google Translate for fast translation.
 
-Review that service's policy before using translation with sensitive content.
+Review that service's policy before using translation with sensitive content. The current runtime does not use Google Cloud Translation credentials, an AcademyLens server, or an OpenAI API key.
 
 If AI-assisted terminology review is added later, it will require explicit opt-in wording before use.

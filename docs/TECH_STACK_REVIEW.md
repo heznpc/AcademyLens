@@ -1,0 +1,43 @@
+# Technical Stack Review
+
+Last reviewed: 2026-06-24 01:10 KST
+
+AcademyLens should keep the current MV3, frontend-only, no-server architecture for the default runtime, but it should not treat the current Google Translate web endpoint as a final Chrome Web Store submission backbone until provider/privacy review is closed.
+
+## Decision
+
+| Candidate                                            | Decision                                    | Reason                                                                                                                                                                                                |
+| ---------------------------------------------------- | ------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Current MV3 content script + background worker       | Keep                                        | Best fit for DOM filtering, Restore, generation guards, and local cache.                                                                                                                              |
+| Current Google Translate web endpoint                | Keep as current runtime / review before CWS | Useful for fast no-key translation, but it is not the official authenticated Google Cloud Translation path. Do not market it as a final store-ready provider until privacy/provider review is closed. |
+| Google Cloud Translation API                         | Reject for default runtime                  | Official path requires project setup plus API key or credentials, which conflicts with no-key/no-server.                                                                                              |
+| Remote Puter.js/GPT script                           | Reject for runtime                          | Remote hosted code risk is too high for Chrome Web Store review. Keep only disabled bridge skeleton.                                                                                                  |
+| OpenAI API from extension                            | Reject for default runtime                  | It requires user/developer key handling or a server. That conflicts with the no-key, no-server product principle.                                                                                     |
+| Browser-native Translator API                        | Watch / optional future provider            | Promising no-key/on-device direction, but availability, user-activation, and browser support constraints make it unsuitable as the only default today.                                                |
+| Local offline translation model bundled in extension | Reject for now                              | Bundle size, language coverage, performance, and CWS review complexity are not worth it for this product stage.                                                                                       |
+| Server-side translation proxy                        | Reject for now                              | Better control, but changes privacy posture and creates an operating cost/backend trust surface.                                                                                                      |
+
+## Source Notes
+
+- Chrome Web Store MV3 policy says extension functionality must be discernible from submitted code, and external resources must not contain logic. It lists remote script tags, remote eval, and remote command interpreters as common violations. Source: `https://developer.chrome.com/docs/webstore/program-policies/mv3-requirements/` (last updated 2024-04-03).
+- Chrome's remote-hosted-code migration guide defines RHC as browser-executed JavaScript/WASM loaded from outside the extension package and says MV3 extensions need to bundle all code they use. Source: `https://developer.chrome.com/docs/extensions/develop/migrate/remote-hosted-code/`.
+- Google Cloud Translation authentication docs describe programmatic access through client libraries, REST, ADC, gcloud credentials, service accounts, and API keys for Basic v2 methods. Source: `https://docs.cloud.google.com/translate/docs/authentication/` (last updated 2026-06-23).
+- Google Cloud Translation setup docs require project/API/authentication setup before use. Source: `https://docs.cloud.google.com/translate/docs/setup/` (last updated 2026-06-18).
+- MDN documents Translator and Language Detector APIs as limited/experimental web APIs that require recent user interaction for object creation. Source: `https://developer.mozilla.org/en-US/docs/Web/API/Translator_and_Language_Detector_APIs/` (last modified 2026-05-18).
+- Microsoft Edge documented Translator/Language Detector APIs for sites and extensions as an on-device direction in June 2026. Source: `https://blogs.windows.com/msedgedev/2026/06/02/expanding-on-device-ai-in-microsoft-edge-new-models-and-apis-for-the-web/`.
+- Chrome built-in Translator API is documented as a browser AI translation path, but it is not a stable universal replacement for AcademyLens because support depends on Chrome/version/language availability and page context. Source: `https://developer.chrome.com/docs/ai/translator-api/`.
+
+## Accepted Follow-Up
+
+Do not add a large provider abstraction yet. Add a small provider seam only when there is a second provider implementation or an executable feature-detection spike. Until then, keep the current direct modules and tests, and make the CWS risk explicit in docs.
+
+## Future Experiment Shape
+
+If browser-native Translator APIs become broadly available for extension content scripts:
+
+1. Add a feature-detected provider behind an advanced setting or experiment flag.
+2. Keep Google Translate as fallback until coverage and quality are proven.
+3. Add UI for model-download/availability state when required by the browser.
+4. Add privacy copy for browser-managed language packs.
+5. Add E2E coverage for provider selection and fallback.
+6. Keep glossary placeholder masking before either provider.

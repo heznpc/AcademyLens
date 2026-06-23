@@ -93,7 +93,8 @@
       "status.translatedPartial": "Translated {count} text blocks. {failed} failed.",
       "status.restored": "Restored {count} text blocks.",
       "status.timeout": "Translation request timed out.",
-      "status.failed": "Translation failed."
+      "status.failed": "Translation failed.",
+      "progress.translation": "Translation progress"
     }),
     ko: Object.freeze({
       "panel.aria": "AcademyLens 번역 컨트롤",
@@ -124,7 +125,8 @@
       "status.translatedPartial": "텍스트 {count}개를 번역했습니다. {failed}개는 실패했습니다.",
       "status.restored": "텍스트 {count}개를 원문으로 복원했습니다.",
       "status.timeout": "번역 요청 시간이 초과되었습니다.",
-      "status.failed": "번역에 실패했습니다."
+      "status.failed": "번역에 실패했습니다.",
+      "progress.translation": "번역 진행률"
     })
   });
 
@@ -161,6 +163,7 @@
     "[role='button']",
     "[role='dialog']",
     "[role='progressbar']",
+    "[role='status']",
     "[aria-valuenow]",
     "[contenteditable='true']",
     "[data-academylens-skip]",
