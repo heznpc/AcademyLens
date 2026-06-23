@@ -41,6 +41,7 @@ body:
         - label: Course/lesson text translates but Gradual controls stay usable.
         - label: SPA navigation does not duplicate or stale-apply translations.
         - label: Language switching resolves to the final selected language.
+        - label: Screenshots or notes do not include private account details, certificates, notifications, profile images, or course progress.
   - type: textarea
     id: issues
     attributes:

@@ -6,6 +6,7 @@ AcademyLens is not ready for Chrome Web Store submission just because the build 
 
 ## Required Gates
 
+- `npm run release:preflight` passes before any public release or store asset pass.
 - `npm run check:full` passes on a clean checkout.
 - `npm run build:zip` produces `dist/academy-lens.zip`.
 - `git status --short` is clean after verification, except for intentional release artifacts.
@@ -15,6 +16,7 @@ AcademyLens is not ready for Chrome Web Store submission just because the build 
 
 ## Academy DOM QA
 
+- Use [LIVE_QA_MANIFEST.json](LIVE_QA_MANIFEST.json) as the required surface list.
 - Test public course pages.
 - Test a logged-in course overview page.
 - Test a logged-in lesson page with Gradual sidebars/topbars/progress visible.
@@ -26,6 +28,8 @@ AcademyLens is not ready for Chrome Web Store submission just because the build 
 ## Glossary QA
 
 - Run `npm run glossary:status`.
+- Run `npm run glossary:scoreboard` and commit `docs/GLOSSARY_STATUS.md` when glossary metadata changes.
+- Run `npm run check:glossary-status`.
 - Keep store wording at `community-reviewed` or `AI-drafted beta` unless metadata evidence supports `reviewed`.
 - For each promoted language, close X translation cross-check, community review, and native review notes in glossary metadata.
 - Run `npm run glossary:audit -- --locale=<locale>` before asking external reviewers.

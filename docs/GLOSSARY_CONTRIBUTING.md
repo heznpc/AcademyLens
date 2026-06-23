@@ -6,21 +6,13 @@ The extension can translate every supported target language through machine tran
 
 ## Current Packs
 
-| Locale  | Status             | File                           | Notes                            |
-| ------- | ------------------ | ------------------------------ | -------------------------------- |
-| `de`    | llm-drafted        | `src/data/glossary.de.json`    | Needs community/native review    |
-| `es`    | llm-drafted        | `src/data/glossary.es.json`    | Needs community/native review    |
-| `fr`    | llm-drafted        | `src/data/glossary.fr.json`    | Needs community/native review    |
-| `hi`    | llm-drafted        | `src/data/glossary.hi.json`    | Needs community/native review    |
-| `id`    | llm-drafted        | `src/data/glossary.id.json`    | Needs community/native review    |
-| `it`    | llm-drafted        | `src/data/glossary.it.json`    | Needs community/native review    |
-| `ja`    | llm-drafted        | `src/data/glossary.ja.json`    | Needs community/native review    |
-| `ko`    | community-reviewed | `src/data/glossary.ko.json`    | First community-reviewed example |
-| `pt-BR` | llm-drafted        | `src/data/glossary.pt-BR.json` | Needs community/native review    |
-| `ru`    | llm-drafted        | `src/data/glossary.ru.json`    | Needs community/native review    |
-| `vi`    | llm-drafted        | `src/data/glossary.vi.json`    | Needs community/native review    |
-| `zh-CN` | llm-drafted        | `src/data/glossary.zh-CN.json` | Needs community/native review    |
-| `zh-TW` | llm-drafted        | `src/data/glossary.zh-TW.json` | Needs community/native review    |
+The generated source of truth is [GLOSSARY_STATUS.md](GLOSSARY_STATUS.md). Update it with:
+
+```bash
+npm run glossary:scoreboard
+```
+
+Do not hand-edit the status board. Change `src/data/glossary.index.json` and the relevant `src/data/glossary.<locale>.json` metadata first.
 
 ## Contribution Model
 

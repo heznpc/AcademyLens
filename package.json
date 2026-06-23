@@ -19,6 +19,7 @@
     "store:screenshots": "node scripts/capture-store-screenshots.js",
     "glossary:audit": "node scripts/build-glossary-audit-packet.js",
     "glossary:status": "node scripts/glossary-status.js",
+    "glossary:scoreboard": "node scripts/glossary-status.js --out docs/GLOSSARY_STATUS.md",
     "lint": "eslint src tests scripts playwright.config.js eslint.config.js",
     "format": "prettier --write \"src/**/*.{js,css,html,json}\" \"tests/**/*.js\" \"scripts/**/*.js\" \"*.{js,json,md}\" \"docs/**/*.md\" \"store-assets/**/*.md\"",
     "format:check": "prettier --check \"src/**/*.{js,css,html,json}\" \"tests/**/*.js\" \"scripts/**/*.js\" \"*.{js,json,md}\" \"docs/**/*.md\" \"store-assets/**/*.md\"",
@@ -27,10 +28,14 @@
     "glossary:seed": "node scripts/seed-premium-glossaries.js",
     "check:manifest": "node -e \"JSON.parse(require('fs').readFileSync('manifest.json', 'utf8')); console.log('manifest ok')\"",
     "check:glossary": "node scripts/check-glossary.js",
+    "check:glossary-status": "node scripts/glossary-status.js --check docs/GLOSSARY_STATUS.md",
     "check:glossary-overreach": "node scripts/check-glossary-overreach.js",
     "check:files": "node scripts/check-files.js",
-    "check:all": "npm run node-check && npm run lint && npm run format:check && npm test && npm run check:manifest && npm run check:glossary && npm run check:glossary-overreach && npm run build:zip && npm run check:files",
-    "check:full": "npm run check:all && npm run test:e2e"
+    "check:operations": "node scripts/check-operations.js",
+    "check:all": "npm run node-check && npm run lint && npm run format:check && npm test && npm run check:manifest && npm run check:glossary && npm run check:glossary-status && npm run check:glossary-overreach && npm run build:zip && npm run check:files && npm run check:operations",
+    "check:full": "npm run check:all && npm run test:e2e",
+    "qa:live": "npm run capture:academy -- --url https://academy.openai.com/pages/courses --out /tmp/academylens-captured-page.html --headed",
+    "release:preflight": "npm run check:full && npm run store:screenshots && npm run check:operations"
   },
   "keywords": [
     "chrome-extension",
