@@ -11,10 +11,13 @@ npm run lint
 npm run format:check
 npm run check:manifest
 npm run check:glossary
+npm run check:glossary-status
 npm run check:files
+npm run check:operations
 npm run test:e2e
 npm run build:zip
 npm run check:full
+npm run release:preflight
 ```
 
 ## Current Automated Coverage
@@ -35,6 +38,9 @@ npm run check:full
 - selected-language support messaging
 - local cache trimming by recent access
 - disabled AI review bridge guard
+- generated glossary status board drift checks
+- live Academy QA manifest structure
+- operations checklist coverage
 
 ## Playwright E2E Coverage
 
@@ -62,6 +68,8 @@ npm run capture:academy -- --url https://academy.openai.com/pages/courses --out 
 
 The capture script strips scripts, media sources, common auth attributes, form values, and email-like text before writing HTML.
 It refuses to write under `tests/fixtures` unless `--allow-fixture-write` is passed after manual review.
+
+The required live QA surface list is tracked in `docs/LIVE_QA_MANIFEST.json`.
 
 ## Manual QA
 

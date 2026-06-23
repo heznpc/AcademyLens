@@ -39,6 +39,7 @@ AcademyLens is usable as an open-source beta, but it should not be treated as Ch
 
 5. Release hygiene.
    - `npm run check:full` must pass locally and in CI.
+   - `npm run release:preflight` must pass before public release or store asset preparation.
    - `npm run build:zip` must create a zip with only expected extension files.
    - Store screenshots/video should be captured from a reviewed build, not from a dirty workspace.
    - Follow [RELEASE_CHECKLIST.md](RELEASE_CHECKLIST.md) before any store upload or promotional release.
@@ -50,7 +51,7 @@ AcademyLens is usable as an open-source beta, but it should not be treated as Ch
 - Real logged-in Academy DOM still needs periodic sanitized recapture from live Academy pages before a store submission.
 - Store screenshots can be generated locally, but final public screenshots still need a reviewed real-session capture pass with private account surfaces removed.
 - Chrome Web Store privacy copy needs one final review against the exact release build and provider path.
-- No store screenshots or demo video are checked into a release workflow yet.
+- Demo video is not part of the automated release workflow yet.
 
 ## Non-Goals
 

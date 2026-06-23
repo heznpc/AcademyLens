@@ -14,6 +14,7 @@
 ## Verification
 
 - [ ] `npm run check:full` passes
+- [ ] `npm run release:preflight` passes for release, store, fixture, provider/privacy, or glossary status changes
 - [ ] Extension loads in Chrome developer mode
 - [ ] Tested on `https://academy.openai.com/`
 - [ ] No unexpected console errors
@@ -32,6 +33,8 @@
 - [ ] Does not add remote hosted runtime code
 - [ ] Does not touch enrollment, progress, certificates, quizzes, accounts, or credentials
 - [ ] Sanitizes any captured Academy/Gradual fixture
+- [ ] Updates `docs/GLOSSARY_STATUS.md` when glossary metadata changes
+- [ ] Updates `docs/LIVE_QA_MANIFEST.json` when Academy/Gradual surfaces change
 
 ## Related Issues
 

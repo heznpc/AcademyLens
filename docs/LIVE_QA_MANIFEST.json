@@ -1,0 +1,98 @@
+{
+  "schemaVersion": 1,
+  "requiredBeforeStore": [
+    "public-course",
+    "logged-in-courses",
+    "logged-in-study-room",
+    "live-lesson-shell",
+    "nested-scorm",
+    "delayed-scorm",
+    "in-frame-scorm-navigation"
+  ],
+  "surfaces": [
+    {
+      "id": "public-course",
+      "label": "Public course detail",
+      "fixture": "tests/fixtures/openai-academy-public-course.html",
+      "automation": "tests/dom-walker.test.js and tests/e2e/academy-lens.spec.js",
+      "status": "fixture-covered",
+      "manualRequired": true,
+      "privateDataRisk": "low",
+      "protectedSurfaces": ["navigation", "footer", "policy links"],
+      "lastLiveCapture": null
+    },
+    {
+      "id": "logged-in-courses",
+      "label": "Logged-in course listing",
+      "fixture": "tests/fixtures/openai-academy-logged-in-courses.html",
+      "automation": "tests/dom-walker.test.js and tests/e2e/academy-lens.spec.js",
+      "status": "fixture-covered",
+      "manualRequired": true,
+      "privateDataRisk": "medium",
+      "protectedSurfaces": ["topbar", "sidebar", "account menu", "search", "course CTAs"],
+      "lastLiveCapture": null
+    },
+    {
+      "id": "logged-in-study-room",
+      "label": "Logged-in study room",
+      "fixture": "tests/fixtures/gradual-study-room-fragment.html",
+      "automation": "tests/dom-walker.test.js and tests/e2e/academy-lens.spec.js",
+      "status": "fixture-covered",
+      "manualRequired": true,
+      "privateDataRisk": "high",
+      "protectedSurfaces": ["progress", "certificate", "quiz", "account", "settings"],
+      "lastLiveCapture": null
+    },
+    {
+      "id": "live-lesson-shell",
+      "label": "Live lesson shell",
+      "fixture": "tests/fixtures/gradual-live-lesson-shell.html",
+      "automation": "tests/dom-walker.test.js and tests/e2e/academy-lens.spec.js",
+      "status": "fixture-covered",
+      "manualRequired": true,
+      "privateDataRisk": "high",
+      "protectedSurfaces": ["table of contents", "progress", "certificate", "quiz", "save status"],
+      "lastLiveCapture": null
+    },
+    {
+      "id": "nested-scorm",
+      "label": "Nested SCORM lesson frame",
+      "fixture": null,
+      "automation": "tests/e2e/helpers/fixture-server.js",
+      "status": "synthetic-covered",
+      "manualRequired": true,
+      "privateDataRisk": "medium",
+      "protectedSurfaces": ["Gradual topbar", "study room breadcrumb", "media iframe"],
+      "lastLiveCapture": null
+    },
+    {
+      "id": "delayed-scorm",
+      "label": "Delayed SCORM frame injection",
+      "fixture": null,
+      "automation": "tests/e2e/helpers/fixture-server.js",
+      "status": "synthetic-covered",
+      "manualRequired": true,
+      "privateDataRisk": "medium",
+      "protectedSurfaces": ["late iframe load", "top-level shell"],
+      "lastLiveCapture": null
+    },
+    {
+      "id": "in-frame-scorm-navigation",
+      "label": "SCORM in-frame lesson navigation",
+      "fixture": null,
+      "automation": "tests/e2e/helpers/fixture-server.js",
+      "status": "synthetic-covered",
+      "manualRequired": true,
+      "privateDataRisk": "medium",
+      "protectedSurfaces": ["start/continue controls", "media iframe", "top-level shell"],
+      "lastLiveCapture": null
+    }
+  ],
+  "releaseRules": [
+    "Run npm run check:full before any public release.",
+    "Run npm run store:screenshots and inspect dist/store-screenshots before preparing store assets.",
+    "Do not commit live captures unless they are sanitized and reviewed.",
+    "Do not publish screenshots containing private account, progress, certificate, notification, or profile surfaces.",
+    "Keep AcademyLens explicitly unofficial in all public copy."
+  ]
+}

@@ -17,13 +17,18 @@ const REQUIRED_PACKAGE_SCRIPTS = [
   "glossary:audit",
   "glossary:seed",
   "glossary:status",
+  "glossary:scoreboard",
   "check:manifest",
   "check:glossary",
+  "check:glossary-status",
   "check:glossary-overreach",
   "check:files",
+  "check:operations",
   "check:all",
   "build:zip",
-  "check:full"
+  "check:full",
+  "qa:live",
+  "release:preflight"
 ];
 const REQUIRED_PROTECTED_TERMS = [
   "OpenAI",
@@ -192,6 +197,9 @@ assertFile("tests/fixtures/openai-academy-logged-in-courses.html");
 assertFile("src/lib/ai-review-bridge.js");
 assertFile("src/lib/browser-translator.js");
 assertFile("docs/GLOSSARY_CONTRIBUTING.md");
+assertFile("docs/GLOSSARY_STATUS.md");
+assertFile("docs/LIVE_QA_MANIFEST.json");
+assertFile("docs/OPERATIONS.md");
 assertFile("docs/QUALITY_ROADMAP.md");
 assertFile("docs/RELEASE_CHECKLIST.md");
 assertFile("docs/TECH_STACK_REVIEW.md");

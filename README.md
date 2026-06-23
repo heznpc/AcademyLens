@@ -33,6 +33,7 @@ AcademyLens is an unofficial Chrome extension for learners using OpenAI Academy.
 - [Planned v1.1](#planned-v11)
 - [Development](#development)
 - [Glossary Contributions](#glossary-contributions)
+- [Operations](#operations)
 - [Open Source](#open-source)
 - [Privacy](#privacy)
 - [License](#license)
@@ -117,6 +118,7 @@ npm run check:all
 npm run test:e2e
 npm run build:zip
 npm run check:full
+npm run release:preflight
 ```
 
 Focused commands:
@@ -129,6 +131,7 @@ npm test
 npm run check:manifest
 npm run check:glossary
 npm run check:files
+npm run check:operations
 npm run test:e2e
 npm run build:zip
 npm run store:screenshots
@@ -154,6 +157,7 @@ Check current glossary review status:
 
 ```bash
 npm run glossary:status
+npm run glossary:scoreboard
 ```
 
 Generate reviewer packets and run over-translation smoke checks:
@@ -180,6 +184,16 @@ npm run store:screenshots
 ```
 
 The screenshots are written to `dist/store-screenshots/`, which is intentionally ignored.
+
+## Operations
+
+Operational release work is tracked in [docs/OPERATIONS.md](docs/OPERATIONS.md). The live Academy QA surface manifest is [docs/LIVE_QA_MANIFEST.json](docs/LIVE_QA_MANIFEST.json), and the generated glossary status board is [docs/GLOSSARY_STATUS.md](docs/GLOSSARY_STATUS.md).
+
+Before any public release or store asset pass:
+
+```bash
+npm run release:preflight
+```
 
 ## Open Source
 
