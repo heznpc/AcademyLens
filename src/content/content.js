@@ -111,6 +111,14 @@
     toggle.setAttribute("aria-label", state.collapsed ? message("action.expand") : message("action.collapse"));
   }
 
+  function extensionVersion() {
+    try {
+      return chrome.runtime.getManifest().version || "dev";
+    } catch {
+      return "dev";
+    }
+  }
+
   function sendMessage(message, timeoutMs = 30000) {
     return new Promise((resolve, reject) => {
       let settled = false;
@@ -496,6 +504,7 @@
   function createPanel() {
     const host = document.createElement("div");
     host.className = "academylens-root";
+    host.dataset.version = extensionVersion();
     host.setAttribute("aria-label", message("panel.aria"));
     const shadow = host.attachShadow({ mode: "open" });
     shadow.innerHTML = `
@@ -511,13 +520,13 @@
           right: 28px;
           bottom: calc(24px + var(--academylens-bottom-offset, 0px));
           z-index: 2147483647;
-          width: min(440px, calc(100vw - 48px));
+          width: min(500px, calc(100vw - 56px));
           border: 1px solid rgba(15, 23, 42, 0.14);
-          border-radius: 10px;
+          border-radius: 8px;
           background: rgba(255, 255, 255, 0.98);
-          box-shadow: 0 10px 28px rgba(15, 23, 42, 0.12);
+          box-shadow: 0 14px 34px rgba(15, 23, 42, 0.12);
           color: #111827;
-          font-size: 15px;
+          font-size: 16px;
           line-height: 1.45;
           overflow: hidden;
           pointer-events: auto;
@@ -541,18 +550,18 @@
           align-items: center;
           justify-content: space-between;
           gap: 14px;
-          min-height: 64px;
-          padding: 18px 20px;
+          min-height: 72px;
+          padding: 20px 22px;
           border-bottom: 1px solid rgba(15, 23, 42, 0.1);
         }
         .name {
-          font-size: 17px;
+          font-size: 18px;
           font-weight: 750;
           letter-spacing: 0;
           white-space: nowrap;
         }
         .badge {
-          font-size: 13px;
+          font-size: 14px;
           color: #475569;
           white-space: nowrap;
         }
@@ -563,8 +572,8 @@
         }
         .icon-button {
           display: inline-grid;
-          width: 34px;
-          min-height: 34px;
+          width: 38px;
+          min-height: 38px;
           place-items: center;
           border: 1px solid rgba(15, 23, 42, 0.12);
           border-radius: 8px;
@@ -575,10 +584,10 @@
         }
         .body {
           display: grid;
-          gap: 14px;
-          max-height: 410px;
+          gap: 16px;
+          max-height: 460px;
           overflow: hidden;
-          padding: 18px 20px 20px;
+          padding: 20px 22px 22px;
           opacity: 1;
           transform: translateY(0);
           transition:
@@ -588,8 +597,8 @@
             transform 190ms cubic-bezier(0.2, 0.8, 0.2, 1);
         }
         .panel[data-collapsed="true"] {
-          width: min(380px, calc(100vw - 48px));
-          box-shadow: 0 6px 18px rgba(15, 23, 42, 0.1);
+          width: min(430px, calc(100vw - 56px));
+          box-shadow: 0 8px 22px rgba(15, 23, 42, 0.1);
         }
         .panel[data-collapsed="true"] .body {
           max-height: 0;
@@ -605,7 +614,7 @@
         }
         .note {
           color: #64748b;
-          font-size: 13px;
+          font-size: 14px;
           line-height: 1.45;
         }
         .note[data-glossary="true"] {
@@ -627,23 +636,23 @@
           align-items: center;
           gap: 8px;
           color: #475569;
-          font-size: 13.5px;
+          font-size: 14.5px;
           line-height: 1;
         }
         .toggle input {
-          width: 17px;
-          height: 17px;
+          width: 18px;
+          height: 18px;
           margin: 0;
         }
         button, select {
-          min-height: 48px;
-          border-radius: 10px;
+          min-height: 52px;
+          border-radius: 8px;
           border: 1px solid rgba(15, 23, 42, 0.16);
           background: #fff;
           color: #111827;
           font: inherit;
-          font-size: 15px;
-          padding: 0 14px;
+          font-size: 16px;
+          padding: 0 16px;
         }
         button {
           cursor: pointer;
@@ -662,9 +671,9 @@
           opacity: 0.55;
         }
         .status {
-          min-height: 20px;
+          min-height: 22px;
           color: #475569;
-          font-size: 13px;
+          font-size: 14px;
           line-height: 1.5;
         }
         .status[data-tone="error"] {
@@ -676,8 +685,8 @@
         .progress {
           --value: 0%;
           flex: 1;
-          height: 5px;
-          min-width: 78px;
+          height: 6px;
+          min-width: 96px;
           overflow: hidden;
           border-radius: 999px;
           background: rgba(15, 23, 42, 0.08);
@@ -720,7 +729,7 @@
           }
         }
       </style>
-      <section class="panel" data-collapsed="true">
+      <section class="panel" data-collapsed="true" data-version="${extensionVersion()}">
         <div class="top">
           <div class="name">AcademyLens</div>
           <div class="top-actions">
