@@ -8,7 +8,6 @@
   const Text = globalThis.AcademyLensTextUtils;
   const uiLocale = C && C.getUiLocale ? C.getUiLocale(navigator.language) : "en";
   const FRAME_MESSAGE_SOURCE = "AcademyLens";
-  const BACKGROUND_FALLBACK_DELAY_MS = 1200;
   const BACKGROUND_RESPONSE_TIMEOUT_MS = 12000;
   const isTopFrame = window.top === window;
 
@@ -83,8 +82,15 @@
     if (generation && generation !== state.generation) return;
     if (!state.shadow) return;
     const panel = state.shadow.querySelector(".panel");
+    const translate = state.shadow.querySelector("[data-translate]");
     if (!panel) return;
-    panel.setAttribute("aria-busy", String(Boolean(isBusy)));
+    const busy = Boolean(isBusy);
+    panel.setAttribute("aria-busy", String(busy));
+    panel.dataset.busy = String(busy);
+    if (translate) {
+      translate.dataset.busy = String(busy);
+      translate.setAttribute("aria-busy", String(busy));
+    }
   }
 
   function setCollapsed(isCollapsed, options = {}) {
@@ -220,25 +226,15 @@
 
   async function sendTranslationBatch(payload, timeoutMs) {
     const backgroundTimeout = Math.min(timeoutMs || BACKGROUND_RESPONSE_TIMEOUT_MS, BACKGROUND_RESPONSE_TIMEOUT_MS);
-    const background = sendMessage(payload, backgroundTimeout)
-      .then((response) => ({ source: "background", response }))
-      .catch((error) => ({ source: "backgroundError", error }));
+    try {
+      const response = await sendMessage(payload, backgroundTimeout);
+      if (response && response.ok) return response;
+      if (response && response.translated && Object.keys(response.translated).length > 0) return response;
+    } catch (error) {
+      console.warn("[AcademyLens] background translation unavailable; trying content fallback", error);
+    }
 
-    const fallback = new Promise((resolve) => {
-      window.setTimeout(resolve, BACKGROUND_FALLBACK_DELAY_MS);
-    }).then(() =>
-      translateBatchInContent(payload.texts || [], payload.targetLanguage)
-        .then((response) => ({ source: "fallback", response }))
-        .catch((error) => ({ source: "fallbackError", error }))
-    );
-
-    const first = await Promise.race([background, fallback]);
-    if (first.source === "background" && first.response) return first.response;
-    if (first.source === "fallback" && first.response) return first.response;
-
-    const second = first.source === "backgroundError" ? await fallback : await background;
-    if (second.source === "background" || second.source === "fallback") return second.response;
-    throw second.error || first.error || new Error(message("status.failed"));
+    return translateBatchInContent(payload.texts || [], payload.targetLanguage);
   }
 
   function message(key, params) {
@@ -658,6 +654,9 @@
           color: #fff;
           border-color: #111827;
         }
+        .panel[data-busy="true"] button.primary {
+          background: #1f2937;
+        }
         button:disabled {
           cursor: not-allowed;
           opacity: 0.55;
@@ -739,7 +738,7 @@
               <input type="checkbox" data-auto-translate />
               <span>${message("panel.autoTranslate")}</span>
             </label>
-            <div class="progress" data-progress role="progressbar" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0"></div>
+            <div class="progress" data-progress role="progressbar" aria-label="${message("progress.translation")}" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0"></div>
           </div>
           <div class="row">
             <button type="button" class="primary" data-translate>${message("action.translate")}</button>

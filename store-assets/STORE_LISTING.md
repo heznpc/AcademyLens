@@ -35,7 +35,7 @@ This extension is unofficial and not affiliated with OpenAI.
 
 ## Privacy Summary
 
-Page text selected for translation is sent to Google Translate. The extension does not run a server, does not load remote AI scripts in v1, and does not collect personal data for the developer.
+Page text selected for translation is sent to Google Translate. If auto-translate is enabled, newly rendered visible lesson text can be translated automatically after page changes. Original visible text, translated text, language, and cache timestamps may be stored locally in Chrome extension storage. The extension does not run a server, does not load remote AI scripts in v1, and does not collect personal data for the developer.
 
 ## Planned Later
 

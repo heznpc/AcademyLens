@@ -17,8 +17,8 @@ Required notice: Unofficial, not affiliated with OpenAI.
 - OpenAI Academy pages under `academy.openai.com`.
 - Course listing and public course detail pages.
 - Login-only lesson pages as best-effort DOM translation after the user signs in.
-- Twelve premium AI terminology glossary packs.
-- Google Translate fast translation.
+- Thirteen premium AI terminology glossary packs.
+- Google Translate fast translation in the current runtime, with provider/privacy review before any store submission.
 - Glossary correction for reviewed packs and clearly labeled AI-drafted beta packs.
 - Protected-term preservation for all target languages.
 - Clear UI disclosure when a selected language is using a reviewed glossary, an AI-drafted beta glossary, or protected-term-only machine translation.

@@ -6,21 +6,21 @@ The extension can translate every supported target language through machine tran
 
 ## Current Packs
 
-| Locale  | Status      | File                           | Notes                         |
-| ------- | ----------- | ------------------------------ | ----------------------------- |
-| `de`    | llm-drafted | `src/data/glossary.de.json`    | Needs community/native review |
-| `es`    | llm-drafted | `src/data/glossary.es.json`    | Needs community/native review |
-| `fr`    | llm-drafted | `src/data/glossary.fr.json`    | Needs community/native review |
-| `hi`    | llm-drafted | `src/data/glossary.hi.json`    | Needs community/native review |
-| `id`    | llm-drafted | `src/data/glossary.id.json`    | Needs community/native review |
-| `it`    | llm-drafted | `src/data/glossary.it.json`    | Needs community/native review |
-| `ja`    | llm-drafted | `src/data/glossary.ja.json`    | Needs community/native review |
-| `ko`    | reviewed    | `src/data/glossary.ko.json`    | First quality-bar example     |
-| `pt-BR` | llm-drafted | `src/data/glossary.pt-BR.json` | Needs community/native review |
-| `ru`    | llm-drafted | `src/data/glossary.ru.json`    | Needs community/native review |
-| `vi`    | llm-drafted | `src/data/glossary.vi.json`    | Needs community/native review |
-| `zh-CN` | llm-drafted | `src/data/glossary.zh-CN.json` | Needs community/native review |
-| `zh-TW` | llm-drafted | `src/data/glossary.zh-TW.json` | Needs community/native review |
+| Locale  | Status             | File                           | Notes                            |
+| ------- | ------------------ | ------------------------------ | -------------------------------- |
+| `de`    | llm-drafted        | `src/data/glossary.de.json`    | Needs community/native review    |
+| `es`    | llm-drafted        | `src/data/glossary.es.json`    | Needs community/native review    |
+| `fr`    | llm-drafted        | `src/data/glossary.fr.json`    | Needs community/native review    |
+| `hi`    | llm-drafted        | `src/data/glossary.hi.json`    | Needs community/native review    |
+| `id`    | llm-drafted        | `src/data/glossary.id.json`    | Needs community/native review    |
+| `it`    | llm-drafted        | `src/data/glossary.it.json`    | Needs community/native review    |
+| `ja`    | llm-drafted        | `src/data/glossary.ja.json`    | Needs community/native review    |
+| `ko`    | community-reviewed | `src/data/glossary.ko.json`    | First community-reviewed example |
+| `pt-BR` | llm-drafted        | `src/data/glossary.pt-BR.json` | Needs community/native review    |
+| `ru`    | llm-drafted        | `src/data/glossary.ru.json`    | Needs community/native review    |
+| `vi`    | llm-drafted        | `src/data/glossary.vi.json`    | Needs community/native review    |
+| `zh-CN` | llm-drafted        | `src/data/glossary.zh-CN.json` | Needs community/native review    |
+| `zh-TW` | llm-drafted        | `src/data/glossary.zh-TW.json` | Needs community/native review    |
 
 ## Contribution Model
 
@@ -58,7 +58,7 @@ Each term must include:
 - `llm-audited`: AI draft has received a focused second-pass audit against source docs and likely machine-translation failures.
 - `community-reviewed`: A fluent community reviewer has checked the language values.
 - `native-reviewed`: A native speaker has checked the language values and register.
-- `reviewed`: Project-maintainer-approved pack that has enough evidence and tests to serve as the quality-bar example.
+- `reviewed`: Project-maintainer-approved pack that has complete review evidence and tests. This is stricter than `community-reviewed`.
 
 ## Reviewed Pack Bar
 
@@ -71,8 +71,20 @@ A `reviewed` glossary pack must have:
 - No duplicate source phrases.
 - No collision with protected terms.
 - Notes that explain the choice, not just repeat the target word.
+- Closed `qaSignals.xTranslationCheck` and `qaSignals.communityReview`.
+- Registry `officialAlignment` marked `complete`.
 
 Use `llm-drafted` status for early community packs that need review.
+
+## Status Dashboard
+
+Print the current status, next review step, and term count for every registered pack:
+
+```bash
+npm run glossary:status
+```
+
+Use the output when opening glossary issues or picking a review target. A pack should not be promoted just because it has the same source-key count as the other packs.
 
 ## X Translation Cross-Check
 

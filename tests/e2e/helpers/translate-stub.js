@@ -1,5 +1,6 @@
 const KO = new Map([
   ["AI Foundations", "AI 기초"],
+  ["Reflection", "회고"],
   ["1.1 Welcome to AI Foundations", "1.1 AI 기초에 오신 것을 환영합니다"],
   ["Welcome to the course.", "강의에 오신 것을 환영합니다."],
   ["SKIP TO LESSON", "강의로 건너뛰기"],

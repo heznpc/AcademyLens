@@ -324,6 +324,36 @@ test.describe("AcademyLens extension E2E", () => {
     }
   });
 
+  test("translates live lesson shell text without touching Gradual state surfaces", async () => {
+    const harness = await startHarness({ path: "/live-lesson-shell" });
+    try {
+      await expandPanel(harness.page);
+      await clickPanelButton(harness.page, "[data-translate]");
+      await expect(harness.page.locator("#live-course")).toHaveText("AI 기초");
+      await expect(harness.page.locator("#live-title")).toHaveText("업무를 위한 실용 AI 기술 구축");
+      await expect(harness.page.locator("#live-context")).toHaveText(
+        "ChatGPT를 사용하기 전에 명확한 컨텍스트를 설정하세요."
+      );
+      await expect(harness.page.locator("#live-agents")).toHaveText(
+        "재사용 가능한 프롬프트는 에이전트가 경계를 따르도록 돕습니다."
+      );
+      await expect(harness.page.locator("#live-review")).toHaveText(
+        "검토 지점은 팀이 출력을 책임 있게 평가하도록 돕습니다."
+      );
+      await expect(harness.page.locator("#live-reflection-heading")).toHaveText("회고");
+      await expect(harness.page.locator("#live-reflection")).toHaveText(
+        "최종 결과물을 직접 통제하면서 AI에 무엇을 위임할지 결정하는 연습을 합니다."
+      );
+      await expect(harness.page.locator(".course-progress")).toContainText("4/7 Lessons Completed");
+      await expect(harness.page.locator("#live-certificate")).toHaveText("Course Certificate");
+      await expect(harness.page.locator("#live-quiz")).toHaveText("Knowledge Check");
+      await expect(harness.page.locator("[role='status']")).toHaveText("Saved");
+      await expect(harness.page.locator("#live-code")).toContainText("Do not translate code");
+    } finally {
+      await stopHarness(harness);
+    }
+  });
+
   test("translates nested SCORM lesson content from the top-level panel", async () => {
     const harness = await startHarness({ path: "/learn/ai-foundations-juzjs/lessons" });
     try {

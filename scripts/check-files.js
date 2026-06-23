@@ -9,13 +9,18 @@ const REQUIRED_PACKAGE_SCRIPTS = [
   "test",
   "test:e2e",
   "lint",
+  "format",
   "format:check",
   "node-check",
   "capture:academy",
+  "glossary:audit",
   "glossary:seed",
+  "glossary:status",
   "check:manifest",
   "check:glossary",
+  "check:glossary-overreach",
   "check:files",
+  "check:all",
   "build:zip",
   "check:full"
 ];
@@ -181,8 +186,12 @@ for (const locale of REQUIRED_PREMIUM_LOCALES) {
   );
 }
 assertFile("tests/fixtures/gradual-study-room-fragment.html");
+assertFile("tests/fixtures/gradual-live-lesson-shell.html");
 assertFile("src/lib/ai-review-bridge.js");
 assertFile("docs/GLOSSARY_CONTRIBUTING.md");
+assertFile("docs/QUALITY_ROADMAP.md");
+assertFile("docs/RELEASE_CHECKLIST.md");
+assertFile("docs/TECH_STACK_REVIEW.md");
 
 const publicCourseFixture = "tests/fixtures/openai-academy-public-course.html";
 assertFile(publicCourseFixture);

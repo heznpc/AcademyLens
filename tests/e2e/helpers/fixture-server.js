@@ -69,6 +69,58 @@ const PAGES = {
         </main>
       </body>
     </html>`,
+  "/live-lesson-shell": `<!doctype html>
+    <html>
+      <head><meta charset="utf-8"><title>AcademyLens Live Lesson Shell Fixture</title></head>
+      <body>
+        <header id="gradual-topbar">
+          <a href="/home">OpenAI Academy</a>
+          <button>Search</button>
+          <button>Notifications</button>
+          <button data-testid="account-menu">Account</button>
+        </header>
+        <aside id="gradual-sidebar" role="navigation" aria-label="Course navigation">
+          <a href="/home">Home</a>
+          <a href="/home/courses">Courses</a>
+          <a href="/learn/ai-foundations-juzjs/lessons/intro">Introduction</a>
+          <a href="/learn/ai-foundations-juzjs/lessons/workflows">Workflows</a>
+        </aside>
+        <div class="course-progress" role="progressbar" aria-valuenow="57" aria-valuemin="0" aria-valuemax="100">
+          4/7 Lessons Completed
+        </div>
+        <nav aria-label="Table of Contents">
+          <span>Lesson 4 of 7</span>
+          <button>Complete</button>
+          <button>Continue</button>
+        </nav>
+        <aside data-testid="certificate-card">
+          <h2 id="live-certificate">Course Certificate</h2>
+          <button>View Certificate</button>
+          <button>Download PDF</button>
+        </aside>
+        <form data-testid="lesson-quiz">
+          <h2 id="live-quiz">Knowledge Check</h2>
+          <label>Time limit</label>
+          <button>Start quiz</button>
+          <button>Submit</button>
+        </form>
+        <main data-testid="course-study-room">
+          <article data-testid="lesson-content">
+            <p id="live-course">AI Foundations</p>
+            <h1 id="live-title">Build practical AI skills for work</h1>
+            <p id="live-context">Set clear context before using ChatGPT.</p>
+            <p id="live-agents">Reusable prompts help agents follow boundaries.</p>
+            <p id="live-review">Review points help teams evaluate outputs responsibly.</p>
+            <section aria-labelledby="live-reflection-heading">
+              <h2 id="live-reflection-heading">Reflection</h2>
+              <p id="live-reflection">Practice deciding what to delegate to AI while staying in control of the final work.</p>
+            </section>
+            <pre id="live-code">const message = "Do not translate code";</pre>
+          </article>
+        </main>
+        <div role="status" aria-live="polite">Saved</div>
+      </body>
+    </html>`,
   "/learn/ai-foundations-juzjs/lessons": `<!doctype html>
     <html>
       <head><meta charset="utf-8"><title>AcademyLens SCORM Shell Fixture</title></head>

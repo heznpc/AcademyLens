@@ -132,3 +132,43 @@ test("logged-in study-room fixture translates lesson text but skips platform con
     assert(!values.includes("Settings"));
   });
 });
+
+test("logged-in live lesson shell keeps Gradual controls out of the translation set", () => {
+  const html = readFileSync(join(__dirname, "fixtures/gradual-live-lesson-shell.html"), "utf8");
+
+  assert.match(html, /"page"\s*:\s*"\/learn\/\[courseSlug\]\/lessons\/\[lessonSlug\]"/);
+  assert.match(html, /data-testid="lesson-content"/);
+  assert(!/<script[^>]+src=/i.test(html));
+  assert(!/sentry-trace|baggage|__CF\$cv|_buildManifest/i.test(html));
+
+  withDom(html, (document) => {
+    const nodes = Text.collectTranslatableTextNodes(document.body, {
+      targetLanguage: "ko",
+      maxNodes: 120,
+      maxTextLength: 1200
+    });
+    const values = nodes.map((node) => Text.normalizeWhitespace(node.textContent));
+
+    assert(values.includes("AI Foundations"));
+    assert(values.includes("Build practical AI skills for work"));
+    assert(values.includes("Set clear context before using ChatGPT."));
+    assert(values.includes("Reusable prompts help agents follow boundaries."));
+    assert(values.includes("Review points help teams evaluate outputs responsibly."));
+    assert(values.includes("Reflection"));
+    assert(values.includes("Practice deciding what to delegate to AI while staying in control of the final work."));
+    assert(!values.includes("OpenAI Academy"));
+    assert(!values.includes("Search"));
+    assert(!values.includes("Notifications"));
+    assert(!values.includes("Account"));
+    assert(!values.includes("4/7 Lessons Completed"));
+    assert(!values.includes("Lesson 4 of 7"));
+    assert(!values.includes("Complete"));
+    assert(!values.includes("Continue"));
+    assert(!values.includes("Course Certificate"));
+    assert(!values.includes("Knowledge Check"));
+    assert(!values.includes("Start quiz"));
+    assert(!values.includes("Submit"));
+    assert(!values.includes("Saved"));
+    assert(!values.some((value) => value.includes("Do not translate code")));
+  });
+});
