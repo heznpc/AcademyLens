@@ -32,4 +32,4 @@ Chrome Web Store policy can treat remote hosted JavaScript as a review risk. Aca
 ## Current Guards
 
 - `npm test` verifies that the bridge is disabled by default and requires explicit opt-in before any request path can proceed.
-- `npm run check:files` fails if runtime files reference `js.puter.com`, remote script tags, remote `importScripts`, or remote dynamic imports.
+- `npm run check:files` fails if runtime files reference `js.puter.com`, Puter globals/app identity keys, remote script tags, remote `importScripts`, or remote dynamic imports.
