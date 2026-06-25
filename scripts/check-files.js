@@ -224,6 +224,15 @@ const runtimeFiles = ["manifest.json", ...listFiles("src", (path) => /\.(js|html
 for (const file of runtimeFiles) {
   const source = readFileSync(join(ROOT, file), "utf8");
   assert(!/js\.puter\.com/i.test(source), `Remote Puter script reference is not allowed in runtime: ${file}`);
+  assert(
+    !/\b(?:window|globalThis|self)\.puter\b/i.test(source),
+    `Puter global access is not allowed in runtime: ${file}`
+  );
+  assert(!/\bputer\.ai\b/i.test(source), `Puter AI runtime access is not allowed: ${file}`);
+  assert(
+    !/\bputer\.(?:app\.(?:id|name)|auth\.token)\b/i.test(source),
+    `Puter app/auth identity storage keys are not allowed in runtime: ${file}`
+  );
   assert(!/<script[^>]+src=["']https?:\/\//i.test(source), `Remote script tag is not allowed in runtime: ${file}`);
   assert(!/importScripts\(\s*["']https?:\/\//i.test(source), `Remote importScripts is not allowed in runtime: ${file}`);
   assert(!/import\(\s*["']https?:\/\//i.test(source), `Remote dynamic import is not allowed in runtime: ${file}`);
