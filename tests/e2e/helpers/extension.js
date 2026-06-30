@@ -26,6 +26,43 @@ function patchAcademyUrlGate(extensionPath) {
   fs.writeFileSync(constantsPath, patched);
 }
 
+function patchBrowserTranslatorStub(extensionPath, mode) {
+  if (!mode) return;
+  const browserTranslatorPath = path.join(extensionPath, "src", "lib", "browser-translator.js");
+  const source = `
+(function initAcademyLensBrowserTranslatorStub(root) {
+  "use strict";
+  const mode = ${JSON.stringify(mode)};
+  root.AcademyLensBrowserTranslator = Object.freeze({
+    PROVIDER_ID: "browser-translator-test",
+    async availability(options = {}) {
+      return {
+        provider: "browser-translator-test",
+        status: mode === "downloadable" ? "downloadable" : "available",
+        sourceLanguage: options.sourceLanguage || "en",
+        targetLanguage: options.targetLanguage || "ko"
+      };
+    },
+    async translateBatch(texts, options = {}) {
+      if (mode === "downloadable" && !options.allowDownload) {
+        throw new Error("download disabled");
+      }
+      if (mode === "downloadable" && typeof options.onDownloadProgress === "function") {
+        options.onDownloadProgress();
+      }
+      const translated = {};
+      for (const text of texts || []) {
+        if (mode === "partial" && /fallback/i.test(text)) continue;
+        translated[text] = "[native] " + text;
+      }
+      return translated;
+    }
+  });
+})(typeof globalThis !== "undefined" ? globalThis : this);
+`;
+  fs.writeFileSync(browserTranslatorPath, source);
+}
+
 function makePatchedExtension() {
   const extensionPath = fs.mkdtempSync(path.join(os.tmpdir(), "academylens-e2e-ext-"));
   for (const entry of ["manifest.json", "assets", "src", "README.md", "PRIVACY_POLICY.md", "LICENSE"]) {
@@ -41,8 +78,9 @@ function makePatchedExtension() {
   return extensionPath;
 }
 
-async function launchExtension() {
+async function launchExtension(options = {}) {
   const extensionPath = makePatchedExtension();
+  patchBrowserTranslatorStub(extensionPath, options.browserTranslatorStub);
   const userDataDir = fs.mkdtempSync(path.join(os.tmpdir(), "academylens-e2e-profile-"));
   const channel = process.env.E2E_BROWSER_CHANNEL || "chromium";
 

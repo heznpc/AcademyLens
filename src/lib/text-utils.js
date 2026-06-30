@@ -227,10 +227,31 @@
     });
 
     const nodes = [];
+    const maxNodes = settings.maxNodes || 120;
+    const scoreNode = typeof settings.scoreNode === "function" ? settings.scoreNode : null;
+    let acceptedIndex = 0;
     let node = walker.nextNode();
-    while (node && nodes.length < (settings.maxNodes || 120)) {
-      nodes.push(node);
+    while (node) {
+      if (scoreNode) {
+        nodes.push({
+          node,
+          index: acceptedIndex,
+          score: scoreNode(node)
+        });
+        if (nodes.length > maxNodes) {
+          nodes.sort((a, b) => a.score - b.score || a.index - b.index);
+          nodes.pop();
+        }
+      } else {
+        if (nodes.length >= maxNodes) break;
+        nodes.push(node);
+      }
+      acceptedIndex += 1;
       node = walker.nextNode();
+    }
+
+    if (scoreNode) {
+      return nodes.sort((a, b) => a.score - b.score || a.index - b.index).map((item) => item.node);
     }
 
     return nodes;

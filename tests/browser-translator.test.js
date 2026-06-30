@@ -146,3 +146,43 @@ test("browser translator batch avoids implicit downloads by default", async () =
   );
   assert.equal(createCalls, 0);
 });
+
+test("browser translator batch allows downloads only when requested", async () => {
+  let createCalls = 0;
+  let monitorAttached = false;
+  const scope = {
+    Translator: {
+      async availability() {
+        return "downloadable";
+      },
+      async create(options) {
+        createCalls += 1;
+        options.monitor({
+          addEventListener(eventName, listener) {
+            assert.equal(eventName, "downloadprogress");
+            assert.equal(typeof listener, "function");
+            monitorAttached = true;
+          }
+        });
+        return {
+          async translate(text) {
+            return `native: ${text}`;
+          },
+          destroy() {}
+        };
+      }
+    }
+  };
+
+  const result = await BrowserTranslator.translateBatch(["Course text"], {
+    scope,
+    sourceLanguage: "en",
+    targetLanguage: "ko",
+    allowDownload: true,
+    onDownloadProgress() {}
+  });
+
+  assert.deepEqual(result, { "Course text": "native: Course text" });
+  assert.equal(createCalls, 1);
+  assert.equal(monitorAttached, true);
+});

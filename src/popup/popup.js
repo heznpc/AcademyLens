@@ -5,6 +5,7 @@
   const uiLocale = C.getUiLocale(navigator.language);
   const language = document.getElementById("targetLanguage");
   const autoTranslate = document.getElementById("autoTranslate");
+  const nativeDownloads = document.getElementById("nativeDownloads");
   const languageSupport = document.getElementById("languageSupport");
   let glossaryIndex = null;
 
@@ -36,6 +37,7 @@
 
   language.value = settings.targetLanguage;
   autoTranslate.checked = Boolean(settings.autoTranslate);
+  nativeDownloads.checked = Boolean(settings.enableBrowserTranslatorDownloads);
   updateLanguageSupport();
 
   function updateLanguageSupport() {
@@ -49,11 +51,13 @@
       [C.STORAGE_KEYS.SETTINGS]: {
         ...settings,
         targetLanguage: language.value,
-        autoTranslate: autoTranslate.checked
+        autoTranslate: autoTranslate.checked,
+        enableBrowserTranslatorDownloads: nativeDownloads.checked
       }
     });
   }
 
   language.addEventListener("change", save);
   autoTranslate.addEventListener("change", save);
+  nativeDownloads.addEventListener("change", save);
 })();

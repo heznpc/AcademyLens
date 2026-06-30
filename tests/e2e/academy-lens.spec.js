@@ -5,10 +5,30 @@ const { startFixtureServer, stopFixtureServer } = require("./helpers/fixture-ser
 const { registerTranslateStub } = require("./helpers/translate-stub");
 
 async function waitForPanel(page) {
-  await page.waitForFunction(() => {
-    const root = document.querySelector(".academylens-root");
-    return Boolean(root && root.shadowRoot && root.shadowRoot.querySelector("[data-translate]"));
-  });
+  for (let attempt = 0; attempt < 2; attempt += 1) {
+    const ready = await page
+      .locator(".academylens-root")
+      .waitFor({ state: "attached", timeout: 6000 })
+      .then(async () =>
+        page.evaluate(() => {
+          const root = document.querySelector(".academylens-root");
+          return Boolean(root && root.shadowRoot && root.shadowRoot.querySelector("[data-translate]"));
+        })
+      )
+      .catch(() => false);
+    if (ready) return;
+    await page.reload({ waitUntil: "load" });
+  }
+
+  await page.locator(".academylens-root").waitFor({ state: "attached" });
+  await expect
+    .poll(() =>
+      page.evaluate(() => {
+        const root = document.querySelector(".academylens-root");
+        return Boolean(root && root.shadowRoot && root.shadowRoot.querySelector("[data-translate]"));
+      })
+    )
+    .toBe(true);
 }
 
 async function clickPanelButton(page, selector) {
@@ -35,6 +55,14 @@ async function setPanelLanguage(page, language) {
   }, language);
 }
 
+async function setNativeDownloads(page, enabled) {
+  await page.evaluate((value) => {
+    const checkbox = document.querySelector(".academylens-root").shadowRoot.querySelector("[data-native-download]");
+    checkbox.checked = value;
+    checkbox.dispatchEvent(new Event("change", { bubbles: true }));
+  }, enabled);
+}
+
 async function panelSnapshot(page) {
   return page.evaluate(() => {
     const root = document.querySelector(".academylens-root");
@@ -54,6 +82,8 @@ async function panelSnapshot(page) {
           )
         : [],
       note: shadow ? shadow.querySelector("[data-language-note]").textContent : null,
+      provider: shadow ? shadow.querySelector("[data-provider-chip]").textContent : null,
+      providerMode: root ? root.dataset.provider : null,
       status: shadow ? shadow.querySelector("[data-status]").textContent : null
     };
   });
@@ -71,7 +101,7 @@ async function panelProgress(page) {
 
 async function startHarness(options = {}) {
   const fixture = await startFixtureServer();
-  const ext = await launchExtension();
+  const ext = await launchExtension({ browserTranslatorStub: options.browserTranslatorStub });
   const calls = await registerTranslateStub(ext.context, options);
   const page = await ext.context.newPage();
   await page.goto(`${fixture.baseUrl}${options.path || "/course"}`);
@@ -88,6 +118,16 @@ async function waitForFrame(page, pattern) {
 async function stopHarness(harness) {
   if (harness.ext) await closeExtension(harness.ext);
   if (harness.fixture) await stopFixtureServer(harness.fixture.server);
+}
+
+async function savePanelCorrection(page, value) {
+  await page.evaluate((translated) => {
+    const shadow = document.querySelector(".academylens-root").shadowRoot;
+    const input = shadow.querySelector("[data-correction-input]");
+    input.value = translated;
+    input.dispatchEvent(new Event("input", { bubbles: true }));
+    shadow.querySelector("[data-save-correction]").click();
+  }, value);
 }
 
 test.describe("AcademyLens extension E2E", () => {
@@ -114,6 +154,7 @@ test.describe("AcademyLens extension E2E", () => {
       ]);
       expect(snapshot.actionButtons).toEqual(["번역", "원문 복원"]);
       expect(snapshot.note).toContain("용어");
+      expect(snapshot.provider).toBeTruthy();
     } finally {
       await stopHarness(harness);
     }
@@ -223,6 +264,36 @@ test.describe("AcademyLens extension E2E", () => {
     }
   });
 
+  test("saves a local correction and reapplies it on the next translation", async () => {
+    const harness = await startHarness();
+    try {
+      await expandPanel(harness.page);
+      await clickPanelButton(harness.page, "[data-translate]");
+      await expect(harness.page.locator("#title")).toHaveText("업무를 위한 실용 AI 기술 구축");
+
+      await harness.page.locator("#title").click();
+      await expect
+        .poll(async () =>
+          harness.page.evaluate(() => {
+            const correction = document
+              .querySelector(".academylens-root")
+              .shadowRoot.querySelector("[data-correction]");
+            return correction.dataset.active;
+          })
+        )
+        .toBe("true");
+      await savePanelCorrection(harness.page, "업무용 AI 실전 역량 만들기");
+      await expect(harness.page.locator("#title")).toHaveText("업무용 AI 실전 역량 만들기");
+
+      await clickPanelButton(harness.page, "[data-restore]");
+      await expect(harness.page.locator("#title")).toHaveText("Build practical AI skills for work");
+      await clickPanelButton(harness.page, "[data-translate]");
+      await expect(harness.page.locator("#title")).toHaveText("업무용 AI 실전 역량 만들기");
+    } finally {
+      await stopHarness(harness);
+    }
+  });
+
   test("resets progress after translation failure", async () => {
     const harness = await startHarness({ failAll: true });
     try {
@@ -274,6 +345,75 @@ test.describe("AcademyLens extension E2E", () => {
       await expect.poll(async () => (await panelSnapshot(harness.page)).selected).toBe("ja");
       await clickPanelButton(harness.page, "[data-translate]");
       await expect(harness.page.locator("#title")).toHaveText("仕事に役立つ実践的なAIスキルを身につける");
+    } finally {
+      await stopHarness(harness);
+    }
+  });
+
+  test("uses browser-native provider before Google fallback when available", async () => {
+    const harness = await startHarness({ browserTranslatorStub: "available" });
+    try {
+      await harness.page.evaluate(() => {
+        document.querySelector("#lesson-main").innerHTML = `<p id="native-only">Native provider unique sentence</p>`;
+      });
+      await expandPanel(harness.page);
+      await clickPanelButton(harness.page, "[data-translate]");
+
+      await expect(harness.page.locator("#native-only")).toHaveText("[native] Native provider unique sentence");
+      expect(harness.calls.some((call) => call.text.includes("Native provider unique sentence"))).toBe(false);
+      await expect.poll(async () => (await panelSnapshot(harness.page)).providerMode).toBe("native");
+    } finally {
+      await stopHarness(harness);
+    }
+  });
+
+  test("falls back only for native provider misses", async () => {
+    const harness = await startHarness({ browserTranslatorStub: "partial" });
+    try {
+      await harness.page.evaluate(() => {
+        document.querySelector("#lesson-main").innerHTML = `
+          <p id="native-hit">Native provider keeps this sentence</p>
+          <p id="native-miss">Native fallback miss sentence</p>
+        `;
+      });
+      await expandPanel(harness.page);
+      await clickPanelButton(harness.page, "[data-translate]");
+
+      await expect(harness.page.locator("#native-hit")).toHaveText("[native] Native provider keeps this sentence");
+      await expect(harness.page.locator("#native-miss")).toHaveText("[ko] Native fallback miss sentence");
+      expect(harness.calls.map((call) => call.text)).toEqual(["Native fallback miss sentence"]);
+    } finally {
+      await stopHarness(harness);
+    }
+  });
+
+  test("uses downloadable browser-native provider only after explicit opt-in", async () => {
+    const harness = await startHarness({ browserTranslatorStub: "downloadable" });
+    try {
+      await harness.page.evaluate(() => {
+        document.querySelector("#lesson-main").innerHTML =
+          `<p id="downloadable-native">Downloadable native sentence</p>`;
+      });
+      await expandPanel(harness.page);
+      await clickPanelButton(harness.page, "[data-translate]");
+
+      await expect(harness.page.locator("#downloadable-native")).toHaveText("[ko] Downloadable native sentence");
+      expect(harness.calls.map((call) => call.text)).toEqual(["Downloadable native sentence"]);
+
+      await clickPanelButton(harness.page, "[data-restore]");
+      await expect(harness.page.locator("#downloadable-native")).toHaveText("Downloadable native sentence");
+      await harness.page.locator("#downloadable-native").evaluate((node) => {
+        node.textContent = "Downloadable native second sentence";
+      });
+      harness.calls.length = 0;
+      await setNativeDownloads(harness.page, true);
+      await expect.poll(async () => (await panelSnapshot(harness.page)).providerMode).toBe("nativeDownloading");
+      await clickPanelButton(harness.page, "[data-translate]");
+
+      await expect(harness.page.locator("#downloadable-native")).toHaveText(
+        "[native] Downloadable native second sentence"
+      );
+      expect(harness.calls).toEqual([]);
     } finally {
       await stopHarness(harness);
     }
@@ -397,6 +537,7 @@ test.describe("AcademyLens extension E2E", () => {
       await expect(scormFrame.locator("#scorm-llm")).toHaveText(
         "대규모 언어 모델은 사람들이 책임 있는 검토를 연습하도록 돕습니다."
       );
+      await expect.poll(async () => (await panelSnapshot(harness.page)).status).toMatch(/페이지 텍스트|임베드/);
       await expect(harness.page.locator("#gradual-topbar")).toContainText("Home");
       await expect(harness.page.locator("#gradual-topbar")).toContainText("Study Room");
 
@@ -552,6 +693,35 @@ test.describe("AcademyLens extension E2E", () => {
       await expect(harness.page.locator("#chunk-119")).toHaveText("[ko] Chunked translation sample 119");
       await expect(harness.page.locator("#chunk-144")).toHaveText("[ko] Chunked translation sample 144");
       expect(harness.calls.filter((call) => call.text.startsWith("Chunked translation sample")).length).toBe(145);
+    } finally {
+      await stopHarness(harness);
+    }
+  });
+
+  test("prioritizes visible lesson text before offscreen text", async () => {
+    const harness = await startHarness();
+    try {
+      await harness.page.evaluate(() => {
+        const main = document.querySelector("#lesson-main");
+        main.innerHTML = `
+          ${Array.from({ length: 130 }, (_, index) => `<p>Offscreen lesson sample ${index}</p>`).join("")}
+          <p id="visible-priority">Viewport priority lesson</p>
+          <p id="below-priority">Below viewport lesson</p>
+        `;
+        document.querySelector("#visible-priority").scrollIntoView({ block: "center" });
+      });
+      await expandPanel(harness.page);
+      await clickPanelButton(harness.page, "[data-translate]");
+
+      await expect(harness.page.locator("#visible-priority")).toHaveText("[ko] Viewport priority 레슨");
+      await expect
+        .poll(() => harness.calls.findIndex((call) => call.text.includes("sample 0")))
+        .toBeGreaterThanOrEqual(0);
+      const visibleIndex = harness.calls.findIndex((call) => call.text.startsWith("Viewport priority"));
+      const farOffscreenIndex = harness.calls.findIndex((call) => call.text.includes("sample 0"));
+      expect(visibleIndex).toBeGreaterThanOrEqual(0);
+      expect(farOffscreenIndex).toBeGreaterThanOrEqual(0);
+      expect(visibleIndex).toBeLessThan(farOffscreenIndex);
     } finally {
       await stopHarness(harness);
     }

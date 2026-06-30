@@ -41,10 +41,18 @@ test("UI messages are localized for Korean browsers", () => {
   assert.equal(Constants.getMessage("field.targetLanguage", "ko-KR"), "번역할 언어");
   assert.equal(Constants.getMessage("action.translate", "ko-KR"), "번역");
   assert.equal(Constants.getMessage("status.translated", "ko-KR", { count: 3 }), "텍스트 3개를 번역했습니다.");
+  assert.equal(Constants.getMessage("popup.nativeDownloads", "ko-KR"), "내장 번역 다운로드 허용");
+  assert.equal(Constants.getMessage("provider.nativeReady", "ko-KR"), "내장 번역 준비됨");
+  assert.equal(
+    Constants.getMessage("status.translatedWithFrames", "ko-KR", { count: 3, frameCount: 2 }),
+    "페이지 텍스트 3개와 임베드 텍스트 2개를 번역했습니다."
+  );
   assert.equal(
     Constants.getMessage("status.translatedCapped", "ko-KR", { count: 120 }),
     "텍스트 120개를 번역했습니다. 남은 텍스트가 있습니다."
   );
+  assert.equal(Constants.DEFAULT_SETTINGS.enableBrowserTranslatorDownloads, false);
+  assert.equal(Constants.LIMITS.maxCandidateScanNodes, 600);
   assert.equal(Constants.LIMITS.maxTranslationPasses, 8);
 });
 

@@ -22,7 +22,7 @@ AcademyLens is an unofficial Chrome extension for learners using OpenAI Academy.
 
 ---
 
-> **Beta status:** local install only, unofficial, powered by a Google Translate web endpoint, and not Chrome Web Store-ready until live logged-in Academy QA, glossary review evidence, provider/privacy review, and release assets are closed.
+> **Beta status:** local install only, unofficial, uses browser-native translation when available with Google Translate fallback, and not Chrome Web Store-ready until live logged-in Academy QA, glossary review evidence, provider/privacy review, and release assets are closed.
 
 ## Table of Contents
 
@@ -48,7 +48,8 @@ AcademyLens is an unofficial Chrome extension for learners using OpenAI Academy.
 - Applies installed premium glossaries built from OpenAI Academy course language and OpenAI documentation terminology before machine translation.
 - Uses native language names in the language picker.
 - Shows whether the selected language has a final/native-reviewed, community-reviewed, AI-drafted beta, or protected-term machine translation status.
-- Uses Google Translate for the current fast translation runtime while browser-native translation providers are evaluated.
+- Uses browser-native Translator when available; browser language-pack downloads require explicit opt-in, and Google Translate remains the fallback runtime.
+- Stores optional local correction overrides so a learner can fix repeated awkward translations on their own device.
 - Guards against late translation responses after Restore, language switches, and Gradual/Next.js route changes.
 - Does not modify enrollment, progress tracking, certificates, account state, or Gradual platform data.
 - Does not load remote AI scripts.
@@ -88,7 +89,7 @@ AcademyLens is a separate project because OpenAI Academy has a different product
 - Content script for OpenAI Academy DOM translation
 - Background service worker for translation requests and cache
 
-The current build uses a Google Translate web endpoint for fast translation. Chrome Web Store submission is blocked until the final provider/privacy posture is reviewed. Browser-native Translator APIs are tracked as a future provider candidate, but not treated as a universal default yet. See [docs/TECH_STACK_REVIEW.md](docs/TECH_STACK_REVIEW.md).
+The current build uses browser-native Translator when the browser reports it as available, or when the user explicitly allows browser-managed translator downloads. Google Translate remains the fallback runtime. Chrome Web Store submission is blocked until the final provider/privacy posture is reviewed. Browser-native Translator APIs are not treated as a universal default because support depends on browser, version, language availability, and page context. See [docs/TECH_STACK_REVIEW.md](docs/TECH_STACK_REVIEW.md).
 
 OpenAI Academy is hosted through Gradual for course enrollment, progress tracking, and course-completion certificates. AcademyLens intentionally stays outside those flows and works only with visible page text.
 

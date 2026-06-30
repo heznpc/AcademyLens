@@ -67,25 +67,86 @@ test("browser translator provider only runs when already available", () => {
     source.indexOf("async function sendBackgroundTranslationBatch")
   );
 
-  assert.match(provider, /support\.status !== "available"/);
-  assert.match(provider, /allowDownload: false/);
+  assert.match(provider, /const canUseBrowserTranslator/);
+  assert.match(provider, /!canUseBrowserTranslator/);
+  assert.match(provider, /allowDownload: Boolean\(state\.settings\.enableBrowserTranslatorDownloads\)/);
   assert.match(provider, /cacheHasTranslation/);
   assert.match(provider, /persistContentCache/);
+  assert.match(provider, /ok: stats\.failed === 0 \|\| Object\.keys\(translated\)\.length > 0/);
+});
+
+test("browser translator downloads require explicit user opt-in", () => {
+  const source = read("src/content/content.js");
+  const provider = source.slice(
+    source.indexOf("async function translateBatchWithBrowserTranslator"),
+    source.indexOf("async function sendBackgroundTranslationBatch")
+  );
+  const constants = read("src/lib/constants.js");
+
+  assert.match(constants, /enableBrowserTranslatorDownloads: false/);
+  assert.match(provider, /state\.settings\.enableBrowserTranslatorDownloads/);
+  assert.match(provider, /support\.status === "downloadable"/);
+  assert.match(provider, /allowDownload: Boolean\(state\.settings\.enableBrowserTranslatorDownloads\)/);
+  assert.match(source, /data-native-download/);
+  assert.match(source, /data-provider-chip/);
 });
 
 test("content translation keeps scanning bounded passes beyond one node cap", () => {
   const constants = read("src/lib/constants.js");
   const source = read("src/content/content.js");
   const translatePage = source.slice(
-    source.indexOf("async function translatePage"),
-    source.indexOf("function restorePage", source.indexOf("async function translatePage"))
+    source.indexOf("async function performTranslatePage"),
+    source.indexOf("function restorePage", source.indexOf("async function performTranslatePage"))
   );
 
   assert.match(constants, /maxTranslationPasses: 8/);
+  assert.match(constants, /maxCandidateScanNodes: 600/);
   assert.match(source, /async function translateCandidatePass/);
+  assert.match(source, /scoreNode\(node\)/);
   assert.match(translatePage, /for \(let passIndex = 0; passIndex < maxPasses; passIndex \+= 1\)/);
   assert.match(translatePage, /result\.reachedLimit/);
   assert.match(translatePage, /status\.translatedCapped/);
+});
+
+test("content translation uses a queue for manual, auto, and frame requests", () => {
+  const source = read("src/content/content.js");
+
+  assert.match(source, /translationQueue/);
+  assert.match(source, /function enqueueTranslation/);
+  assert.match(source, /async function runTranslationQueue/);
+  assert.match(source, /async function performTranslatePage/);
+  assert.match(source, /function translatePage\(options = \{\}\)/);
+  assert.match(source, /scheduleAutoTranslate\(delay\)/);
+  assert.match(source, /window\.clearTimeout\(state\.debounceTimer\)/);
+});
+
+test("content supports local corrections, frame aggregation, viewport priority, and inline tokens", () => {
+  const source = read("src/content/content.js");
+  const constants = read("src/lib/constants.js");
+
+  assert.match(constants, /CORRECTIONS: "academylens\.localCorrections\.v1"/);
+  assert.match(source, /function persistCorrection/);
+  assert.match(source, /function correctionFor/);
+  assert.match(source, /function startFrameAggregate/);
+  assert.match(source, /cleanupTimer/);
+  assert.match(source, /status\.translatedWithFrames/);
+  assert.match(source, /function sortCandidatesByViewport/);
+  assert.match(source, /function prepareInlinePlaceholders/);
+  assert.match(source, /preparedByCandidate/);
+  assert.match(source, /__AL_INLINE_/);
+});
+
+test("content fallback only retries texts missed by browser-native translation", () => {
+  const source = read("src/content/content.js");
+  const sendTranslationBatch = source.slice(
+    source.indexOf("async function sendTranslationBatch"),
+    source.indexOf("function message", source.indexOf("async function sendTranslationBatch"))
+  );
+
+  assert.match(source, /function untranslatedTexts/);
+  assert.match(source, /function mergeTranslationResponses/);
+  assert.match(sendTranslationBatch, /const missingTexts = untranslatedTexts\(requestedTexts, browserResponse\)/);
+  assert.match(sendTranslationBatch, /texts: missingTexts/);
 });
 
 test("content mutation and placement work is throttled before expensive page scans", () => {
@@ -125,6 +186,10 @@ test("privacy policy describes local cache contents and auto-translate behavior"
 
   assert.match(policy, /auto-translate is enabled/i);
   assert.match(policy, /newly rendered visible lesson text/i);
+  assert.match(policy, /browser-native Translator API/i);
+  assert.match(policy, /translator downloads are disabled unless you explicitly turn them on/i);
+  assert.match(policy, /local correction overrides/i);
+  assert.match(policy, /locally corrected original visible text/i);
   assert.match(policy, /cached original visible text/i);
   assert.match(policy, /cached translated text/i);
   assert.match(policy, /target language, creation time, and last-access time/i);

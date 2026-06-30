@@ -18,12 +18,14 @@
 
   const STORAGE_KEYS = Object.freeze({
     SETTINGS: "academylens.settings",
-    CACHE: "academylens.translationCache.v1"
+    CACHE: "academylens.translationCache.v1",
+    CORRECTIONS: "academylens.localCorrections.v1"
   });
 
   const DEFAULT_SETTINGS = Object.freeze({
     targetLanguage: "ko",
-    autoTranslate: false
+    autoTranslate: false,
+    enableBrowserTranslatorDownloads: false
   });
 
   const SUPPORTED_LANGUAGES = Object.freeze([
@@ -73,6 +75,7 @@
       "field.targetLanguage": "Target language",
       "popup.description": "Translate OpenAI Academy course content in your language.",
       "popup.autoTranslate": "Auto-translate new course text",
+      "popup.nativeDownloads": "Allow built-in translator downloads",
       "popup.languageNoteGlossary": "Reviewed terminology corrections are enabled for this language.",
       "popup.languageNoteCommunity": "Community-reviewed terminology corrections are enabled for this language.",
       "popup.languageNoteDraft": "AI-drafted terminology corrections are enabled. Community review is welcome.",
@@ -80,13 +83,26 @@
         "Machine translation with protected terms. A reviewed glossary is not installed for this language yet.",
       "popup.languageTermCount": "{count}+ terminology corrections.",
       "panel.autoTranslate": "Auto",
+      "panel.nativeDownloads": "Native",
+      "panel.correction": "Correction",
+      "action.saveCorrection": "Save",
+      "action.cancelCorrection": "Cancel",
       "notice.unofficial": DISCLAIMER,
+      "provider.checking": "Checking provider",
+      "provider.native": "Built-in",
+      "provider.nativeReady": "Built-in ready",
+      "provider.nativeDownloadable": "Built-in available",
+      "provider.nativeDownloading": "Built-in downloading",
+      "provider.fallback": "Fallback",
+      "provider.background": "Background",
+      "provider.local": "Local correction",
       "status.ready": "Ready on OpenAI Academy.",
       "status.targetLanguage": "Target language: {language}",
       "status.glossaryLoading": "Glossary is still loading.",
       "status.noNewText": "No new course text found.",
       "status.frameDispatch": "Sent translation to embedded course content.",
       "status.frameTranslated": "Translated {count} embedded course text blocks.",
+      "status.translatedWithFrames": "Translated {count} page and {frameCount} embedded text blocks.",
       "status.frameRestored": "Restored embedded course content.",
       "status.translating": "Translating {count} text blocks...",
       "status.translated": "Translated {count} text blocks.",
@@ -107,19 +123,33 @@
       "field.targetLanguage": "번역할 언어",
       "popup.description": "OpenAI Academy 강의 내용을 원하는 언어로 번역합니다.",
       "popup.autoTranslate": "새 강의 텍스트 자동 번역",
+      "popup.nativeDownloads": "내장 번역 다운로드 허용",
       "popup.languageNoteGlossary": "이 언어에는 검토 완료된 용어 보정이 적용됩니다.",
       "popup.languageNoteCommunity": "이 언어에는 커뮤니티 검토를 거친 용어 보정이 적용됩니다.",
       "popup.languageNoteDraft": "AI 초안 용어 사전 보정이 적용됩니다. 커뮤니티 검수를 기다리고 있습니다.",
       "popup.languageNoteMachine": "기계번역과 보호 용어만 적용됩니다. 이 언어의 용어 사전은 아직 없습니다.",
       "popup.languageTermCount": "{count}개 이상의 용어 보정.",
       "panel.autoTranslate": "자동 번역",
+      "panel.nativeDownloads": "내장",
+      "panel.correction": "보정",
+      "action.saveCorrection": "저장",
+      "action.cancelCorrection": "취소",
       "notice.unofficial": "비공식 확장 프로그램이며 OpenAI와 제휴되어 있지 않습니다.",
+      "provider.checking": "번역 경로 확인 중",
+      "provider.native": "내장 번역",
+      "provider.nativeReady": "내장 번역 준비됨",
+      "provider.nativeDownloadable": "내장 번역 사용 가능",
+      "provider.nativeDownloading": "내장 번역 다운로드 중",
+      "provider.fallback": "대체 경로",
+      "provider.background": "백그라운드",
+      "provider.local": "로컬 보정",
       "status.ready": "OpenAI Academy에서 사용할 준비가 됐습니다.",
       "status.targetLanguage": "번역 언어: {language}",
       "status.glossaryLoading": "용어 사전을 불러오는 중입니다.",
       "status.noNewText": "새로 번역할 강의 텍스트가 없습니다.",
       "status.frameDispatch": "임베드된 강의 콘텐츠에 번역을 전달했습니다.",
       "status.frameTranslated": "임베드된 강의 텍스트 {count}개를 번역했습니다.",
+      "status.translatedWithFrames": "페이지 텍스트 {count}개와 임베드 텍스트 {frameCount}개를 번역했습니다.",
       "status.frameRestored": "임베드된 강의 콘텐츠를 원문으로 복원했습니다.",
       "status.translating": "텍스트 {count}개 번역 중...",
       "status.translated": "텍스트 {count}개를 번역했습니다.",
@@ -194,6 +224,7 @@
 
   const LIMITS = Object.freeze({
     maxTextNodesPerPass: 120,
+    maxCandidateScanNodes: 600,
     maxTranslationPasses: 8,
     maxBatchSize: 40,
     maxTextLength: 1200,

@@ -1,21 +1,21 @@
 # Technical Stack Review
 
-Last reviewed: 2026-06-24 01:10 KST
+Last reviewed: 2026-07-01 KST
 
-AcademyLens should keep the current MV3, frontend-only, no-server architecture for the default runtime, but it should not treat the current Google Translate web endpoint as a final Chrome Web Store submission backbone until provider/privacy review is closed.
+AcademyLens should keep the current MV3, frontend-only, no-server architecture for the default runtime, but it should not treat any translation provider path as final Chrome Web Store submission posture until provider/privacy review is closed.
 
 ## Decision
 
-| Candidate                                            | Decision                                    | Reason                                                                                                                                                                                                |
-| ---------------------------------------------------- | ------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Current MV3 content script + background worker       | Keep                                        | Best fit for DOM filtering, Restore, generation guards, and local cache.                                                                                                                              |
-| Current Google Translate web endpoint                | Keep as current runtime / review before CWS | Useful for fast no-key translation, but it is not the official authenticated Google Cloud Translation path. Do not market it as a final store-ready provider until privacy/provider review is closed. |
-| Google Cloud Translation API                         | Reject for default runtime                  | Official path requires project setup plus API key or credentials, which conflicts with no-key/no-server.                                                                                              |
-| Remote Puter.js/GPT script                           | Reject for runtime                          | Remote hosted code risk is too high for Chrome Web Store review. Keep only disabled bridge skeleton.                                                                                                  |
-| OpenAI API from extension                            | Reject for default runtime                  | It requires user/developer key handling or a server. That conflicts with the no-key, no-server product principle.                                                                                     |
-| Browser-native Translator API                        | Probe only / optional future provider       | The content script now feature-detects availability for UI diagnostics, but availability, user-activation, and browser support constraints make it unsuitable as the only default today.              |
-| Local offline translation model bundled in extension | Reject for now                              | Bundle size, language coverage, performance, and CWS review complexity are not worth it for this product stage.                                                                                       |
-| Server-side translation proxy                        | Reject for now                              | Better control, but changes privacy posture and creates an operating cost/backend trust surface.                                                                                                      |
+| Candidate                                            | Decision                                     | Reason                                                                                                                                                                                                |
+| ---------------------------------------------------- | -------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Current MV3 content script + background worker       | Keep                                         | Best fit for DOM filtering, Restore, generation guards, and local cache.                                                                                                                              |
+| Current Google Translate web endpoint                | Keep as fallback runtime / review before CWS | Useful for fast no-key translation, but it is not the official authenticated Google Cloud Translation path. Do not market it as a final store-ready provider until privacy/provider review is closed. |
+| Google Cloud Translation API                         | Reject for default runtime                   | Official path requires project setup plus API key or credentials, which conflicts with no-key/no-server.                                                                                              |
+| Remote Puter.js/GPT script                           | Reject for runtime                           | Remote hosted code risk is too high for Chrome Web Store review. Keep only disabled bridge skeleton.                                                                                                  |
+| OpenAI API from extension                            | Reject for default runtime                   | It requires user/developer key handling or a server. That conflicts with the no-key, no-server product principle.                                                                                     |
+| Browser-native Translator API                        | Optional first runtime path                  | Use when already available, or when the user explicitly allows browser-managed language downloads. Keep Google Translate fallback because browser/version/language support is not universal.          |
+| Local offline translation model bundled in extension | Reject for now                               | Bundle size, language coverage, performance, and CWS review complexity are not worth it for this product stage.                                                                                       |
+| Server-side translation proxy                        | Reject for now                               | Better control, but changes privacy posture and creates an operating cost/backend trust surface.                                                                                                      |
 
 ## Source Notes
 
@@ -29,15 +29,14 @@ AcademyLens should keep the current MV3, frontend-only, no-server architecture f
 
 ## Accepted Follow-Up
 
-Do not add a large provider abstraction yet. Keep the current feature-detection probe small: it may report browser-native Translator availability in the panel, but Google Translate remains the active runtime provider until a second provider has real fallback, privacy copy, and E2E coverage.
+Do not add a large provider abstraction yet. Keep provider selection small: browser-native Translator may run first when available or explicitly download-enabled, and Google Translate remains the fallback provider. Preserve privacy copy and E2E coverage for both paths.
 
 ## Future Experiment Shape
 
 If browser-native Translator APIs become broadly available for extension content scripts:
 
-1. Promote the existing feature-detection probe into a provider behind an advanced setting or experiment flag.
-2. Keep Google Translate as fallback until coverage and quality are proven.
-3. Add UI for model-download/availability state when required by the browser.
-4. Add privacy copy for browser-managed language packs.
-5. Add E2E coverage for provider selection and fallback.
-6. Keep glossary placeholder masking before either provider.
+1. Keep Google Translate as fallback until coverage and quality are proven across Academy surfaces.
+2. Keep UI for model-download/availability state when required by the browser.
+3. Keep privacy copy for browser-managed language packs and Google fallback.
+4. Keep E2E coverage for provider selection, explicit download opt-in, and fallback.
+5. Keep glossary placeholder masking before either provider.
