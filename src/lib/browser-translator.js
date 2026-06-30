@@ -96,11 +96,43 @@
     }
   }
 
+  async function translateBatch(texts, options = {}) {
+    const scope = options.scope || globalThis;
+    const sourceLanguage = normalizeLanguage(options.sourceLanguage || DEFAULT_SOURCE_LANGUAGE);
+    const targetLanguage = normalizeLanguage(options.targetLanguage);
+    const current = await availability({ scope, sourceLanguage, targetLanguage });
+    const allowedStatuses = options.allowDownload ? ["available", "downloadable", "downloading"] : ["available"];
+
+    if (!allowedStatuses.includes(current.status)) {
+      throw new Error(`Browser translator unavailable: ${current.status}`);
+    }
+
+    const translator = await translatorObject(scope).create({
+      sourceLanguage,
+      targetLanguage,
+      monitor(monitor) {
+        if (!options.onDownloadProgress || !monitor || typeof monitor.addEventListener !== "function") return;
+        monitor.addEventListener("downloadprogress", options.onDownloadProgress);
+      }
+    });
+
+    try {
+      const translated = {};
+      for (const text of texts || []) {
+        translated[text] = await translator.translate(String(text || ""));
+      }
+      return translated;
+    } finally {
+      if (translator && typeof translator.destroy === "function") translator.destroy();
+    }
+  }
+
   return Object.freeze({
     PROVIDER_ID,
     availability,
     normalizeLanguage,
     supportStatus,
+    translateBatch,
     translateText
   });
 });

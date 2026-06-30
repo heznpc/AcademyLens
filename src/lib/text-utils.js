@@ -216,6 +216,9 @@
         if (!parent) return NodeFilter.FILTER_REJECT;
         if (isExcludedElement(parent)) return NodeFilter.FILTER_REJECT;
         if (!isElementVisible(parent)) return NodeFilter.FILTER_REJECT;
+        if (typeof settings.shouldSkipNode === "function" && settings.shouldSkipNode(node)) {
+          return NodeFilter.FILTER_REJECT;
+        }
         if (!shouldTranslateText(node.textContent, settings.targetLanguage, settings.maxTextLength, parent)) {
           return NodeFilter.FILTER_REJECT;
         }

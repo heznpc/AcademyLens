@@ -83,3 +83,66 @@ test("browser translator translates with monitor and destroys the session", asyn
   assert.equal(monitorAttached, true);
   assert.equal(destroyed, true);
 });
+
+test("browser translator translates a batch with one session", async () => {
+  let createCalls = 0;
+  let destroyed = false;
+  const scope = {
+    Translator: {
+      async availability() {
+        return "available";
+      },
+      async create(options) {
+        createCalls += 1;
+        assert.deepEqual(options.sourceLanguage, "en");
+        assert.deepEqual(options.targetLanguage, "ko");
+        return {
+          async translate(text) {
+            return `batch: ${text}`;
+          },
+          destroy() {
+            destroyed = true;
+          }
+        };
+      }
+    }
+  };
+
+  const result = await BrowserTranslator.translateBatch(["First lesson", "Second lesson"], {
+    scope,
+    sourceLanguage: "en",
+    targetLanguage: "ko"
+  });
+
+  assert.deepEqual(result, {
+    "First lesson": "batch: First lesson",
+    "Second lesson": "batch: Second lesson"
+  });
+  assert.equal(createCalls, 1);
+  assert.equal(destroyed, true);
+});
+
+test("browser translator batch avoids implicit downloads by default", async () => {
+  let createCalls = 0;
+  const scope = {
+    Translator: {
+      async availability() {
+        return "downloadable";
+      },
+      async create() {
+        createCalls += 1;
+      }
+    }
+  };
+
+  await assert.rejects(
+    () =>
+      BrowserTranslator.translateBatch(["AI Foundations"], {
+        scope,
+        sourceLanguage: "en",
+        targetLanguage: "ko"
+      }),
+    /downloadable/
+  );
+  assert.equal(createCalls, 0);
+});

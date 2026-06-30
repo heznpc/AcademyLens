@@ -535,13 +535,13 @@ test.describe("AcademyLens extension E2E", () => {
     }
   });
 
-  test("translates more than one background batch in a single pass", async () => {
+  test("continues translation past one text-node pass", async () => {
     const harness = await startHarness();
     try {
       await harness.page.evaluate(() => {
         const main = document.querySelector("#lesson-main");
         main.innerHTML = Array.from(
-          { length: 45 },
+          { length: 145 },
           (_, index) => `<p id="chunk-${index}">Chunked translation sample ${index}</p>`
         ).join("");
       });
@@ -549,8 +549,9 @@ test.describe("AcademyLens extension E2E", () => {
       await clickPanelButton(harness.page, "[data-translate]");
 
       await expect(harness.page.locator("#chunk-0")).toHaveText("[ko] Chunked translation sample 0");
-      await expect(harness.page.locator("#chunk-44")).toHaveText("[ko] Chunked translation sample 44");
-      expect(harness.calls.filter((call) => call.text.startsWith("Chunked translation sample")).length).toBe(45);
+      await expect(harness.page.locator("#chunk-119")).toHaveText("[ko] Chunked translation sample 119");
+      await expect(harness.page.locator("#chunk-144")).toHaveText("[ko] Chunked translation sample 144");
+      expect(harness.calls.filter((call) => call.text.startsWith("Chunked translation sample")).length).toBe(145);
     } finally {
       await stopHarness(harness);
     }

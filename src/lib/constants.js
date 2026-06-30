@@ -91,6 +91,7 @@
       "status.translating": "Translating {count} text blocks...",
       "status.translated": "Translated {count} text blocks.",
       "status.translatedPartial": "Translated {count} text blocks. {failed} failed.",
+      "status.translatedCapped": "Translated {count} text blocks. More text remains.",
       "status.restored": "Restored {count} text blocks.",
       "status.timeout": "Translation request timed out.",
       "status.failed": "Translation failed.",
@@ -123,6 +124,7 @@
       "status.translating": "텍스트 {count}개 번역 중...",
       "status.translated": "텍스트 {count}개를 번역했습니다.",
       "status.translatedPartial": "텍스트 {count}개를 번역했습니다. {failed}개는 실패했습니다.",
+      "status.translatedCapped": "텍스트 {count}개를 번역했습니다. 남은 텍스트가 있습니다.",
       "status.restored": "텍스트 {count}개를 원문으로 복원했습니다.",
       "status.timeout": "번역 요청 시간이 초과되었습니다.",
       "status.failed": "번역에 실패했습니다.",
@@ -192,6 +194,7 @@
 
   const LIMITS = Object.freeze({
     maxTextNodesPerPass: 120,
+    maxTranslationPasses: 8,
     maxBatchSize: 40,
     maxTextLength: 1200,
     cacheEntries: 600
