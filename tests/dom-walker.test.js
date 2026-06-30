@@ -56,6 +56,36 @@ test("collectTranslatableTextNodes skips Gradual chrome, code, hidden, and alrea
   });
 });
 
+test("collectTranslatableTextNodes skips text hidden by ancestors and inert containers", () => {
+  withDom(
+    `
+      <main>
+        <section style="display: none"><p>Hidden by CSS ancestor</p></section>
+        <section aria-hidden="true"><p>Hidden by ARIA ancestor</p></section>
+        <section inert><p>Hidden by inert ancestor</p></section>
+        <section style="visibility: hidden"><p>Hidden by visibility ancestor</p></section>
+        <section><p>Visible course explanation</p></section>
+      </main>
+    `,
+    (document) => {
+      const nodes = Text.collectTranslatableTextNodes(document.body, {
+        targetLanguage: "ko",
+        maxNodes: 20,
+        maxTextLength: 1200
+      });
+      const values = nodes.map((node) => Text.normalizeWhitespace(node.textContent));
+
+      assert.deepEqual(values, ["Visible course explanation"]);
+    }
+  );
+});
+
+test("platform course controls are not treated as lesson copy", () => {
+  for (const control of ["Start course", "START COURSE", "SKIP TO LESSON", "Continue", "CONTINUE"]) {
+    assert.equal(Text.shouldTranslateText(control, "ko", 1200), false, `${control} should be skipped`);
+  }
+});
+
 test("applyTranslatedText preserves surrounding whitespace and supports restore", () => {
   withDom("<main><p>  Agents and workflows.  </p></main>", (document) => {
     const node = document.querySelector("p").firstChild;

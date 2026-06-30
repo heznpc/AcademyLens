@@ -75,6 +75,7 @@ const REQUIRED_OPEN_SOURCE_FILES = [
   ".github/ISSUE_TEMPLATE/feature_request.yml",
   ".github/ISSUE_TEMPLATE/glossary_submission.yml",
   ".github/ISSUE_TEMPLATE/qa_report.yml",
+  ".github/ISSUE_TEMPLATE/security_disclosure_request.yml",
   ".github/ISSUE_TEMPLATE/config.yml",
   ".github/workflows/ci.yml",
   ".github/dependabot.yml"
@@ -203,6 +204,28 @@ assertFile("docs/OPERATIONS.md");
 assertFile("docs/QUALITY_ROADMAP.md");
 assertFile("docs/RELEASE_CHECKLIST.md");
 assertFile("docs/TECH_STACK_REVIEW.md");
+
+const requiredPublicDisclaimers = ["README.md", "store-assets/STORE_LISTING.md", "CONTRIBUTING.md", "SECURITY.md"];
+for (const file of requiredPublicDisclaimers) {
+  const source = readFileSync(join(ROOT, file), "utf8");
+  assert(/unofficial/i.test(source), `${file} must include unofficial positioning`);
+  assert(/not affiliated with OpenAI/i.test(source), `${file} must include OpenAI non-affiliation wording`);
+}
+
+const bannedBrandPhrases = [
+  /OpenAI Academy Lens/i,
+  /OpenAI Translator/i,
+  /OpenAI-approved/i,
+  /powered by OpenAI/i,
+  /official OpenAI extension/i
+];
+const brandCheckedFiles = ["README.md", "store-assets/STORE_LISTING.md", "manifest.json"];
+for (const file of brandCheckedFiles) {
+  const source = readFileSync(join(ROOT, file), "utf8");
+  for (const phrase of bannedBrandPhrases) {
+    assert(!phrase.test(source), `Official-sounding brand phrase is not allowed in ${file}: ${phrase}`);
+  }
+}
 
 function assertSanitizedFixture(path, options = {}) {
   assertFile(path);

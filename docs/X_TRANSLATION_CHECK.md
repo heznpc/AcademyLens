@@ -14,7 +14,7 @@ Do not treat an X-rendered phrase as authoritative. It can support a glossary de
 
 ## Manual Workflow
 
-1. Find a public post from an official OpenAI account or a clearly relevant OpenAI employee account.
+1. Find a public post from an official product or documentation account when possible. If the useful signal comes from an individual public account, record only the post URL and terminology observation; do not copy personal names into the repo.
 2. Record the original English phrase and the X-rendered translation.
 3. Compare it to the current `src/data/glossary.<locale>.json` target.
 4. Mark one of:
@@ -42,5 +42,6 @@ review note:
 
 - Do not scrape private accounts or logged-in-only material into the repo.
 - Do not commit screenshots with personal account data.
+- Do not include personal names in glossary evidence notes.
 - Do not say "OpenAI officially translates this as ..." unless the source is an official OpenAI translation page.
 - Keep `xTranslationCheck` as `pending` until the review is documented.

@@ -5,6 +5,40 @@ const { startFixtureServer, stopFixtureServer } = require("../tests/e2e/helpers/
 const { registerTranslateStub } = require("../tests/e2e/helpers/translate-stub");
 
 const ROOT = join(__dirname, "..");
+const SCREENSHOT_ROUTES = new Map([
+  [
+    "/logged-in-courses",
+    {
+      selector: "#courses-title",
+      translated: "OpenAI Academy 강좌",
+      restored: "OpenAI Academy Courses"
+    }
+  ],
+  [
+    "/course",
+    {
+      selector: "#title",
+      translated: "업무를 위한 실용 AI 기술 구축",
+      restored: "Build practical AI skills for work"
+    }
+  ],
+  [
+    "/study-room",
+    {
+      selector: "#study-title",
+      translated: "업무를 위한 실용 AI 기술 구축",
+      restored: "Build practical AI skills for work"
+    }
+  ],
+  [
+    "/live-lesson-shell",
+    {
+      selector: "#live-title",
+      translated: "업무를 위한 실용 AI 기술 구축",
+      restored: "Build practical AI skills for work"
+    }
+  ]
+]);
 
 function argValue(name, fallback) {
   const index = process.argv.indexOf(name);
@@ -39,9 +73,25 @@ async function screenshot(page, outDir, filename) {
   console.log(`saved ${path}`);
 }
 
+function routeConfig(path) {
+  const config = SCREENSHOT_ROUTES.get(path);
+  if (config) return config;
+  throw new Error(
+    `Unsupported screenshot path: ${path}. Supported paths: ${Array.from(SCREENSHOT_ROUTES.keys()).join(", ")}`
+  );
+}
+
+async function waitForText(page, selector, text) {
+  await page.waitForFunction(
+    ({ innerSelector, expectedText }) => document.querySelector(innerSelector)?.textContent === expectedText,
+    { innerSelector: selector, expectedText: text }
+  );
+}
+
 async function main() {
   const outDir = resolve(argValue("--out", join(ROOT, "dist/store-screenshots")));
   const path = argValue("--path", "/logged-in-courses");
+  const expectation = routeConfig(path);
   let fixture;
   let ext;
 
@@ -62,14 +112,12 @@ async function main() {
     await screenshot(page, outDir, "01-desktop-panel-ready.png");
 
     await panelClick(page, "[data-translate]");
-    await page.waitForFunction(() => document.querySelector("#courses-title")?.textContent === "OpenAI Academy 강좌");
+    await waitForText(page, expectation.selector, expectation.translated);
     await page.waitForTimeout(350);
     await screenshot(page, outDir, "02-desktop-translated.png");
 
     await panelClick(page, "[data-restore]");
-    await page.waitForFunction(
-      () => document.querySelector("#courses-title")?.textContent === "OpenAI Academy Courses"
-    );
+    await waitForText(page, expectation.selector, expectation.restored);
     await page.setViewportSize({ width: 390, height: 844 });
     await page.waitForTimeout(350);
     await screenshot(page, outDir, "03-mobile-panel-ready.png");

@@ -10,7 +10,7 @@
 [![GitHub contributors](https://img.shields.io/github/contributors/heznpc/AcademyLens)](https://github.com/heznpc/AcademyLens/graphs/contributors)
 [![PRs welcome](https://img.shields.io/badge/PRs-welcome-brightgreen.svg)](CONTRIBUTING.md)
 
-**Translate and review OpenAI Academy course content in your language.**
+**Translate OpenAI Academy course content in your language.**
 
 AcademyLens is an unofficial Chrome extension for learners using OpenAI Academy. It focuses on course text translation and multilingual OpenAI/AI terminology glossaries.
 
@@ -21,6 +21,8 @@ AcademyLens is an unofficial Chrome extension for learners using OpenAI Academy.
 </div>
 
 ---
+
+> **Beta status:** local install only, unofficial, powered by a Google Translate web endpoint, and not Chrome Web Store-ready until live logged-in Academy QA, glossary review evidence, provider/privacy review, and release assets are closed.
 
 ## Table of Contents
 
@@ -45,7 +47,7 @@ AcademyLens is an unofficial Chrome extension for learners using OpenAI Academy.
 - Preserves core OpenAI and AI terminology such as OpenAI, ChatGPT, GPT, LLM, API, Responses API, Agents SDK, JSON, and Gradual.
 - Applies installed premium glossaries built from OpenAI Academy course language and OpenAI documentation terminology before machine translation.
 - Uses native language names in the language picker.
-- Shows whether the selected language has a reviewed glossary, an AI-drafted beta glossary, or machine translation with protected terms.
+- Shows whether the selected language has a final/native-reviewed, community-reviewed, AI-drafted beta, or protected-term machine translation status.
 - Uses Google Translate for the current fast translation runtime while browser-native translation providers are evaluated.
 - Guards against late translation responses after Restore, language switches, and Gradual/Next.js route changes.
 - Does not modify enrollment, progress tracking, certificates, account state, or Gradual platform data.
@@ -61,7 +63,6 @@ Manual install for Chrome or another Chromium browser:
 git clone https://github.com/heznpc/AcademyLens.git
 cd AcademyLens
 npm install
-npm run check:all
 ```
 
 Then:
@@ -93,7 +94,7 @@ OpenAI Academy is hosted through Gradual for course enrollment, progress trackin
 
 ## Built For Academy Pages
 
-AcademyLens is designed around OpenAI Academy course-page patterns and tested against Gradual-style course, study-room, and lesson DOM structures. It translates visible lesson content while avoiding navigation, progress, certificates, quizzes, and account controls.
+AcademyLens is designed around OpenAI Academy course-page patterns and tested against sanitized Gradual-style course, study-room, and synthetic lesson DOM structures. It translates visible lesson content while avoiding navigation, progress, certificates, quizzes, and account controls. Live logged-in Academy QA remains required before store submission.
 
 ## Quality And Release Readiness
 
@@ -176,6 +177,7 @@ npm run capture:academy -- --url https://academy.openai.com/pages/courses --out 
 ```
 
 To intentionally save a reviewed, sanitized capture under `tests/fixtures`, pass `--allow-fixture-write`.
+The capture helper prints a redaction report and blocks fixture writes when residual sensitive patterns remain.
 
 Generate local store screenshot drafts from the sanitized Academy-style fixture:
 
@@ -184,6 +186,8 @@ npm run store:screenshots
 ```
 
 The screenshots are written to `dist/store-screenshots/`, which is intentionally ignored.
+The optional screenshot `--path` must be one of the fixture routes with explicit Translate/Restore assertions.
+These screenshots are review drafts, not final store assets.
 
 ## Operations
 
@@ -207,7 +211,7 @@ Good first contribution paths:
 - UI/accessibility QA reports
 - tests for translation, restore, cache, SPA navigation, or glossary behavior
 
-Start with [CONTRIBUTING.md](CONTRIBUTING.md). Please keep every contribution clear that AcademyLens is unofficial and not affiliated with OpenAI.
+Start with [CONTRIBUTING.md](CONTRIBUTING.md) and [docs/GLOSSARY_CONTRIBUTING.md](docs/GLOSSARY_CONTRIBUTING.md). Please keep every contribution clear that AcademyLens is unofficial and not affiliated with OpenAI.
 
 ## Privacy
 
@@ -219,4 +223,4 @@ AcademyLens is released under the [MIT License](LICENSE).
 
 ## Acknowledgements
 
-Development assisted by OpenAI Codex.
+Development uses AI coding assistance. AcademyLens remains unofficial and not affiliated with OpenAI.

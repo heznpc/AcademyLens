@@ -10,6 +10,7 @@
 - [ ] Documentation
 - [ ] Test/QA
 - [ ] Refactor
+- [ ] Copy/assets
 
 ## Verification
 
@@ -35,6 +36,12 @@
 - [ ] Sanitizes any captured Academy/Gradual fixture
 - [ ] Updates `docs/GLOSSARY_STATUS.md` when glossary metadata changes
 - [ ] Updates `docs/LIVE_QA_MANIFEST.json` when Academy/Gradual surfaces change
+
+## Copy / Asset Checklist
+
+- [ ] Does not use official-sounding names such as `OpenAI Academy Lens`, `OpenAI Translator`, or `powered by OpenAI`
+- [ ] Icon changes explain the visual direction and regenerate all manifest PNG sizes
+- [ ] Store/README claims match implemented behavior and glossary metadata
 
 ## Related Issues
 

@@ -37,7 +37,7 @@ Use the capture helper for reviewed fixture candidates:
 npm run qa:live
 ```
 
-The command writes to `/tmp` by default. To intentionally write under `tests/fixtures`, first review the output and then rerun `npm run capture:academy` with `--allow-fixture-write`.
+The command writes to `/tmp` by default and prints a redaction report. To intentionally write under `tests/fixtures`, first review the output and then rerun `npm run capture:academy` with `--allow-fixture-write`.
 
 ## Glossary Operations
 
@@ -85,6 +85,7 @@ npm run store:screenshots
 ```
 
 Outputs are written to `dist/store-screenshots/`, which is intentionally ignored. These are review drafts, not automatic release assets.
+The optional `--path` argument is restricted to fixture routes with explicit Translate/Restore assertions.
 
 Final public screenshots should be reviewed manually for:
 
@@ -103,5 +104,7 @@ Useful external contributions:
 - sanitized fixture improvements
 - live QA reports
 - accessibility and visual QA notes
+- public copy, README, store listing, and screenshot review improvements that keep the unofficial positioning clear
 
 Every PR should keep the unofficial positioning intact, avoid remote hosted runtime code, and preserve protected terms.
+Final merge authority is intentionally centralized through CODEOWNERS while the project is pre-release; external reviewer evidence should be captured in issues, PR notes, QA reports, or glossary audit packets before status promotion.

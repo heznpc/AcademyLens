@@ -66,8 +66,8 @@ Use the capture command when a logged-in Academy page is available in a Playwrig
 npm run capture:academy -- --url https://academy.openai.com/pages/courses --out /tmp/academylens-captured-page.html --headed
 ```
 
-The capture script strips scripts, media sources, common auth attributes, form values, and email-like text before writing HTML.
-It refuses to write under `tests/fixtures` unless `--allow-fixture-write` is passed after manual review.
+The capture script strips scripts, media sources, common auth attributes, account/profile containers, form values, emails, phone-like values, UUIDs, and long mixed account identifiers before writing HTML.
+It prints a redaction report and refuses to write under `tests/fixtures` unless `--allow-fixture-write` is passed after manual review.
 
 The required live QA surface list is tracked in `docs/LIVE_QA_MANIFEST.json`.
 

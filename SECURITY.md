@@ -2,9 +2,9 @@
 
 ## Reporting a Vulnerability
 
-Do not open a public issue for suspected security vulnerabilities.
+Do not open a public issue with vulnerability details.
 
-If GitHub Private Vulnerability Reporting is available for this repository, use the repo's Security tab and choose "Report a vulnerability." If that is unavailable, open a public issue titled `Security disclosure request` with no vulnerability details; the maintainer will provide a private intake path.
+If GitHub Private Vulnerability Reporting is available for this repository, use the repo's Security tab and choose "Report a vulnerability." If that is unavailable, use the `Security Disclosure Request` issue form with no vulnerability details; the maintainer will provide a private intake path.
 
 ## In Scope
 

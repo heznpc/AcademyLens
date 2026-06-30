@@ -28,6 +28,7 @@ body:
     id: academy-page
     attributes:
       label: Academy Page Type
+      description: Use a page type, not a private live URL.
       placeholder: course list, course detail, study room, SCORM lesson
   - type: checkboxes
     id: checklist
@@ -41,7 +42,8 @@ body:
         - label: Course/lesson text translates but Gradual controls stay usable.
         - label: SPA navigation does not duplicate or stale-apply translations.
         - label: Language switching resolves to the final selected language.
-        - label: Screenshots or notes do not include private account details, certificates, notifications, profile images, or course progress.
+        - label: Screenshots or notes do not include private account details, certificates, notifications, profile images, course progress, cookies, auth/session tokens, request headers, telemetry IDs, or full DOM dumps.
+          required: true
   - type: textarea
     id: issues
     attributes:
@@ -51,4 +53,4 @@ body:
     id: screenshots
     attributes:
       label: Screenshots
-      description: Optional. Avoid screenshots with private account details.
+      description: Optional. Redact account names, profile images, certificate/progress data, notifications, cookies, auth/session tokens, request headers, telemetry IDs, and full DOM dumps.
