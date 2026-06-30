@@ -80,6 +80,33 @@ test("collectTranslatableTextNodes skips text hidden by ancestors and inert cont
   );
 });
 
+test("collectTranslatableTextNodes applies caller skips before max node limit", () => {
+  withDom(
+    `
+      <main>
+        <p>Already translated lesson zero</p>
+        <p>Already translated lesson one</p>
+        <p>Already translated lesson two</p>
+        <p>Fresh lesson three</p>
+        <p>Fresh lesson four</p>
+      </main>
+    `,
+    (document) => {
+      const nodes = Text.collectTranslatableTextNodes(document.body, {
+        targetLanguage: "ko",
+        maxNodes: 2,
+        maxTextLength: 1200,
+        shouldSkipNode(node) {
+          return Text.normalizeWhitespace(node.textContent).startsWith("Already translated");
+        }
+      });
+      const values = nodes.map((node) => Text.normalizeWhitespace(node.textContent));
+
+      assert.deepEqual(values, ["Fresh lesson three", "Fresh lesson four"]);
+    }
+  );
+});
+
 test("platform course controls are not treated as lesson copy", () => {
   for (const control of ["Start course", "START COURSE", "SKIP TO LESSON", "Continue", "CONTINUE"]) {
     assert.equal(Text.shouldTranslateText(control, "ko", 1200), false, `${control} should be skipped`);

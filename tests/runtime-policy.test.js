@@ -23,18 +23,27 @@ function listRuntimeFiles(dir) {
 
 test("content translation fallback does not race background translation by default", () => {
   const source = read("src/content/content.js");
+  const sendBackgroundTranslationBatch = source.slice(
+    source.indexOf("async function sendBackgroundTranslationBatch"),
+    source.indexOf(
+      "async function sendTranslationBatch",
+      source.indexOf("async function sendBackgroundTranslationBatch")
+    )
+  );
   const sendTranslationBatch = source.slice(
     source.indexOf("async function sendTranslationBatch"),
     source.indexOf("function message", source.indexOf("async function sendTranslationBatch"))
   );
 
   assert(!source.includes("BACKGROUND_FALLBACK_DELAY_MS"));
-  assert(!sendTranslationBatch.includes("Promise.race"));
-  assert.match(sendTranslationBatch, /await sendMessage/);
-  assert.match(sendTranslationBatch, /BACKGROUND_RESPONSE_MAX_TIMEOUT_MS/);
-  assert.match(sendTranslationBatch, /BACKGROUND_TIMEOUT_CODE/);
-  assert.match(sendTranslationBatch, /throw error/);
-  assert.match(sendTranslationBatch, /translateBatchInContent/);
+  assert(!sendBackgroundTranslationBatch.includes("Promise.race"));
+  assert.match(sendBackgroundTranslationBatch, /await sendMessage/);
+  assert.match(sendBackgroundTranslationBatch, /BACKGROUND_RESPONSE_MAX_TIMEOUT_MS/);
+  assert.match(sendBackgroundTranslationBatch, /BACKGROUND_TIMEOUT_CODE/);
+  assert.match(sendBackgroundTranslationBatch, /throw error/);
+  assert.match(sendBackgroundTranslationBatch, /translateBatchInContent/);
+  assert.match(sendTranslationBatch, /translateBatchWithBrowserTranslator/);
+  assert.match(sendTranslationBatch, /sendBackgroundTranslationBatch/);
 });
 
 test("content translation fallback has retry, timeout, dedupe, and concurrency controls", () => {
@@ -49,6 +58,34 @@ test("content translation fallback has retry, timeout, dedupe, and concurrency c
   assert.match(fallback, /AbortController/);
   assert.match(fallback, /RETRYABLE_TRANSLATE_STATUS/);
   assert.match(fallback, /runWithContentFallbackFetchLimit/);
+});
+
+test("browser translator provider only runs when already available", () => {
+  const source = read("src/content/content.js");
+  const provider = source.slice(
+    source.indexOf("async function translateBatchWithBrowserTranslator"),
+    source.indexOf("async function sendBackgroundTranslationBatch")
+  );
+
+  assert.match(provider, /support\.status !== "available"/);
+  assert.match(provider, /allowDownload: false/);
+  assert.match(provider, /cacheHasTranslation/);
+  assert.match(provider, /persistContentCache/);
+});
+
+test("content translation keeps scanning bounded passes beyond one node cap", () => {
+  const constants = read("src/lib/constants.js");
+  const source = read("src/content/content.js");
+  const translatePage = source.slice(
+    source.indexOf("async function translatePage"),
+    source.indexOf("function restorePage", source.indexOf("async function translatePage"))
+  );
+
+  assert.match(constants, /maxTranslationPasses: 8/);
+  assert.match(source, /async function translateCandidatePass/);
+  assert.match(translatePage, /for \(let passIndex = 0; passIndex < maxPasses; passIndex \+= 1\)/);
+  assert.match(translatePage, /result\.reachedLimit/);
+  assert.match(translatePage, /status\.translatedCapped/);
 });
 
 test("content mutation and placement work is throttled before expensive page scans", () => {

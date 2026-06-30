@@ -41,6 +41,11 @@ test("UI messages are localized for Korean browsers", () => {
   assert.equal(Constants.getMessage("field.targetLanguage", "ko-KR"), "번역할 언어");
   assert.equal(Constants.getMessage("action.translate", "ko-KR"), "번역");
   assert.equal(Constants.getMessage("status.translated", "ko-KR", { count: 3 }), "텍스트 3개를 번역했습니다.");
+  assert.equal(
+    Constants.getMessage("status.translatedCapped", "ko-KR", { count: 120 }),
+    "텍스트 120개를 번역했습니다. 남은 텍스트가 있습니다."
+  );
+  assert.equal(Constants.LIMITS.maxTranslationPasses, 8);
 });
 
 test("language support messages distinguish glossary-backed languages", () => {
