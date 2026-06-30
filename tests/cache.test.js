@@ -10,6 +10,31 @@ test("cacheKey is stable and language scoped", () => {
   assert.notEqual(Cache.cacheKey("ko", text), Cache.cacheKey("ja", text));
 });
 
+test("cacheKey and entryMatches include provider, glossary, and correction scope", () => {
+  const text = "Provider scoped lesson";
+  const google = {
+    provider: "google-translate",
+    glossarySignature: "g-a",
+    correctionSignature: "c-a"
+  };
+  const native = {
+    provider: "browser-translator",
+    glossarySignature: "g-a",
+    correctionSignature: "c-a"
+  };
+  const key = Cache.cacheKey("ko", text, google);
+  const entry = {
+    original: text,
+    translated: "번역",
+    targetLanguage: "ko",
+    ...Cache.normalizeScope(google)
+  };
+
+  assert.notEqual(key, Cache.cacheKey("ko", text, native));
+  assert.equal(Cache.entryMatches(entry, text, "ko", google), true);
+  assert.equal(Cache.entryMatches(entry, text, "ko", native), false);
+});
+
 test("trimCache keeps the newest entries", () => {
   const cache = {
     old: { createdAt: 1, translated: "old" },

@@ -70,6 +70,7 @@ test("browser translator provider only runs when already available", () => {
   assert.match(provider, /const canUseBrowserTranslator/);
   assert.match(provider, /!canUseBrowserTranslator/);
   assert.match(provider, /allowDownload: Boolean\(state\.settings\.enableBrowserTranslatorDownloads\)/);
+  assert.match(provider, /translationLooksSuspicious/);
   assert.match(provider, /cacheHasTranslation/);
   assert.match(provider, /persistContentCache/);
   assert.match(provider, /ok: stats\.failed === 0 \|\| Object\.keys\(translated\)\.length > 0/);
@@ -126,14 +127,32 @@ test("content supports local corrections, frame aggregation, viewport priority, 
 
   assert.match(constants, /CORRECTIONS: "academylens\.localCorrections\.v1"/);
   assert.match(source, /function persistCorrection/);
+  assert.match(source, /function deleteCorrection/);
+  assert.match(source, /function updateCorrectionsManager/);
   assert.match(source, /function correctionFor/);
   assert.match(source, /function startFrameAggregate/);
   assert.match(source, /cleanupTimer/);
   assert.match(source, /status\.translatedWithFrames/);
   assert.match(source, /function sortCandidatesByViewport/);
   assert.match(source, /function prepareInlinePlaceholders/);
+  assert.match(source, /function candidateContextKey/);
+  assert.match(source, /function updateDiagnosticsPanel/);
   assert.match(source, /preparedByCandidate/);
   assert.match(source, /__AL_INLINE_/);
+});
+
+test("content cache scope tracks provider, glossary, and correction changes", () => {
+  const source = read("src/content/content.js");
+  const cache = read("src/lib/cache.js");
+  const background = read("src/background/background.js");
+
+  assert.match(cache, /function normalizeScope/);
+  assert.match(cache, /function entryMatches/);
+  assert.match(source, /function glossarySignature/);
+  assert.match(source, /function correctionSignature/);
+  assert.match(source, /function cacheScope/);
+  assert.match(source, /provider: "google-translate"/);
+  assert.match(background, /function googleCacheScope/);
 });
 
 test("content fallback only retries texts missed by browser-native translation", () => {
@@ -147,6 +166,15 @@ test("content fallback only retries texts missed by browser-native translation",
   assert.match(source, /function mergeTranslationResponses/);
   assert.match(sendTranslationBatch, /const missingTexts = untranslatedTexts\(requestedTexts, browserResponse\)/);
   assert.match(sendTranslationBatch, /texts: missingTexts/);
+});
+
+test("frame commands are scoped to the current route before redispatch", () => {
+  const source = read("src/content/content.js");
+
+  assert.match(source, /routeVersion/);
+  assert.match(source, /pageUrl: extra\.pageUrl \|\| location\.href/);
+  assert.match(source, /function isPendingFrameCommandCurrent/);
+  assert.match(source, /function clearFrameAggregates/);
 });
 
 test("content mutation and placement work is throttled before expensive page scans", () => {
@@ -192,6 +220,9 @@ test("privacy policy describes local cache contents and auto-translate behavior"
   assert.match(policy, /locally corrected original visible text/i);
   assert.match(policy, /cached original visible text/i);
   assert.match(policy, /cached translated text/i);
+  assert.match(policy, /provider, glossary, correction-state/i);
+  assert.match(policy, /diagnostics are displayed locally/i);
+  assert.match(policy, /do not include the translated page text/i);
   assert.match(policy, /target language, creation time, and last-access time/i);
 });
 

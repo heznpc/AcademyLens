@@ -37,8 +37,15 @@ function sleep(ms) {
   return new Promise((resolve) => setTimeout(resolve, ms));
 }
 
-function inFlightKey(targetLanguage, text) {
-  return Cache.cacheKey(targetLanguage, text);
+function googleCacheScope(message) {
+  return {
+    ...((message && message.cacheScope) || {}),
+    provider: "google-translate"
+  };
+}
+
+function inFlightKey(targetLanguage, text, scope) {
+  return Cache.cacheKey(targetLanguage, text, scope);
 }
 
 function drainRemoteFetchQueue() {
@@ -99,8 +106,8 @@ async function fetchWithRetry(url) {
   throw lastError || new Error("Google Translate request failed");
 }
 
-function remoteTranslate(text, targetLanguage) {
-  const key = inFlightKey(targetLanguage, text);
+function remoteTranslate(text, targetLanguage, scope) {
+  const key = inFlightKey(targetLanguage, text, scope);
   const existing = inFlightTranslations.get(key);
   if (existing) return existing;
 
@@ -159,6 +166,7 @@ async function mergeCacheUpdates(cacheUpdates) {
 
 async function translateBatch(message) {
   const targetLanguage = message.targetLanguage || DEFAULT_SETTINGS.targetLanguage;
+  const cacheScope = googleCacheScope(message);
   const allTexts = Array.isArray(message.texts)
     ? [...new Set(message.texts.map((text) => String(text)).filter(Boolean))]
     : [];
@@ -179,17 +187,13 @@ async function translateBatch(message) {
 
   await Promise.all(
     texts.map(async (text) => {
-      const key = Cache.cacheKey(targetLanguage, text);
-      if (
-        cache[key] &&
-        cache[key].translated &&
-        cache[key].original === text &&
-        cache[key].targetLanguage === targetLanguage
-      ) {
+      const key = Cache.cacheKey(targetLanguage, text, cacheScope);
+      if (Cache.entryMatches(cache[key], text, targetLanguage, cacheScope)) {
         translated[text] = cache[key].translated;
         cacheUpdates[key] = {
           original: text,
           targetLanguage,
+          ...Cache.normalizeScope(cacheScope),
           accessedAt: Date.now()
         };
         stats.cacheHits += 1;
@@ -198,12 +202,13 @@ async function translateBatch(message) {
 
       stats.cacheMisses += 1;
       try {
-        const result = await remoteTranslate(text, targetLanguage);
+        const result = await remoteTranslate(text, targetLanguage, cacheScope);
         translated[text] = result;
         cacheUpdates[key] = {
           original: text,
           translated: result,
           targetLanguage,
+          ...Cache.normalizeScope(cacheScope),
           createdAt: Date.now(),
           accessedAt: Date.now()
         };

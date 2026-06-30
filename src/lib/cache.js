@@ -18,8 +18,36 @@
     return (hash >>> 0).toString(36);
   }
 
-  function cacheKey(targetLanguage, text) {
-    return `${targetLanguage || "ko"}:${stableHash(text)}`;
+  function normalizeScope(scope) {
+    const options = scope || {};
+    return {
+      provider: String(options.provider || "default").replace(/[^A-Za-z0-9_.-]/g, "_"),
+      glossarySignature: String(options.glossarySignature || "g0").replace(/[^A-Za-z0-9_.-]/g, "_"),
+      correctionSignature: String(options.correctionSignature || "c0").replace(/[^A-Za-z0-9_.-]/g, "_")
+    };
+  }
+
+  function cacheKey(targetLanguage, text, scope) {
+    const normalized = normalizeScope(scope);
+    return [
+      targetLanguage || "ko",
+      normalized.provider,
+      normalized.glossarySignature,
+      normalized.correctionSignature,
+      stableHash(text)
+    ].join(":");
+  }
+
+  function entryMatches(entry, text, targetLanguage, scope) {
+    if (!entry || !entry.translated || entry.original !== text || entry.targetLanguage !== targetLanguage) {
+      return false;
+    }
+    const normalized = normalizeScope(scope);
+    return (
+      (entry.provider || "default") === normalized.provider &&
+      (entry.glossarySignature || "g0") === normalized.glossarySignature &&
+      (entry.correctionSignature || "c0") === normalized.correctionSignature
+    );
   }
 
   function trimCache(cache, maxEntries) {
@@ -37,6 +65,8 @@
   return Object.freeze({
     stableHash,
     cacheKey,
+    entryMatches,
+    normalizeScope,
     trimCache
   });
 });

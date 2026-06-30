@@ -14,6 +14,7 @@ AcademyLens should keep the current MV3, frontend-only, no-server architecture f
 | Remote Puter.js/GPT script                           | Reject for runtime                           | Remote hosted code risk is too high for Chrome Web Store review. Keep only disabled bridge skeleton.                                                                                                  |
 | OpenAI API from extension                            | Reject for default runtime                   | It requires user/developer key handling or a server. That conflicts with the no-key, no-server product principle.                                                                                     |
 | Browser-native Translator API                        | Optional first runtime path                  | Use when already available, or when the user explicitly allows browser-managed language downloads. Keep Google Translate fallback because browser/version/language support is not universal.          |
+| Local correction and diagnostics storage             | Keep local-only                              | Learner corrections, cache scope metadata, and runtime diagnostics improve repeat-use quality without adding an AcademyLens server or remote AI dependency.                                           |
 | Local offline translation model bundled in extension | Reject for now                               | Bundle size, language coverage, performance, and CWS review complexity are not worth it for this product stage.                                                                                       |
 | Server-side translation proxy                        | Reject for now                               | Better control, but changes privacy posture and creates an operating cost/backend trust surface.                                                                                                      |
 
@@ -30,6 +31,8 @@ AcademyLens should keep the current MV3, frontend-only, no-server architecture f
 ## Accepted Follow-Up
 
 Do not add a large provider abstraction yet. Keep provider selection small: browser-native Translator may run first when available or explicitly download-enabled, and Google Translate remains the fallback provider. Preserve privacy copy and E2E coverage for both paths.
+
+Cache entries should remain scoped by provider, glossary signature, and local correction signature. This keeps native-provider experiments from silently reusing Google fallback output when the user changes provider posture.
 
 ## Future Experiment Shape
 

@@ -24,7 +24,9 @@ AcademyLens stores settings, optional local correction overrides, and a local tr
 - target language, creation time, and last-access time for correction entries
 - cached original visible text
 - cached translated text
-- target language, creation time, and last-access time for cache entries
+- provider, glossary, correction-state, target language, creation time, and last-access time for cache entries
+
+The panel may show local diagnostics such as provider path, cache hit/miss counts, fallback count, correction count, context grouping count, and embedded-frame count. These diagnostics are displayed locally and do not include the translated page text.
 
 Bundled glossary files are stored inside the extension package. They do not require a network request to AcademyLens or any AcademyLens server.
 
@@ -37,6 +39,7 @@ Bundled glossary files are stored inside the extension package. They do not requ
 - It does not run a backend server.
 - It does not require an API key.
 - It does not load remote AI scripts.
+- It does not send local correction lists or diagnostics to AcademyLens.
 - It does not run GPT/Puter-based review in the current runtime. The included AI review bridge is disabled and cannot send review text.
 - It does not connect to X/Twitter. Public X translation checks are a manual glossary QA process outside the extension runtime.
 
