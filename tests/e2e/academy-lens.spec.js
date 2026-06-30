@@ -150,12 +150,14 @@ test.describe("AcademyLens extension E2E", () => {
       );
       await expect(harness.page.locator("#technical")).toHaveText("JSON API 예제는 읽기 쉽게 유지됩니다.");
       await expect(harness.page.locator("#inline")).toHaveText("ChatGPT를 안전하게 사용하세요.");
+      await expect(harness.page.locator("#inline strong")).toHaveText("ChatGPT");
       await expect(harness.page.locator("#gradual-topbar")).toHaveText("Courses Search Account");
       await expect(harness.page.locator("#code")).toContainText("Do not translate code");
 
       await clickPanelButton(harness.page, "[data-restore]");
       await expect(harness.page.locator("#title")).toHaveText("Build practical AI skills for work");
       await expect(harness.page.locator("#protected")).toHaveText("OpenAI Academy courses use ChatGPT and GPT-5.");
+      await expect(harness.page.locator("#inline strong")).toHaveText("ChatGPT");
     } finally {
       await stopHarness(harness);
     }
@@ -388,6 +390,7 @@ test.describe("AcademyLens extension E2E", () => {
 
       await clickPanelButton(harness.page, "[data-translate]");
       await expect(scormFrame.locator("#scorm-title")).toHaveText("AI 기초");
+      await expect(scormFrame.locator("#scorm-start")).toHaveText("START COURSE");
       await expect(scormFrame.locator("#scorm-body")).toHaveText(
         "이 과정은 AI와 ChatGPT를 안전하게 사용하기 위한 기반을 구축하도록 설계되었습니다."
       );
@@ -434,6 +437,8 @@ test.describe("AcademyLens extension E2E", () => {
       await clickPanelButton(harness.page, "[data-translate]");
       await expect(scormFrame.locator("#scorm-lesson-title")).toHaveText("1.1 AI 기초에 오신 것을 환영합니다");
       await expect(scormFrame.locator("#scorm-lesson-caption")).toHaveText("강의에 오신 것을 환영합니다.");
+      await expect(scormFrame.locator("#scorm-skip")).toHaveText("SKIP TO LESSON");
+      await expect(scormFrame.locator("#scorm-continue")).toHaveText("CONTINUE");
       await expect(scormFrame.locator("#scorm-media")).toBeVisible();
       await expect(harness.page.locator("#gradual-topbar")).toContainText("Study Room");
 
@@ -491,14 +496,14 @@ test.describe("AcademyLens extension E2E", () => {
         expect(box.top).toBeGreaterThanOrEqual(0);
         expect(box.right).toBeLessThanOrEqual(viewport.width);
         expect(box.bottom).toBeLessThanOrEqual(viewport.height);
-        expect(box.width).toBeGreaterThanOrEqual(viewport.width > 600 ? 420 : 330);
+        expect(box.width).toBeGreaterThanOrEqual(52);
+        expect(box.width).toBeLessThanOrEqual(72);
         expect(box.hostVersion).toBe(manifest.version);
         expect(box.panelVersion).toBe(manifest.version);
         expect(["checking", "unsupported", "unavailable", "available", "downloadable", "downloading"]).toContain(
           box.browserTranslatorStatus
         );
-        expect(box.topHeight).toBeGreaterThanOrEqual(68);
-        expect(box.nameFontSize).toBeGreaterThanOrEqual(17.5);
+        expect(box.topHeight).toBeGreaterThanOrEqual(52);
         expect(box.collapsed).toBe("true");
         expect(box.bodyVisible).toBe(false);
 
@@ -509,11 +514,13 @@ test.describe("AcademyLens extension E2E", () => {
         expect(expandedBox.top).toBeGreaterThanOrEqual(0);
         expect(expandedBox.right).toBeLessThanOrEqual(viewport.width);
         expect(expandedBox.bottom).toBeLessThanOrEqual(viewport.height);
-        expect(expandedBox.width).toBeGreaterThanOrEqual(viewport.width > 600 ? 480 : 330);
-        expect(expandedBox.selectFontSize).toBeGreaterThanOrEqual(15.5);
-        expect(expandedBox.buttonFontSize).toBeGreaterThanOrEqual(15.5);
-        expect(expandedBox.selectHeight).toBeGreaterThanOrEqual(50);
-        expect(expandedBox.primaryHeight).toBeGreaterThanOrEqual(50);
+        expect(expandedBox.width).toBeGreaterThanOrEqual(viewport.width > 600 ? 400 : 330);
+        expect(expandedBox.topHeight).toBeGreaterThanOrEqual(54);
+        expect(expandedBox.nameFontSize).toBeGreaterThanOrEqual(15);
+        expect(expandedBox.selectFontSize).toBeGreaterThanOrEqual(14.25);
+        expect(expandedBox.buttonFontSize).toBeGreaterThanOrEqual(14.25);
+        expect(expandedBox.selectHeight).toBeGreaterThanOrEqual(42);
+        expect(expandedBox.primaryHeight).toBeGreaterThanOrEqual(42);
         expect(expandedBox.collapsed).toBe("false");
         expect(expandedBox.bodyVisible).toBe(true);
 

@@ -1,0 +1,18 @@
+name: Security Disclosure Request
+description: Request a private intake path without posting vulnerability details.
+title: "Security disclosure request"
+labels: ["security"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Use this only when GitHub Private Vulnerability Reporting is unavailable.
+
+        Do not include vulnerability details, proof-of-concept steps, exploit code, private URLs, request headers, cookies, auth/session tokens, account identifiers, or screenshots. A maintainer will provide a private intake path.
+  - type: checkboxes
+    id: no-details
+    attributes:
+      label: No Public Details
+      options:
+        - label: I understand this public issue must not include vulnerability details, private URLs, request headers, cookies, auth/session tokens, account identifiers, screenshots, or proof-of-concept steps.
+          required: true

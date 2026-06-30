@@ -104,10 +104,13 @@
       /^copy link(?: to clipboard)?$/i,
       /^publish to linkedin profile$/i,
       /^show table of contents$/i,
+      /^start (?:course|lesson|module)$/i,
       /^exit course$/i,
       /^start quiz$/i,
       /^start learning$/i,
       /^submit$/i,
+      /^skip to lesson$/i,
+      /^continue(?: learning| course| lesson)?$/i,
       /^next$/i,
       /^back$/i,
       /^home$/i,
@@ -161,14 +164,24 @@
 
   function isElementVisible(element) {
     if (!element || element.nodeType !== 1) return true;
-    if (element.hidden || element.getAttribute("aria-hidden") === "true") return false;
 
     if (typeof window === "undefined" || typeof window.getComputedStyle !== "function") {
-      return true;
+      return !element.closest("[hidden],[aria-hidden='true'],[inert]");
     }
 
-    const style = window.getComputedStyle(element);
-    return style.display !== "none" && style.visibility !== "hidden" && style.opacity !== "0";
+    let current = element;
+    while (current && current.nodeType === 1) {
+      if (current.hidden || current.getAttribute("aria-hidden") === "true" || current.hasAttribute("inert")) {
+        return false;
+      }
+      const style = window.getComputedStyle(current);
+      if (style.display === "none" || style.visibility === "hidden" || style.opacity === "0") {
+        return false;
+      }
+      current = current.parentElement;
+    }
+
+    return true;
   }
 
   function isExcludedElement(element) {

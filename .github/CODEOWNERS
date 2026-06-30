@@ -1,7 +1,8 @@
 # AcademyLens CODEOWNERS
 #
-# Solo maintainer today. Keep load-bearing surfaces reviewed as the
-# project grows.
+# Solo maintainer today. External glossary, QA, fixture, and brand reviews
+# should be captured in issues or PR notes; final merge authority remains here
+# until a maintainer group exists.
 
 * @heznpc
 

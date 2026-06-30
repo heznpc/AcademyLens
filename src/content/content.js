@@ -10,6 +10,13 @@
   const uiLocale = C && C.getUiLocale ? C.getUiLocale(navigator.language) : "en";
   const FRAME_MESSAGE_SOURCE = "AcademyLens";
   const BACKGROUND_RESPONSE_TIMEOUT_MS = 12000;
+  const BACKGROUND_RESPONSE_MAX_TIMEOUT_MS = 90000;
+  const BACKGROUND_TIMEOUT_CODE = "ACADEMYLENS_BACKGROUND_TIMEOUT";
+  const CONTENT_FALLBACK_FETCH_TIMEOUT_MS = 8000;
+  const CONTENT_FALLBACK_MAX_RETRIES = 2;
+  const CONTENT_FALLBACK_BASE_BACKOFF_MS = 350;
+  const CONTENT_FALLBACK_MAX_CONCURRENT_FETCHES = 5;
+  const RETRYABLE_TRANSLATE_STATUS = new Set([408, 425, 429, 500, 502, 503, 504]);
   const isTopFrame = window.top === window;
 
   if (!C || !Glossary || !Text || !C.isAcademyUrl(location.href)) return;
@@ -27,13 +34,18 @@
     observer: null,
     debounceTimer: 0,
     placementTimer: 0,
+    placementFrame: 0,
     placementSettleTimers: [],
     latestFrameCommand: null,
     handledFrameMessages: new Set(),
     browserTranslatorStatus: "unchecked",
     collapsed: false,
-    collapseUserSet: false
+    collapseUserSet: false,
+    suppressMutationUntil: 0
   };
+  const contentFallbackInFlight = new Map();
+  const contentFallbackFetchQueue = [];
+  let activeContentFallbackFetches = 0;
 
   function frameMessageId() {
     return `${Date.now().toString(36)}-${Math.random().toString(36).slice(2)}`;
@@ -80,6 +92,10 @@
     );
   }
 
+  function suppressMutationReactions(durationMs = 250) {
+    state.suppressMutationUntil = Math.max(state.suppressMutationUntil, Date.now() + durationMs);
+  }
+
   function setBusy(isBusy, generation) {
     if (generation && generation !== state.generation) return;
     if (!state.shadow) return;
@@ -108,7 +124,8 @@
       body.toggleAttribute("inert", state.collapsed);
       body.setAttribute("aria-hidden", String(state.collapsed));
     }
-    toggle.textContent = state.collapsed ? "+" : "-";
+    const symbol = toggle.querySelector("[data-toggle-symbol]");
+    if (symbol) symbol.textContent = state.collapsed ? "" : "-";
     toggle.setAttribute("aria-expanded", String(!state.collapsed));
     toggle.setAttribute("aria-label", state.collapsed ? message("action.expand") : message("action.collapse"));
   }
@@ -155,7 +172,9 @@
       let settled = false;
       const timeoutId = window.setTimeout(() => {
         settled = true;
-        reject(new Error(C.getMessage("status.timeout", uiLocale)));
+        const error = new Error(C.getMessage("status.timeout", uiLocale));
+        error.code = BACKGROUND_TIMEOUT_CODE;
+        reject(error);
       }, timeoutMs);
 
       chrome.runtime.sendMessage(message, (response) => {
@@ -169,6 +188,87 @@
         resolve(response);
       });
     });
+  }
+
+  function sleep(ms) {
+    return new Promise((resolve) => window.setTimeout(resolve, ms));
+  }
+
+  function drainContentFallbackFetchQueue() {
+    while (
+      activeContentFallbackFetches < CONTENT_FALLBACK_MAX_CONCURRENT_FETCHES &&
+      contentFallbackFetchQueue.length > 0
+    ) {
+      const next = contentFallbackFetchQueue.shift();
+      next();
+    }
+  }
+
+  function runWithContentFallbackFetchLimit(task) {
+    return new Promise((resolve, reject) => {
+      const run = () => {
+        activeContentFallbackFetches += 1;
+        Promise.resolve()
+          .then(task)
+          .then(resolve, reject)
+          .finally(() => {
+            activeContentFallbackFetches -= 1;
+            drainContentFallbackFetchQueue();
+          });
+      };
+
+      if (activeContentFallbackFetches < CONTENT_FALLBACK_MAX_CONCURRENT_FETCHES) {
+        run();
+      } else {
+        contentFallbackFetchQueue.push(run);
+      }
+    });
+  }
+
+  async function fetchContentTranslationWithRetry(text, targetLanguage) {
+    let lastError = null;
+
+    for (let attempt = 0; attempt <= CONTENT_FALLBACK_MAX_RETRIES; attempt += 1) {
+      const controller = new AbortController();
+      const timeoutId = window.setTimeout(() => controller.abort(), CONTENT_FALLBACK_FETCH_TIMEOUT_MS);
+
+      try {
+        const response = await fetch(GoogleTranslate.buildGoogleTranslateUrl(text, targetLanguage), {
+          signal: controller.signal
+        });
+        if (response.ok) return response;
+
+        lastError = new Error(`Google Translate request failed with ${response.status}`);
+        lastError.retryable = RETRYABLE_TRANSLATE_STATUS.has(response.status);
+        if (!lastError.retryable || attempt === CONTENT_FALLBACK_MAX_RETRIES) throw lastError;
+      } catch (error) {
+        lastError = error;
+        if (error.retryable === false || attempt === CONTENT_FALLBACK_MAX_RETRIES) throw error;
+      } finally {
+        window.clearTimeout(timeoutId);
+      }
+
+      const jitter = Math.floor(Math.random() * 120);
+      await sleep(CONTENT_FALLBACK_BASE_BACKOFF_MS * 2 ** attempt + jitter);
+    }
+
+    throw lastError || new Error("Google Translate request failed");
+  }
+
+  function translateTextInContent(text, targetLanguage) {
+    const key = Cache.cacheKey(targetLanguage, text);
+    const existing = contentFallbackInFlight.get(key);
+    if (existing) return existing;
+
+    const promise = runWithContentFallbackFetchLimit(async () => {
+      const response = await fetchContentTranslationWithRetry(text, targetLanguage);
+      return GoogleTranslate.parseGoogleTranslatePayload(await response.json());
+    }).finally(() => {
+      contentFallbackInFlight.delete(key);
+    });
+
+    contentFallbackInFlight.set(key, promise);
+    return promise;
   }
 
   async function persistContentCache(cacheUpdates) {
@@ -230,11 +330,7 @@
 
         stats.cacheMisses += 1;
         try {
-          const response = await fetch(GoogleTranslate.buildGoogleTranslateUrl(text, targetLanguage));
-          if (!response.ok) {
-            throw new Error(`Google Translate request failed with ${response.status}`);
-          }
-          const result = GoogleTranslate.parseGoogleTranslatePayload(await response.json());
+          const result = await translateTextInContent(text, targetLanguage);
           translated[text] = result;
           cacheUpdates[key] = {
             original: text,
@@ -264,12 +360,19 @@
   }
 
   async function sendTranslationBatch(payload, timeoutMs) {
-    const backgroundTimeout = Math.min(timeoutMs || BACKGROUND_RESPONSE_TIMEOUT_MS, BACKGROUND_RESPONSE_TIMEOUT_MS);
+    const requestedTimeout = Number(timeoutMs) || BACKGROUND_RESPONSE_TIMEOUT_MS;
+    const backgroundTimeout = Math.max(
+      BACKGROUND_RESPONSE_TIMEOUT_MS,
+      Math.min(requestedTimeout, BACKGROUND_RESPONSE_MAX_TIMEOUT_MS)
+    );
     try {
       const response = await sendMessage(payload, backgroundTimeout);
       if (response && response.ok) return response;
       if (response && response.translated && Object.keys(response.translated).length > 0) return response;
     } catch (error) {
+      if (error && error.code === BACKGROUND_TIMEOUT_CODE) {
+        throw error;
+      }
       console.warn("[AcademyLens] background translation unavailable; trying content fallback", error);
     }
 
@@ -431,8 +534,20 @@
     );
   }
 
+  const BOTTOM_OVERLAY_SELECTOR = [
+    "[role='dialog']",
+    "[aria-modal='true']",
+    "[class*='cookie' i]",
+    "[id*='cookie' i]",
+    "[class*='privacy' i]",
+    "[id*='privacy' i]",
+    "[class*='consent' i]",
+    "[id*='consent' i]"
+  ].join(",");
+
   function looksLikeBottomOverlay(element, rect) {
     if (!element || element === state.panel || state.panel?.contains(element)) return false;
+    if (!Text.isElementVisible(element)) return false;
     if (!rect || rect.width < Math.min(280, window.innerWidth * 0.35) || rect.height < 36) return false;
     if (rect.bottom < window.innerHeight - 12) return false;
 
@@ -454,6 +569,14 @@
     );
   }
 
+  function collectPanelOverlayCandidates() {
+    const candidates = new Set(Array.from(document.body.children));
+    for (const element of document.body.querySelectorAll(BOTTOM_OVERLAY_SELECTOR)) {
+      candidates.add(element);
+    }
+    return candidates;
+  }
+
   function updatePanelPlacement() {
     if (!state.panel || !state.shadow) return;
     const panel = state.shadow.querySelector(".panel");
@@ -462,7 +585,7 @@
     const baseGap = 14;
     let offset = 0;
 
-    for (const element of document.body.querySelectorAll("*")) {
+    for (const element of collectPanelOverlayCandidates()) {
       const rect = element.getBoundingClientRect();
       if (!looksLikeBottomOverlay(element, rect)) continue;
       offset = Math.max(offset, Math.ceil(window.innerHeight - rect.top + baseGap));
@@ -475,9 +598,21 @@
     }
   }
 
+  function requestPanelPlacementFrame() {
+    if (state.placementFrame) return;
+    state.placementFrame = window.requestAnimationFrame(() => {
+      state.placementFrame = 0;
+      updatePanelPlacement();
+    });
+  }
+
   function schedulePanelPlacement(delay = 80) {
     window.clearTimeout(state.placementTimer);
-    state.placementTimer = window.setTimeout(updatePanelPlacement, delay);
+    if (delay <= 0) {
+      requestPanelPlacementFrame();
+      return;
+    }
+    state.placementTimer = window.setTimeout(requestPanelPlacementFrame, delay);
   }
 
   function settlePanelPlacement() {
@@ -485,7 +620,7 @@
       window.clearTimeout(timer);
     }
     state.placementSettleTimers = [100, 350, 800, 1500, 3000, 5000].map((delay) =>
-      window.setTimeout(updatePanelPlacement, delay)
+      window.setTimeout(requestPanelPlacementFrame, delay)
     );
   }
 
@@ -539,6 +674,7 @@
     host.dataset.browserTranslator = state.browserTranslatorStatus;
     host.setAttribute("aria-label", message("panel.aria"));
     const shadow = host.attachShadow({ mode: "open" });
+    const iconUrl = chrome.runtime.getURL("assets/icons/icon48.png");
     shadow.innerHTML = `
       <style>
         :host {
@@ -549,16 +685,16 @@
         }
         .panel {
           position: fixed;
-          right: 28px;
-          bottom: calc(24px + var(--academylens-bottom-offset, 0px));
+          right: 22px;
+          bottom: calc(20px + var(--academylens-bottom-offset, 0px));
           z-index: 2147483647;
-          width: min(500px, calc(100vw - 56px));
+          width: min(408px, calc(100vw - 44px));
           border: 1px solid rgba(15, 23, 42, 0.14);
           border-radius: 8px;
           background: rgba(255, 255, 255, 0.98);
-          box-shadow: 0 14px 34px rgba(15, 23, 42, 0.12);
+          box-shadow: 0 12px 28px rgba(15, 23, 42, 0.12);
           color: #111827;
-          font-size: 16px;
+          font-size: 14.5px;
           line-height: 1.45;
           overflow: hidden;
           pointer-events: auto;
@@ -581,19 +717,31 @@
           display: flex;
           align-items: center;
           justify-content: space-between;
-          gap: 14px;
-          min-height: 72px;
-          padding: 20px 22px;
+          gap: 12px;
+          min-height: 56px;
+          padding: 12px 16px;
           border-bottom: 1px solid rgba(15, 23, 42, 0.1);
         }
+        .brand {
+          display: inline-flex;
+          align-items: center;
+          min-width: 0;
+          gap: 9px;
+        }
+        .brand-icon {
+          width: 22px;
+          height: 22px;
+          border-radius: 7px;
+          flex: 0 0 auto;
+        }
         .name {
-          font-size: 18px;
+          font-size: 15.5px;
           font-weight: 750;
           letter-spacing: 0;
           white-space: nowrap;
         }
         .badge {
-          font-size: 14px;
+          font-size: 12.5px;
           color: #475569;
           white-space: nowrap;
         }
@@ -604,8 +752,8 @@
         }
         .icon-button {
           display: inline-grid;
-          width: 38px;
-          min-height: 38px;
+          width: 34px;
+          min-height: 34px;
           place-items: center;
           border: 1px solid rgba(15, 23, 42, 0.12);
           border-radius: 8px;
@@ -614,12 +762,21 @@
           font-size: 16px;
           line-height: 1;
         }
+        .toggle-icon {
+          display: none;
+          width: 24px;
+          height: 24px;
+          border-radius: 8px;
+        }
+        [data-toggle-symbol] {
+          line-height: 1;
+        }
         .body {
           display: grid;
-          gap: 16px;
-          max-height: 460px;
-          overflow: hidden;
-          padding: 20px 22px 22px;
+          gap: 12px;
+          max-height: min(348px, calc(100vh - 156px));
+          overflow-y: auto;
+          padding: 14px 16px;
           opacity: 1;
           transform: translateY(0);
           transition:
@@ -629,8 +786,35 @@
             transform 190ms cubic-bezier(0.2, 0.8, 0.2, 1);
         }
         .panel[data-collapsed="true"] {
-          width: min(430px, calc(100vw - 56px));
-          box-shadow: 0 8px 22px rgba(15, 23, 42, 0.1);
+          width: 56px;
+          border-radius: 999px;
+          box-shadow: 0 8px 20px rgba(15, 23, 42, 0.12);
+        }
+        .panel[data-collapsed="true"] .top {
+          justify-content: center;
+          min-height: 54px;
+          padding: 5px;
+          border-bottom: 0;
+        }
+        .panel[data-collapsed="true"] .brand,
+        .panel[data-collapsed="true"] .badge {
+          display: none;
+        }
+        .panel[data-collapsed="true"] .top-actions {
+          gap: 0;
+        }
+        .panel[data-collapsed="true"] .icon-button {
+          width: 44px;
+          min-height: 44px;
+          border-color: #111827;
+          border-radius: 999px;
+          background: #111827;
+          color: #fff;
+          font-size: 13px;
+          font-weight: 760;
+        }
+        .panel[data-collapsed="true"] .toggle-icon {
+          display: block;
         }
         .panel[data-collapsed="true"] .body {
           max-height: 0;
@@ -646,7 +830,7 @@
         }
         .note {
           color: #64748b;
-          font-size: 14px;
+          font-size: 13px;
           line-height: 1.45;
         }
         .note[data-glossary="true"] {
@@ -668,23 +852,23 @@
           align-items: center;
           gap: 8px;
           color: #475569;
-          font-size: 14.5px;
+          font-size: 13.5px;
           line-height: 1;
         }
         .toggle input {
-          width: 18px;
-          height: 18px;
+          width: 16px;
+          height: 16px;
           margin: 0;
         }
         button, select {
-          min-height: 52px;
+          min-height: 42px;
           border-radius: 8px;
           border: 1px solid rgba(15, 23, 42, 0.16);
           background: #fff;
           color: #111827;
           font: inherit;
-          font-size: 16px;
-          padding: 0 16px;
+          font-size: 14.5px;
+          padding: 0 14px;
         }
         button {
           cursor: pointer;
@@ -703,9 +887,9 @@
           opacity: 0.55;
         }
         .status {
-          min-height: 22px;
+          min-height: 20px;
           color: #475569;
-          font-size: 14px;
+          font-size: 13px;
           line-height: 1.5;
         }
         .status[data-tone="error"] {
@@ -728,12 +912,12 @@
           width: var(--value);
           height: 100%;
           border-radius: inherit;
-          background: #111827;
+          background: #18b6a7;
           content: "";
           transition: width 160ms ease;
         }
         .progress[data-active="true"]::before {
-          background: #2563eb;
+          background: #3578e5;
         }
         @media (max-width: 420px) {
           .panel {
@@ -742,7 +926,7 @@
             width: calc(100vw - 24px);
           }
           .panel[data-collapsed="true"] {
-            width: calc(100vw - 24px);
+            width: 56px;
           }
           .panel[data-bottom-overlay="true"][data-collapsed="true"] {
             top: 84px;
@@ -763,10 +947,16 @@
       </style>
       <section class="panel" data-collapsed="true" data-version="${extensionVersion()}" data-browser-translator="${state.browserTranslatorStatus}">
         <div class="top">
-          <div class="name">AcademyLens</div>
+          <div class="brand">
+            <img class="brand-icon" src="${iconUrl}" alt="" />
+            <div class="name">AcademyLens</div>
+          </div>
           <div class="top-actions">
             <div class="badge">${message("badge.unofficial")}</div>
-            <button type="button" class="icon-button" data-collapse aria-expanded="true" aria-label="${message("action.collapse")}">-</button>
+            <button type="button" class="icon-button" data-collapse aria-expanded="true" aria-label="${message("action.collapse")}">
+              <img class="toggle-icon" src="${iconUrl}" alt="" />
+              <span data-toggle-symbol aria-hidden="true">-</span>
+            </button>
           </div>
         </div>
         <div class="body">
@@ -965,6 +1155,50 @@
     return placeholder ? placeholder.value : "";
   }
 
+  function appendTextPart(fragment, value) {
+    if (value) fragment.append(document.createTextNode(value));
+  }
+
+  function createInlinePreservingFragment(element, translated) {
+    const inlineChildren = Array.from(element.children).filter(
+      (child) =>
+        SAFE_INLINE_TAGS.has(child.tagName) &&
+        !child.matches(UNSAFE_INLINE_MERGE_SELECTOR) &&
+        !child.querySelector(UNSAFE_INLINE_MERGE_SELECTOR) &&
+        Text.normalizeWhitespace(child.textContent)
+    );
+    if (!inlineChildren.length) return null;
+
+    const fragment = document.createDocumentFragment();
+    let cursor = 0;
+    let preserved = 0;
+    for (const child of inlineChildren) {
+      const childText = Text.normalizeWhitespace(child.textContent);
+      const index = translated.indexOf(childText, cursor);
+      if (index === -1) continue;
+
+      appendTextPart(fragment, translated.slice(cursor, index));
+      const clone = child.cloneNode(false);
+      clone.textContent = translated.slice(index, index + childText.length);
+      fragment.append(clone);
+      cursor = index + childText.length;
+      preserved += 1;
+    }
+
+    if (preserved === 0) return null;
+    appendTextPart(fragment, translated.slice(cursor));
+    return fragment;
+  }
+
+  function applyTranslatedElement(element, translated) {
+    const fragment = createInlinePreservingFragment(element, translated);
+    if (fragment) {
+      element.replaceChildren(fragment);
+      return;
+    }
+    element.textContent = translated;
+  }
+
   function applyCandidateTranslation(candidate, translated) {
     if (!candidate || !candidate.target || !candidate.target.isConnected) return false;
     if (Text.normalizeWhitespace(candidate.target.textContent) !== candidate.normalized) return false;
@@ -982,8 +1216,9 @@
     };
     state.nodeRecords.set(candidate.target, record);
     state.replacements.push(record);
+    suppressMutationReactions();
     if (candidate.kind === "element") {
-      candidate.target.textContent = translated;
+      applyTranslatedElement(candidate.target, translated);
     } else {
       Text.applyTranslatedText(candidate.target, translated);
     }
@@ -1138,6 +1373,7 @@
       postToChildFrames("restore");
     }
     let restored = 0;
+    suppressMutationReactions();
     for (const record of currentRecords()) {
       const target = recordTarget(record);
       if (!target || !target.isConnected) continue;
@@ -1168,7 +1404,7 @@
   }
 
   function handleRouteChange() {
-    if (location.href === state.lastUrl) return;
+    if (location.href === state.lastUrl) return false;
     state.lastUrl = location.href;
     bumpGeneration();
     restorePage({ bump: false, silent: true });
@@ -1177,21 +1413,69 @@
     if (state.settings.autoTranslate && state.settings.targetLanguage !== "en") {
       scheduleAutoTranslate(900);
     }
+    return true;
+  }
+
+  function mutationElement(node) {
+    if (!node) return null;
+    if (node.nodeType === Node.ELEMENT_NODE) return node;
+    return node.parentElement || null;
+  }
+
+  function isPanelMutation(node) {
+    const element = mutationElement(node);
+    return Boolean(element && state.panel && (element === state.panel || state.panel.contains(element)));
+  }
+
+  function textNodeMayNeedTranslation(node) {
+    const parent = node && node.parentElement;
+    if (!parent || Text.isExcludedElement(parent) || !Text.isElementVisible(parent)) return false;
+    return Text.shouldTranslateText(node.textContent, state.settings.targetLanguage, C.LIMITS.maxTextLength, parent);
+  }
+
+  function elementMayContainTranslatableText(element) {
+    if (!element || Text.isExcludedElement(element) || !Text.isElementVisible(element)) return false;
+    if (element.tagName === "IFRAME" || element.querySelector?.("iframe")) return true;
+
+    for (const child of element.childNodes) {
+      if (child.nodeType === Node.TEXT_NODE && textNodeMayNeedTranslation(child)) return true;
+    }
+
+    return Boolean(
+      Array.from(element.querySelectorAll("p, li, h1, h2, h3, h4, h5, h6, blockquote, figcaption")).some(
+        (candidate) =>
+          !Text.isExcludedElement(candidate) &&
+          Text.isElementVisible(candidate) &&
+          Text.shouldTranslateText(
+            candidate.textContent,
+            state.settings.targetLanguage,
+            C.LIMITS.maxTextLength,
+            candidate
+          )
+      )
+    );
   }
 
   function reconcileMutations(mutations) {
     let sawFrameMutation = false;
+    let sawTranslatableMutation = false;
     for (const mutation of mutations) {
+      if (isPanelMutation(mutation.target)) continue;
+
       if (mutation.type === "characterData") {
         const nodeRecord = state.nodeRecords.get(mutation.target);
         if (nodeRecord && !isCurrentRecordStillOwned(nodeRecord)) {
           forgetRecord(nodeRecord);
+          sawTranslatableMutation = true;
+        } else if (!nodeRecord && textNodeMayNeedTranslation(mutation.target)) {
+          sawTranslatableMutation = true;
         }
         let parent = mutation.target.parentElement;
         while (parent && parent !== document.body) {
           const elementRecord = state.nodeRecords.get(parent);
           if (elementRecord && !isCurrentRecordStillOwned(elementRecord)) {
             forgetRecord(elementRecord);
+            sawTranslatableMutation = true;
             break;
           }
           parent = parent.parentElement;
@@ -1203,12 +1487,17 @@
           const elementRecord = state.nodeRecords.get(mutation.target);
           if (elementRecord && !isCurrentRecordStillOwned(elementRecord)) {
             forgetRecord(elementRecord);
+            sawTranslatableMutation = true;
           }
         }
         for (const node of mutation.addedNodes || []) {
+          if (isPanelMutation(node)) continue;
           if (node.nodeType !== Node.ELEMENT_NODE) continue;
           if (node.tagName === "IFRAME" || node.querySelector?.("iframe")) {
             sawFrameMutation = true;
+          }
+          if (elementMayContainTranslatableText(node)) {
+            sawTranslatableMutation = true;
           }
         }
       }
@@ -1217,15 +1506,19 @@
     if (sawFrameMutation) {
       window.setTimeout(() => dispatchPendingFrameCommand(), 80);
     }
+    return { sawFrameMutation, sawTranslatableMutation };
   }
 
   function watchSpaNavigation() {
     state.observer = new MutationObserver((mutations) => {
-      reconcileMutations(mutations);
-      handleRouteChange();
-      schedulePanelPlacement();
+      const signal = reconcileMutations(mutations);
+      const routeChanged = handleRouteChange();
+      if (Date.now() < state.suppressMutationUntil) return;
+      if (signal.sawFrameMutation || signal.sawTranslatableMutation || routeChanged) {
+        schedulePanelPlacement();
+      }
 
-      if (!state.settings.autoTranslate) return;
+      if (!state.settings.autoTranslate || routeChanged || !signal.sawTranslatableMutation) return;
       scheduleAutoTranslate(800);
     });
 
@@ -1309,6 +1602,10 @@
       state.observer?.disconnect();
       window.clearTimeout(state.debounceTimer);
       window.clearTimeout(state.placementTimer);
+      if (state.placementFrame) {
+        window.cancelAnimationFrame(state.placementFrame);
+        state.placementFrame = 0;
+      }
       for (const timer of state.placementSettleTimers) {
         window.clearTimeout(timer);
       }

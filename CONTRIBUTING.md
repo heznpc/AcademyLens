@@ -2,7 +2,13 @@
 
 Thanks for helping make OpenAI Academy course material easier to read across languages.
 
-AcademyLens is an unofficial browser extension. Contributions must avoid language that suggests endorsement, partnership, or affiliation with OpenAI.
+AcademyLens is an unofficial browser extension and is not affiliated with OpenAI. Contributions must avoid language that suggests endorsement, partnership, or affiliation with OpenAI.
+
+## Affiliation Rules
+
+Use `AcademyLens` as the product name. Use `AcademyLens for OpenAI Academy (Unofficial)` only when the context needs to identify the target site.
+
+Do not use names or copy such as `OpenAI Academy Lens`, `OpenAI Translator`, `OpenAI-approved`, `powered by OpenAI`, or anything that implies OpenAI built, sponsors, endorses, or certifies the extension.
 
 ## Quick Start
 
@@ -26,10 +32,13 @@ Load the extension locally:
 - Fix a glossary term in `src/data/glossary.<locale>.json`.
 - Add a high-signal smoke term in `scripts/lib/glossary-config.js`.
 - Improve documentation or privacy wording.
+- Improve public copy consistency without making official-affiliation claims.
 - File a QA report from a real Academy course page.
 - Add a sanitized Gradual fixture or a focused test case.
 
 Look for issues labeled `good first issue`, `i18n`, `glossary`, or `qa`.
+
+CODEOWNERS currently routes final merge authority to `@heznpc`. Outside review is still welcome through issues, PR notes, QA reports, and glossary audit packets; status promotion happens only after the review evidence is documented.
 
 ## Glossary Contributions
 
@@ -46,10 +55,12 @@ When changing glossary data:
 5. Run:
 
 ```bash
-npm run glossary:seed
 npm run format
 npm run check:glossary
+npm run check:glossary-overreach
 ```
+
+For normal glossary PRs, edit the locale JSON directly. Do not run `npm run glossary:seed` unless you are intentionally regenerating the maintained draft packs from `scripts/seed-premium-glossaries.js`.
 
 AI-generated drafts are welcome as starting points. Do not mark a pack `reviewed` unless it has credible human/native/community review evidence. Use `llm-audited` for second-model audits and `native-reviewed` or `community-reviewed` only when that review actually happened.
 
@@ -109,6 +120,7 @@ Do not commit:
 - [ ] `npm run check:full` passes, or the PR explains why it was not run.
 - [ ] Glossary changes include smoke checks when appropriate.
 - [ ] UI changes include screenshots or a short visual QA note.
+- [ ] README, store, or icon changes avoid official-affiliation claims.
 - [ ] Fixture changes are sanitized.
 - [ ] Privacy/security-sensitive changes are called out clearly.
 

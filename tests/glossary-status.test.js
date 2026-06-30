@@ -28,7 +28,10 @@ test("glossary status markdown is generated from registry rows", () => {
   const markdown = GlossaryStatus.formatMarkdown(index);
 
   assert.match(markdown, /^# Glossary Status/);
-  assert.match(markdown, /Summary: 2 premium packs, 230 terms, 0 reviewed, 1 AI-drafted beta packs, 1 in review\./);
+  assert.match(
+    markdown,
+    /Summary: 2 premium packs, 230 terms, 0 reviewed, 0 native-reviewed, 1 community-reviewed, 1 AI-drafted beta packs, 0 in review\./
+  );
   assert.match(markdown, /## ko - Korean/);
   assert.match(markdown, /Status: `community-reviewed`/);
   assert.match(markdown, /Next action: complete X check and native review/);
@@ -72,9 +75,14 @@ test("glossary status console summary counts review states", () => {
   assert.deepEqual(GlossaryStatus.summaryFromRows(rows), {
     draftCount: 1,
     reviewedCount: 1,
-    inReviewCount: 1,
+    communityReviewedCount: 1,
+    nativeReviewedCount: 0,
+    inReviewCount: 0,
     totalPacks: 3,
     totalTerms: 345
   });
-  assert.match(GlossaryStatus.formatConsole(rows), /summary: 3 packs, 1 reviewed, 1 llm-drafted, 1 in review/);
+  assert.match(
+    GlossaryStatus.formatConsole(rows),
+    /summary: 3 packs, 1 reviewed, 0 native-reviewed, 1 community-reviewed, 1 llm-drafted, 0 in review/
+  );
 });

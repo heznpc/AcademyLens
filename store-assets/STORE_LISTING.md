@@ -1,6 +1,6 @@
 # AcademyLens for OpenAI Academy (Unofficial)
 
-Translate OpenAI Academy course content in your language with protected AI terminology.
+Translate OpenAI Academy course content in your language.
 
 AcademyLens helps learners read OpenAI Academy courses with fast page translation and multilingual OpenAI/AI terminology glossaries.
 
@@ -14,14 +14,14 @@ Translate OpenAI Academy course content in your language.
 
 AcademyLens is an unofficial browser extension for learners using OpenAI Academy.
 
-It translates visible course content and preserves important AI terms.
+It translates visible course content, restores original text when needed, and preserves important AI terms so course pages stay easier to read across languages.
 
 Features:
 
 - Translate OpenAI Academy course pages.
 - Preserve terms such as OpenAI, ChatGPT, GPT, LLM, API, Responses API, Agents SDK, JSON, and Gradual.
-- Apply installed premium glossaries based on OpenAI Academy course language and OpenAI documentation terminology.
-- Show when a selected language is using a reviewed glossary, an AI-drafted beta glossary, or machine translation with protected terms.
+- Apply installed premium glossary packs based on OpenAI Academy course language and OpenAI documentation terminology.
+- Show whether the selected language has final/native-reviewed, community-reviewed, AI-drafted beta, or protected-term machine translation support.
 - Restore original page text with one click.
 - Protect against stale translations after Restore, language switching, and Gradual/Next.js navigation.
 - Avoid translating Gradual progress, certificate, quiz, and account controls.
@@ -40,3 +40,7 @@ Page text selected for translation is sent to Google Translate. If auto-translat
 ## Planned Later
 
 AI-assisted terminology review may be added later only if it can be implemented without remote hosted code risk and with explicit opt-in privacy disclosure.
+
+## Store Asset Status
+
+This file is listing copy only. Final Chrome Web Store screenshots and promotional images are not committed yet. Screenshot drafts generated under `dist/store-screenshots/` are local review artifacts and must be manually checked before public use.

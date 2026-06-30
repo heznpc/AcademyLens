@@ -80,11 +80,12 @@ Use the output when opening glossary issues or picking a review target. A pack s
 
 ## X Translation Cross-Check
 
-OpenAI employees and product accounts often discuss new OpenAI features on X, and X provides built-in post translation. AcademyLens can use that as a practical cross-check signal:
+Public product and documentation posts often discuss new OpenAI features on X, and X provides built-in post translation. AcademyLens can use that as a practical cross-check signal:
 
 - Use public posts only.
 - Keep short notes about terminology behavior, not copied post text.
 - Treat X translation as a real-world machine-translation signal, not an official OpenAI translation source.
+- Do not include personal names in glossary evidence notes.
 - Do not scrape X or automate around account restrictions for glossary evidence.
 - Prefer link-backed manual observations such as "X commonly renders `structured outputs` this way, but official alignment remains unavailable."
 

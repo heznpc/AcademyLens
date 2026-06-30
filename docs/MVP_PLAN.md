@@ -6,7 +6,7 @@ AcademyLens helps learners translate OpenAI Academy course content in their lang
 
 Store name: AcademyLens for OpenAI Academy (Unofficial)
 
-Initial brand sentence: Translate and review OpenAI Academy course content in your language.
+Initial brand sentence: Translate OpenAI Academy course content in your language.
 
 Current store sentence: Translate OpenAI Academy course content in your language with protected AI terminology.
 
@@ -21,7 +21,7 @@ Required notice: Unofficial, not affiliated with OpenAI.
 - Google Translate fast translation in the current runtime, with provider/privacy review before any store submission.
 - Glossary correction for reviewed packs and clearly labeled AI-drafted beta packs.
 - Protected-term preservation for all target languages.
-- Clear UI disclosure when a selected language is using a reviewed glossary, an AI-drafted beta glossary, or protected-term-only machine translation.
+- Clear UI disclosure when a selected language is using final/native-reviewed, community-reviewed, AI-drafted beta, or protected-term-only machine translation support.
 - Generation guard for restore/language/route-change races.
 - Playwright E2E coverage for core translation flows, study-room-style DOM, and visual smoke checks.
 

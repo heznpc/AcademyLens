@@ -1,5 +1,5 @@
 body {
-  width: 300px;
+  width: 320px;
   margin: 0;
   color: #111827;
   background: #ffffff;
@@ -26,8 +26,21 @@ header {
   gap: 10px;
 }
 
+.brand {
+  display: inline-flex;
+  align-items: center;
+  min-width: 0;
+  gap: 8px;
+}
+
+.brand img {
+  width: 22px;
+  height: 22px;
+  border-radius: 7px;
+}
+
 strong {
-  font-size: 15px;
+  font-size: 15.5px;
 }
 
 span,
@@ -61,11 +74,17 @@ label {
 
 select {
   min-height: 34px;
-  border: 1px solid rgba(15, 23, 42, 0.16);
+  border: 1px solid rgba(24, 182, 167, 0.28);
   border-radius: 6px;
   background: #fff;
   color: #111827;
   font: inherit;
+}
+
+select:focus {
+  border-color: #3578e5;
+  outline: 2px solid rgba(53, 120, 229, 0.16);
+  outline-offset: 1px;
 }
 
 .toggle {
