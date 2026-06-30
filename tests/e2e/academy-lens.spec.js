@@ -84,6 +84,8 @@ async function panelSnapshot(page) {
       note: shadow ? shadow.querySelector("[data-language-note]").textContent : null,
       provider: shadow ? shadow.querySelector("[data-provider-chip]").textContent : null,
       providerMode: root ? root.dataset.provider : null,
+      correctionCount: shadow ? shadow.querySelector("[data-correction-count]").textContent : null,
+      diagnostics: shadow ? shadow.querySelector("[data-diagnostics-output]").textContent : null,
       status: shadow ? shadow.querySelector("[data-status]").textContent : null
     };
   });
@@ -96,6 +98,17 @@ async function panelProgress(page) {
       value: shadow.querySelector("[data-progress]").getAttribute("aria-valuenow"),
       status: shadow.querySelector("[data-status]").textContent
     };
+  });
+}
+
+async function translationCacheSize(context) {
+  let [worker] = context.serviceWorkers();
+  if (!worker) {
+    worker = await context.waitForEvent("serviceworker", { timeout: 5000 });
+  }
+  return worker.evaluate(async () => {
+    const stored = await chrome.storage.local.get(["academylens.translationCache.v1"]);
+    return Object.keys(stored["academylens.translationCache.v1"] || {}).length;
   });
 }
 
@@ -225,6 +238,11 @@ test.describe("AcademyLens extension E2E", () => {
         "OpenAI Academy 강의는 ChatGPT와 GPT-5를 사용합니다."
       );
       expect(harness.calls.length).toBe(firstPassCalls);
+      expect(await translationCacheSize(harness.ext.context)).toBeGreaterThan(0);
+
+      await clickPanelButton(harness.page, "[data-clear-cache]");
+      await expect.poll(async () => (await panelSnapshot(harness.page)).status).toMatch(/캐시/);
+      expect(await translationCacheSize(harness.ext.context)).toBe(0);
     } finally {
       await stopHarness(harness);
     }
@@ -289,6 +307,13 @@ test.describe("AcademyLens extension E2E", () => {
       await expect(harness.page.locator("#title")).toHaveText("Build practical AI skills for work");
       await clickPanelButton(harness.page, "[data-translate]");
       await expect(harness.page.locator("#title")).toHaveText("업무용 AI 실전 역량 만들기");
+      await expect.poll(async () => (await panelSnapshot(harness.page)).correctionCount).toBe("(1)");
+
+      await clickPanelButton(harness.page, "[data-delete-correction]");
+      await expect.poll(async () => (await panelSnapshot(harness.page)).correctionCount).toBe("(0)");
+      await clickPanelButton(harness.page, "[data-restore]");
+      await clickPanelButton(harness.page, "[data-translate]");
+      await expect(harness.page.locator("#title")).toHaveText("업무를 위한 실용 AI 기술 구축");
     } finally {
       await stopHarness(harness);
     }
@@ -382,6 +407,22 @@ test.describe("AcademyLens extension E2E", () => {
       await expect(harness.page.locator("#native-hit")).toHaveText("[native] Native provider keeps this sentence");
       await expect(harness.page.locator("#native-miss")).toHaveText("[ko] Native fallback miss sentence");
       expect(harness.calls.map((call) => call.text)).toEqual(["Native fallback miss sentence"]);
+    } finally {
+      await stopHarness(harness);
+    }
+  });
+
+  test("falls back when browser-native returns source-like output", async () => {
+    const harness = await startHarness({ browserTranslatorStub: "copy" });
+    try {
+      await harness.page.evaluate(() => {
+        document.querySelector("#lesson-main").innerHTML = `<p id="native-copy">Native copy fallback sentence</p>`;
+      });
+      await expandPanel(harness.page);
+      await clickPanelButton(harness.page, "[data-translate]");
+
+      await expect(harness.page.locator("#native-copy")).toHaveText("[ko] Native copy fallback sentence");
+      expect(harness.calls.map((call) => call.text)).toEqual(["Native copy fallback sentence"]);
     } finally {
       await stopHarness(harness);
     }
@@ -717,6 +758,7 @@ test.describe("AcademyLens extension E2E", () => {
       await expect
         .poll(() => harness.calls.findIndex((call) => call.text.includes("sample 0")))
         .toBeGreaterThanOrEqual(0);
+      await expect.poll(async () => (await panelSnapshot(harness.page)).diagnostics).toMatch(/캐시|묶음/);
       const visibleIndex = harness.calls.findIndex((call) => call.text.startsWith("Viewport priority"));
       const farOffscreenIndex = harness.calls.findIndex((call) => call.text.includes("sample 0"));
       expect(visibleIndex).toBeGreaterThanOrEqual(0);

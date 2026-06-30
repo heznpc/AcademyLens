@@ -66,6 +66,8 @@ Current runtime behavior:
 
 - Browser-native Translator API is used when already available, or when the user explicitly allows browser-managed translator downloads.
 - Google Translate endpoint is the fallback translation provider.
+- Translation cache entries are scoped by provider, glossary state, and correction state.
+- Correction management and runtime diagnostics are local-only browser storage/UI features.
 - GPT/Puter/OpenAI review is disabled.
 - No AcademyLens server is used.
 
@@ -76,7 +78,8 @@ Before public release:
 3. Confirm runtime files do not load remote hosted SDK scripts.
 4. Confirm browser-native translator downloads remain explicit opt-in.
 5. Confirm local correction storage is described.
-6. Confirm AI review remains disabled unless there is explicit opt-in UX and updated privacy text.
+6. Confirm diagnostics do not expose original or translated lesson text.
+7. Confirm AI review remains disabled unless there is explicit opt-in UX and updated privacy text.
 
 ## Store Asset Operations
 

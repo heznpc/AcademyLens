@@ -53,7 +53,7 @@ function patchBrowserTranslatorStub(extensionPath, mode) {
       const translated = {};
       for (const text of texts || []) {
         if (mode === "partial" && /fallback/i.test(text)) continue;
-        translated[text] = "[native] " + text;
+        translated[text] = mode === "copy" ? text : "[native] " + text;
       }
       return translated;
     }
