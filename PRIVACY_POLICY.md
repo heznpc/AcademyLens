@@ -10,14 +10,18 @@ AcademyLens does not collect, sell, rent, or transfer personal data to the exten
 
 ## Data Processed By The Extension
 
-When you translate page text, the extension sends selected visible text from `academy.openai.com` to Google Translate through `translate.googleapis.com`. If auto-translate is enabled, newly rendered visible lesson text can be translated automatically after page changes. The DOM filtering logic is designed to avoid platform chrome such as enrollment, progress, certificate, account, form, navigation, and credential UI. Because OpenAI Academy and Gradual page markup can change, avoid translating pages that contain sensitive personal content.
+When you translate page text, the extension may translate selected visible text from `academy.openai.com` with the browser-native Translator API when that provider is available. Browser-managed translator downloads are disabled unless you explicitly turn them on. If browser-native translation is unavailable, selected visible text is sent to Google Translate through `translate.googleapis.com` as fallback. If auto-translate is enabled, newly rendered visible lesson text can be translated automatically after page changes. The DOM filtering logic is designed to avoid platform chrome such as enrollment, progress, certificate, account, form, navigation, and credential UI. Because OpenAI Academy and Gradual page markup can change, avoid translating pages that contain sensitive personal content.
 
 ## Data Stored Locally
 
-AcademyLens stores settings and a local translation cache in Chrome extension storage:
+AcademyLens stores settings, optional local correction overrides, and a local translation cache in Chrome extension storage:
 
 - target language
 - auto-translate preference
+- browser-native translator download preference
+- locally corrected original visible text
+- locally corrected translated text
+- target language, creation time, and last-access time for correction entries
 - cached original visible text
 - cached translated text
 - target language, creation time, and last-access time for cache entries
@@ -40,8 +44,9 @@ Bundled glossary files are stored inside the extension package. They do not requ
 
 AcademyLens currently uses:
 
-- Google Translate for fast translation.
+- Browser-native Translator API when available or explicitly download-enabled.
+- Google Translate for fallback translation.
 
-Review that service's policy before using translation with sensitive content. The current runtime does not use Google Cloud Translation credentials, an AcademyLens server, or an OpenAI API key.
+Review those services and browser features before using translation with sensitive content. The current runtime does not use Google Cloud Translation credentials, an AcademyLens server, or an OpenAI API key.
 
 If AI-assisted terminology review is added later, it will require explicit opt-in wording before use.

@@ -37,8 +37,18 @@
     placementFrame: 0,
     placementSettleTimers: [],
     latestFrameCommand: null,
+    frameAggregates: new Map(),
     handledFrameMessages: new Set(),
     browserTranslatorStatus: "unchecked",
+    providerMode: "checking",
+    providerDetail: "",
+    translationQueue: {
+      timer: 0,
+      active: false,
+      pending: null,
+      resolvers: []
+    },
+    selectedCorrection: null,
     collapsed: false,
     collapseUserSet: false,
     suppressMutationUntil: 0
@@ -146,25 +156,77 @@
     if (panel) panel.dataset.browserTranslator = state.browserTranslatorStatus;
   }
 
+  function providerMessageKey(mode) {
+    return (
+      {
+        checking: "provider.checking",
+        native: "provider.native",
+        nativeReady: "provider.nativeReady",
+        nativeDownloadable: "provider.nativeDownloadable",
+        nativeDownloading: "provider.nativeDownloading",
+        fallback: "provider.fallback",
+        background: "provider.background",
+        local: "provider.local"
+      }[mode] || "provider.fallback"
+    );
+  }
+
+  function setProviderMode(mode, detail = "") {
+    state.providerMode = mode || "fallback";
+    state.providerDetail = detail || "";
+    if (state.panel) {
+      state.panel.dataset.provider = state.providerMode;
+      state.panel.dataset.providerDetail = state.providerDetail;
+    }
+    if (!state.shadow) return;
+    const panel = state.shadow.querySelector(".panel");
+    const provider = state.shadow.querySelector("[data-provider-chip]");
+    if (panel) {
+      panel.dataset.provider = state.providerMode;
+      panel.dataset.providerDetail = state.providerDetail;
+    }
+    if (provider) {
+      provider.textContent = message(providerMessageKey(state.providerMode));
+      provider.dataset.provider = state.providerMode;
+      provider.title = state.providerDetail || provider.textContent;
+    }
+  }
+
+  function updateProviderModeFromBrowserStatus(status) {
+    if (status === "available") {
+      setProviderMode("nativeReady");
+      return;
+    }
+    if (status === "downloadable" || status === "downloading") {
+      setProviderMode(state.settings.enableBrowserTranslatorDownloads ? "nativeDownloading" : "nativeDownloadable");
+      return;
+    }
+    setProviderMode("fallback");
+  }
+
   async function refreshBrowserTranslatorStatus() {
     if (!isTopFrame || !BrowserTranslator || typeof BrowserTranslator.availability !== "function") {
       setBrowserTranslatorStatus("unsupported");
+      setProviderMode("fallback");
       return;
     }
 
     const targetLanguage = state.settings.targetLanguage;
     if (!targetLanguage || targetLanguage === "en") {
       setBrowserTranslatorStatus("unavailable");
+      setProviderMode("fallback");
       return;
     }
 
     setBrowserTranslatorStatus("checking");
+    setProviderMode("checking");
     const result = await BrowserTranslator.availability({
       sourceLanguage: "en",
       targetLanguage
     });
     if (targetLanguage !== state.settings.targetLanguage) return;
     setBrowserTranslatorStatus(result.status);
+    updateProviderModeFromBrowserStatus(result.status);
   }
 
   function sendMessage(message, timeoutMs = 30000) {
@@ -299,6 +361,48 @@
     );
   }
 
+  function correctionKey(targetLanguage, text) {
+    return `${targetLanguage}:${Text.stableHash(Text.normalizeWhitespace(text))}`;
+  }
+
+  async function loadCorrections() {
+    try {
+      const stored = await getLocal([C.STORAGE_KEYS.CORRECTIONS]);
+      return stored[C.STORAGE_KEYS.CORRECTIONS] || {};
+    } catch {
+      return {};
+    }
+  }
+
+  function correctionFor(corrections, targetLanguage, text) {
+    const normalized = Text.normalizeWhitespace(text);
+    const correction = corrections[correctionKey(targetLanguage, normalized)];
+    if (!correction || correction.original !== normalized || correction.targetLanguage !== targetLanguage) return "";
+    return correction.translated || "";
+  }
+
+  async function persistCorrection(record, translated) {
+    if (!record || !translated) return false;
+    const original = Text.normalizeWhitespace(record.normalized || record.originalText || record.original || "");
+    if (!original) return false;
+
+    try {
+      const corrections = await loadCorrections();
+      corrections[correctionKey(state.settings.targetLanguage, original)] = {
+        original,
+        translated,
+        targetLanguage: state.settings.targetLanguage,
+        createdAt: Date.now(),
+        accessedAt: Date.now()
+      };
+      await chrome.storage.local.set({ [C.STORAGE_KEYS.CORRECTIONS]: corrections });
+      return true;
+    } catch (error) {
+      console.warn("[AcademyLens] local correction persistence failed", error);
+      return false;
+    }
+  }
+
   async function translateBatchInContent(texts, targetLanguage) {
     if (!Cache || !GoogleTranslate || typeof fetch !== "function") {
       throw new Error(message("status.failed"));
@@ -398,7 +502,15 @@
         targetLanguage
       });
       setBrowserTranslatorStatus(support.status);
-      if (support.status !== "available") return null;
+      const canUseBrowserTranslator =
+        support.status === "available" ||
+        (state.settings.enableBrowserTranslatorDownloads &&
+          (support.status === "downloadable" || support.status === "downloading"));
+      if (!canUseBrowserTranslator) {
+        updateProviderModeFromBrowserStatus(support.status);
+        return null;
+      }
+      setProviderMode(support.status === "available" ? "native" : "nativeDownloading");
 
       const stored = await getLocal([C.STORAGE_KEYS.CACHE]);
       const cache = stored[C.STORAGE_KEYS.CACHE] || {};
@@ -428,7 +540,11 @@
         const browserTranslations = await BrowserTranslator.translateBatch(browserTexts, {
           sourceLanguage: "en",
           targetLanguage,
-          allowDownload: false
+          allowDownload: Boolean(state.settings.enableBrowserTranslatorDownloads),
+          onDownloadProgress() {
+            setBrowserTranslatorStatus("downloading");
+            setProviderMode("nativeDownloading");
+          }
         });
 
         for (const text of browserTexts) {
@@ -451,15 +567,13 @@
         }
       }
 
-      if (stats.failed > 0) return null;
-
       const persisted = await persistContentCache(cacheUpdates);
       if (!persisted && Object.keys(cacheUpdates).length) {
         stats.cachePersistFailed = true;
       }
 
       return {
-        ok: true,
+        ok: stats.failed === 0 || Object.keys(translated).length > 0,
         translated,
         errors,
         stats
@@ -470,7 +584,39 @@
     }
   }
 
+  function untranslatedTexts(texts, response) {
+    const translated = (response && response.translated) || {};
+    return (texts || []).filter((text) => !translated[text]);
+  }
+
+  function mergeTranslationResponses(primary, secondary, requestedTexts) {
+    const translated = {
+      ...((primary && primary.translated) || {}),
+      ...((secondary && secondary.translated) || {})
+    };
+    const errors = {
+      ...((primary && primary.errors) || {})
+    };
+    for (const text of Object.keys((secondary && secondary.translated) || {})) {
+      delete errors[text];
+    }
+    Object.assign(errors, (secondary && secondary.errors) || {});
+
+    return {
+      ok: Object.keys(translated).length > 0 || (requestedTexts || []).length === 0,
+      translated,
+      errors,
+      stats: {
+        ...((primary && primary.stats) || {}),
+        fallback: (secondary && secondary.stats) || null,
+        requested: (requestedTexts || []).length,
+        failed: Object.keys(errors).length
+      }
+    };
+  }
+
   async function sendBackgroundTranslationBatch(payload, timeoutMs) {
+    setProviderMode("background");
     const requestedTimeout = Number(timeoutMs) || BACKGROUND_RESPONSE_TIMEOUT_MS;
     const backgroundTimeout = Math.max(
       BACKGROUND_RESPONSE_TIMEOUT_MS,
@@ -487,12 +633,25 @@
       console.warn("[AcademyLens] background translation unavailable; trying content fallback", error);
     }
 
+    setProviderMode("fallback");
     return translateBatchInContent(payload.texts || [], payload.targetLanguage);
   }
 
   async function sendTranslationBatch(payload, timeoutMs) {
-    const browserResponse = await translateBatchWithBrowserTranslator(payload.texts || [], payload.targetLanguage);
-    if (browserResponse && browserResponse.ok) return browserResponse;
+    const requestedTexts = payload.texts || [];
+    const browserResponse = await translateBatchWithBrowserTranslator(requestedTexts, payload.targetLanguage);
+    if (browserResponse) {
+      const missingTexts = untranslatedTexts(requestedTexts, browserResponse);
+      if (missingTexts.length === 0) return mergeTranslationResponses(browserResponse, null, requestedTexts);
+      const fallbackResponse = await sendBackgroundTranslationBatch(
+        {
+          ...payload,
+          texts: missingTexts
+        },
+        timeoutMs
+      );
+      return mergeTranslationResponses(browserResponse, fallbackResponse, requestedTexts);
+    }
     return sendBackgroundTranslationBatch(payload, timeoutMs);
   }
 
@@ -567,6 +726,7 @@
       {
         source: FRAME_MESSAGE_SOURCE,
         action: "frameResult",
+        messageId: state.latestFrameCommand ? state.latestFrameCommand.messageId : "",
         kind,
         applied: result.applied || 0,
         failed: result.failed || 0
@@ -575,8 +735,49 @@
     );
   }
 
+  function startFrameAggregate(payload, expected, kind) {
+    if (!isTopFrame || !payload || !payload.messageId || expected <= 0) return;
+    state.frameAggregates.set(payload.messageId, {
+      kind,
+      expected,
+      received: 0,
+      pageApplied: 0,
+      pageFailed: 0,
+      frameApplied: 0,
+      frameFailed: 0,
+      cleanupTimer: window.setTimeout(() => state.frameAggregates.delete(payload.messageId), 5000)
+    });
+  }
+
+  function updateFrameAggregatePage(messageId, result = {}) {
+    const aggregate = messageId ? state.frameAggregates.get(messageId) : null;
+    if (!aggregate) return;
+    aggregate.pageApplied = result.applied || 0;
+    aggregate.pageFailed = result.failed || 0;
+  }
+
+  function setAggregateStatus(aggregate) {
+    if (!aggregate || aggregate.kind !== "translate") return;
+    const applied = aggregate.pageApplied || 0;
+    const frameCount = aggregate.frameApplied || 0;
+    const failed = (aggregate.pageFailed || 0) + (aggregate.frameFailed || 0);
+    if (applied > 0 || frameCount > 0) {
+      setStatus(message("status.translatedWithFrames", { count: applied, frameCount }), failed > 0 ? "error" : "ok");
+    }
+  }
+
   function handleFrameResult(data) {
     if (!isTopFrame || !data || data.action !== "frameResult") return;
+    const aggregate = data.messageId ? state.frameAggregates.get(data.messageId) : null;
+    if (aggregate) {
+      aggregate.received += 1;
+      if (data.kind === "translate") {
+        aggregate.frameApplied += data.applied || 0;
+        aggregate.frameFailed += data.failed || 0;
+        setAggregateStatus(aggregate);
+      }
+      return;
+    }
     if (data.kind === "translate" && data.applied > 0) {
       setStatus(message("status.frameTranslated", { count: data.applied }), data.failed > 0 ? "error" : "ok");
     }
@@ -964,6 +1165,13 @@
           justify-content: space-between;
           gap: 12px;
         }
+        .toggles {
+          display: inline-flex;
+          align-items: center;
+          flex-wrap: wrap;
+          gap: 10px;
+          min-width: 0;
+        }
         .toggle {
           display: inline-flex;
           align-items: center;
@@ -976,6 +1184,62 @@
           width: 16px;
           height: 16px;
           margin: 0;
+        }
+        .provider {
+          justify-self: start;
+          max-width: 100%;
+          min-height: 24px;
+          border: 1px solid rgba(15, 23, 42, 0.12);
+          border-radius: 999px;
+          padding: 3px 9px;
+          background: rgba(248, 250, 252, 0.9);
+          color: #475569;
+          font-size: 12px;
+          line-height: 1.35;
+          overflow: hidden;
+          text-overflow: ellipsis;
+          white-space: nowrap;
+        }
+        .provider[data-provider="native"],
+        .provider[data-provider="nativeReady"] {
+          border-color: rgba(4, 120, 87, 0.2);
+          color: #047857;
+        }
+        .provider[data-provider="nativeDownloadable"],
+        .provider[data-provider="nativeDownloading"] {
+          border-color: rgba(180, 83, 9, 0.22);
+          color: #92400e;
+        }
+        .correction {
+          display: none;
+          gap: 8px;
+          border-top: 1px solid rgba(15, 23, 42, 0.08);
+          padding-top: 10px;
+        }
+        .correction[data-active="true"] {
+          display: grid;
+        }
+        .correction label {
+          display: grid;
+          gap: 6px;
+          color: #475569;
+          font-size: 12px;
+        }
+        .correction textarea {
+          min-height: 56px;
+          resize: vertical;
+          border: 1px solid rgba(15, 23, 42, 0.16);
+          border-radius: 8px;
+          padding: 8px 10px;
+          color: #111827;
+          font: inherit;
+          font-size: 13px;
+          line-height: 1.4;
+        }
+        .correction-actions {
+          display: grid;
+          grid-template-columns: 1fr 1fr;
+          gap: 8px;
         }
         button, select {
           min-height: 42px;
@@ -1082,11 +1346,28 @@
             <div class="note" data-language-note></div>
           </div>
           <div class="settings">
-            <label class="toggle">
-              <input type="checkbox" data-auto-translate />
-              <span>${message("panel.autoTranslate")}</span>
-            </label>
+            <div class="toggles">
+              <label class="toggle">
+                <input type="checkbox" data-auto-translate />
+                <span>${message("panel.autoTranslate")}</span>
+              </label>
+              <label class="toggle">
+                <input type="checkbox" data-native-download />
+                <span>${message("panel.nativeDownloads")}</span>
+              </label>
+            </div>
             <div class="progress" data-progress role="progressbar" aria-label="${message("progress.translation")}" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0"></div>
+          </div>
+          <div class="provider" data-provider-chip data-provider="${state.providerMode}">${message(providerMessageKey(state.providerMode))}</div>
+          <div class="correction" data-correction data-active="false">
+            <label>
+              <span>${message("panel.correction")}</span>
+              <textarea data-correction-input></textarea>
+            </label>
+            <div class="correction-actions">
+              <button type="button" data-save-correction>${message("action.saveCorrection")}</button>
+              <button type="button" data-cancel-correction>${message("action.cancelCorrection")}</button>
+            </div>
           </div>
           <div class="row">
             <button type="button" class="primary" data-translate>${message("action.translate")}</button>
@@ -1108,6 +1389,8 @@
     language.value = state.settings.targetLanguage;
     const autoTranslate = shadow.querySelector("[data-auto-translate]");
     autoTranslate.checked = Boolean(state.settings.autoTranslate);
+    const nativeDownload = shadow.querySelector("[data-native-download]");
+    nativeDownload.checked = Boolean(state.settings.enableBrowserTranslatorDownloads);
     language.addEventListener("change", async () => {
       await applySettings({ targetLanguage: language.value }, { skipAutoTranslate: true });
       await chrome.storage.local.set({ [C.STORAGE_KEYS.SETTINGS]: state.settings });
@@ -1123,9 +1406,16 @@
         scheduleAutoTranslate(250);
       }
     });
+    nativeDownload.addEventListener("change", async () => {
+      await applySettings({ enableBrowserTranslatorDownloads: nativeDownload.checked }, { skipAutoTranslate: true });
+      await chrome.storage.local.set({ [C.STORAGE_KEYS.SETTINGS]: state.settings });
+      refreshBrowserTranslatorStatus();
+    });
 
-    shadow.querySelector("[data-translate]").addEventListener("click", () => translatePage());
+    shadow.querySelector("[data-translate]").addEventListener("click", () => translatePage({ reason: "manual" }));
     shadow.querySelector("[data-restore]").addEventListener("click", restorePage);
+    shadow.querySelector("[data-save-correction]").addEventListener("click", saveSelectedCorrection);
+    shadow.querySelector("[data-cancel-correction]").addEventListener("click", clearSelectedCorrection);
     shadow.querySelector("[data-collapse]").addEventListener("click", () => {
       setCollapsed(!state.collapsed, { user: true });
       schedulePanelPlacement();
@@ -1135,6 +1425,7 @@
     state.panel = host;
     state.shadow = shadow;
     updateLanguageSupport();
+    setProviderMode(state.providerMode);
     setCollapsed(true);
     settlePanelPlacement();
     window.requestAnimationFrame(() => {
@@ -1230,7 +1521,6 @@
   function collectInlineElementCandidates() {
     return Array.from(document.body.querySelectorAll(INLINE_MERGE_SELECTOR))
       .filter(shouldMergeInlineElement)
-      .slice(0, C.LIMITS.maxTextNodesPerPass)
       .map((element) => ({
         kind: "element",
         target: element,
@@ -1240,12 +1530,42 @@
       }));
   }
 
+  function candidateRect(candidate) {
+    const target = candidate && candidate.target;
+    if (!target) return null;
+    const element = target.nodeType === Node.TEXT_NODE ? target.parentElement : target;
+    if (!element || typeof element.getBoundingClientRect !== "function") return null;
+    return element.getBoundingClientRect();
+  }
+
+  function candidateViewportScore(candidate) {
+    const rect = candidateRect(candidate);
+    if (!rect) return Number.MAX_SAFE_INTEGER;
+    if (rect.bottom >= 0 && rect.top <= window.innerHeight) {
+      return Math.max(0, rect.top);
+    }
+    if (rect.top > window.innerHeight) {
+      return 100000 + rect.top - window.innerHeight;
+    }
+    return 200000 + Math.abs(rect.bottom);
+  }
+
+  function sortCandidatesByViewport(candidates) {
+    return candidates
+      .map((candidate, index) => ({ candidate, index, score: candidateViewportScore(candidate) }))
+      .sort((a, b) => a.score - b.score || a.index - b.index)
+      .map((item) => item.candidate);
+  }
+
   function collectCandidates() {
     const elementCandidates = collectInlineElementCandidates();
     const nodes = Text.collectTranslatableTextNodes(document.body, {
       targetLanguage: state.settings.targetLanguage,
       maxTextLength: C.LIMITS.maxTextLength,
-      maxNodes: C.LIMITS.maxTextNodesPerPass,
+      maxNodes: C.LIMITS.maxCandidateScanNodes || C.LIMITS.maxTextNodesPerPass,
+      scoreNode(node) {
+        return candidateViewportScore({ target: node });
+      },
       shouldSkipNode(node) {
         return (
           isInsideRecordedElement(node) ||
@@ -1268,7 +1588,7 @@
       }))
       .filter((item) => item.normalized);
 
-    return [...elementCandidates, ...nodeCandidates].slice(0, C.LIMITS.maxTextNodesPerPass);
+    return sortCandidatesByViewport([...elementCandidates, ...nodeCandidates]).slice(0, C.LIMITS.maxTextNodesPerPass);
   }
 
   function directGlossaryTranslation(prepared) {
@@ -1283,14 +1603,77 @@
     if (value) fragment.append(document.createTextNode(value));
   }
 
-  function createInlinePreservingFragment(element, translated) {
-    const inlineChildren = Array.from(element.children).filter(
+  function inlineChildrenFor(element) {
+    return Array.from(element.children).filter(
       (child) =>
         SAFE_INLINE_TAGS.has(child.tagName) &&
         !child.matches(UNSAFE_INLINE_MERGE_SELECTOR) &&
         !child.querySelector(UNSAFE_INLINE_MERGE_SELECTOR) &&
         Text.normalizeWhitespace(child.textContent)
     );
+  }
+
+  function prepareInlinePlaceholders(candidate, prepared) {
+    if (!candidate || candidate.kind !== "element" || !candidate.target || !prepared) return prepared;
+
+    const glossaryValues = new Set((prepared.placeholders || []).map((item) => Text.normalizeWhitespace(item.value)));
+    const inlinePlaceholders = [];
+    let text = prepared.text;
+    for (const child of inlineChildrenFor(candidate.target)) {
+      const childText = Text.normalizeWhitespace(child.textContent);
+      if (!childText || glossaryValues.has(childText)) continue;
+
+      const index = text.indexOf(childText);
+      if (index === -1) continue;
+
+      const token = `__AL_INLINE_${inlinePlaceholders.length}__`;
+      text = `${text.slice(0, index)}${token}${text.slice(index + childText.length)}`;
+      inlinePlaceholders.push({
+        token,
+        value: childText,
+        child
+      });
+    }
+
+    if (!inlinePlaceholders.length) return prepared;
+    return {
+      ...prepared,
+      text,
+      inlinePlaceholders
+    };
+  }
+
+  function createInlineTokenFragment(translated, inlinePlaceholders) {
+    if (!Array.isArray(inlinePlaceholders) || inlinePlaceholders.length === 0) return null;
+
+    const tokens = new Map(inlinePlaceholders.map((item) => [item.token, item]));
+    const pattern = new RegExp(
+      inlinePlaceholders.map((item) => item.token.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")).join("|"),
+      "g"
+    );
+    const fragment = document.createDocumentFragment();
+    let cursor = 0;
+    let preserved = 0;
+    for (const match of translated.matchAll(pattern)) {
+      appendTextPart(fragment, translated.slice(cursor, match.index));
+      const placeholder = tokens.get(match[0]);
+      if (placeholder && placeholder.child) {
+        const clone = placeholder.child.cloneNode(false);
+        clone.textContent = placeholder.value;
+        fragment.append(clone);
+        preserved += 1;
+      } else {
+        appendTextPart(fragment, match[0]);
+      }
+      cursor = match.index + match[0].length;
+    }
+    appendTextPart(fragment, translated.slice(cursor));
+
+    return preserved > 0 ? fragment : null;
+  }
+
+  function createInlinePreservingFragment(element, translated) {
+    const inlineChildren = inlineChildrenFor(element);
     if (!inlineChildren.length) return null;
 
     const fragment = document.createDocumentFragment();
@@ -1314,8 +1697,9 @@
     return fragment;
   }
 
-  function applyTranslatedElement(element, translated) {
-    const fragment = createInlinePreservingFragment(element, translated);
+  function applyTranslatedElement(element, translated, inlinePlaceholders) {
+    const fragment =
+      createInlineTokenFragment(translated, inlinePlaceholders) || createInlinePreservingFragment(element, translated);
     if (fragment) {
       element.replaceChildren(fragment);
       return;
@@ -1323,7 +1707,7 @@
     element.textContent = translated;
   }
 
-  function applyCandidateTranslation(candidate, translated) {
+  function applyCandidateTranslation(candidate, translated, inlinePlaceholders) {
     if (!candidate || !candidate.target || !candidate.target.isConnected) return false;
     if (Text.normalizeWhitespace(candidate.target.textContent) !== candidate.normalized) return false;
     if (!translated || translated === candidate.normalized) return false;
@@ -1342,11 +1726,96 @@
     state.replacements.push(record);
     suppressMutationReactions();
     if (candidate.kind === "element") {
-      applyTranslatedElement(candidate.target, translated);
+      applyTranslatedElement(candidate.target, translated, inlinePlaceholders);
     } else {
       Text.applyTranslatedText(candidate.target, translated);
     }
     return true;
+  }
+
+  function recordMatchesClickedElement(record, element) {
+    if (!record || !element) return false;
+    const target = recordTarget(record);
+    if (!target || !target.isConnected) return false;
+    if (target.nodeType === Node.TEXT_NODE) {
+      return element.contains(target);
+    }
+    return target === element || target.contains(element);
+  }
+
+  function recordForClickedElement(element) {
+    if (!element || (state.panel && state.panel.contains(element))) return null;
+    return currentRecords().find((record) => recordMatchesClickedElement(record, element)) || null;
+  }
+
+  function updateCorrectionPanel() {
+    if (!state.shadow) return;
+    const panel = state.shadow.querySelector("[data-correction]");
+    const input = state.shadow.querySelector("[data-correction-input]");
+    if (!panel || !input) return;
+    const record = state.selectedCorrection;
+    panel.dataset.active = String(Boolean(record));
+    if (record) {
+      input.value = record.translated || "";
+      input.dataset.original = record.normalized || "";
+    } else {
+      input.value = "";
+      input.dataset.original = "";
+    }
+  }
+
+  function selectCorrectionRecord(record) {
+    state.selectedCorrection = record || null;
+    updateCorrectionPanel();
+  }
+
+  function clearSelectedCorrection() {
+    state.selectedCorrection = null;
+    updateCorrectionPanel();
+  }
+
+  function applyCorrectionToRecord(record, translated) {
+    const target = recordTarget(record);
+    if (!target || !target.isConnected) return false;
+    record.translated = translated;
+    suppressMutationReactions();
+    if (record.kind === "element") {
+      applyTranslatedElement(target, translated);
+    } else {
+      target.textContent = translated;
+    }
+    return true;
+  }
+
+  async function saveSelectedCorrection() {
+    if (!state.selectedCorrection || !state.shadow) return;
+    const input = state.shadow.querySelector("[data-correction-input]");
+    const translated = Text.normalizeWhitespace(input ? input.value : "");
+    if (!translated) return;
+
+    const record = state.selectedCorrection;
+    if (!applyCorrectionToRecord(record, translated)) {
+      clearSelectedCorrection();
+      return;
+    }
+
+    const persisted = await persistCorrection(record, translated);
+    setProviderMode("local");
+    setStatus(
+      persisted
+        ? message("status.translated", { count: currentRecords().length })
+        : message("status.translatedPartial", { count: currentRecords().length, failed: 1 }),
+      persisted ? "ok" : "error"
+    );
+    clearSelectedCorrection();
+  }
+
+  function handleCorrectionClick(event) {
+    const element = mutationElement(event.target);
+    const record = recordForClickedElement(element);
+    if (record) {
+      selectCorrectionRecord(record);
+    }
   }
 
   function chunks(values, size) {
@@ -1364,25 +1833,31 @@
       return { applied: 0, failed: 0, childFrameCount, hadCandidates: false, reachedLimit: false };
     }
 
+    const corrections = await loadCorrections();
     const unique = new Map();
-    const preparedByOriginal = new Map();
-    const directByOriginal = new Map();
+    const preparedByCandidate = new Map();
+    const directByCandidate = new Map();
     for (const candidate of candidates) {
-      if (unique.has(candidate.normalized)) continue;
-      const prepared = Glossary.prepareForTranslation(candidate.normalized, glossary, targetLanguage);
-      preparedByOriginal.set(candidate.normalized, prepared);
-      const direct = directGlossaryTranslation(prepared);
-      if (direct) {
-        directByOriginal.set(candidate.normalized, direct);
+      const correction = correctionFor(corrections, targetLanguage, candidate.normalized);
+      if (correction) {
+        directByCandidate.set(candidate, correction);
         continue;
       }
-      unique.set(candidate.normalized, prepared.text);
+      const prepared = Glossary.prepareForTranslation(candidate.normalized, glossary, targetLanguage);
+      const inlinePrepared = prepareInlinePlaceholders(candidate, prepared);
+      preparedByCandidate.set(candidate, inlinePrepared);
+      const direct = directGlossaryTranslation(inlinePrepared);
+      if (direct) {
+        directByCandidate.set(candidate, direct);
+        continue;
+      }
+      unique.set(inlinePrepared.text, inlinePrepared.text);
     }
 
     let applied = 0;
     for (const candidate of candidates) {
       if (!isCurrentGeneration(generation, targetLanguage, pageUrl)) return;
-      const directTranslation = directByOriginal.get(candidate.normalized);
+      const directTranslation = directByCandidate.get(candidate);
       if (directTranslation && applyCandidateTranslation(candidate, directTranslation)) {
         applied += 1;
       }
@@ -1439,14 +1914,15 @@
 
     for (const candidate of candidates) {
       if (!isCurrentGeneration(generation, targetLanguage, pageUrl)) return;
-      if (directByOriginal.has(candidate.normalized)) continue;
+      if (directByCandidate.has(candidate)) continue;
 
-      const prepared = preparedByOriginal.get(candidate.normalized);
+      const prepared = preparedByCandidate.get(candidate);
+      if (!prepared) continue;
       const rawTranslation = response.translated[prepared.text];
       if (!rawTranslation) continue;
 
       const translated = Glossary.restoreProtectedTerms(rawTranslation, prepared.placeholders);
-      if (applyCandidateTranslation(candidate, translated)) {
+      if (applyCandidateTranslation(candidate, translated, prepared.inlinePlaceholders)) {
         applied += 1;
       }
     }
@@ -1455,7 +1931,50 @@
     return { applied, failed, childFrameCount, hadCandidates: true, reachedLimit };
   }
 
-  async function translatePage(options = {}) {
+  function enqueueTranslation(options = {}, delay = 0) {
+    return new Promise((resolve) => {
+      state.translationQueue.pending = {
+        ...(state.translationQueue.pending || {}),
+        ...(options || {})
+      };
+      state.translationQueue.resolvers.push(resolve);
+      window.clearTimeout(state.translationQueue.timer);
+      state.translationQueue.timer = window.setTimeout(runTranslationQueue, Math.max(0, delay || 0));
+    });
+  }
+
+  function cancelQueuedTranslation() {
+    window.clearTimeout(state.translationQueue.timer);
+    state.translationQueue.pending = null;
+    const resolvers = state.translationQueue.resolvers.splice(0);
+    for (const resolve of resolvers) resolve(undefined);
+  }
+
+  async function runTranslationQueue() {
+    if (state.translationQueue.active) return;
+    const options = state.translationQueue.pending || {};
+    if (!state.translationQueue.pending) return;
+    const resolvers = state.translationQueue.resolvers.splice(0);
+    state.translationQueue.pending = null;
+    state.translationQueue.active = true;
+
+    let result;
+    try {
+      result = await performTranslatePage(options);
+    } finally {
+      state.translationQueue.active = false;
+      for (const resolve of resolvers) resolve(result);
+      if (state.translationQueue.pending) {
+        state.translationQueue.timer = window.setTimeout(runTranslationQueue, 0);
+      }
+    }
+  }
+
+  function translatePage(options = {}) {
+    return enqueueTranslation(options, options.delay || 0);
+  }
+
+  async function performTranslatePage(options = {}) {
     const generation = bumpGeneration();
     const targetLanguage = state.settings.targetLanguage;
     const pageUrl = location.href;
@@ -1473,7 +1992,11 @@
       return;
     }
 
-    const childFrameCount = shouldBroadcastFrames ? postToChildFrames("translate", { targetLanguage }).sent : 0;
+    const frameDispatch = shouldBroadcastFrames
+      ? postToChildFrames("translate", { targetLanguage })
+      : { payload: null, sent: 0 };
+    const childFrameCount = frameDispatch.sent;
+    startFrameAggregate(frameDispatch.payload, childFrameCount, "translate");
     const maxPasses = Math.max(1, C.LIMITS.maxTranslationPasses || 1);
     let applied = 0;
     let failed = 0;
@@ -1518,6 +2041,7 @@
 
     if (failed > 0) {
       setProgress(0);
+      updateFrameAggregatePage(frameDispatch.payload && frameDispatch.payload.messageId, { applied, failed });
       setStatus(
         applied > 0
           ? message("status.translatedPartial", { count: applied, failed })
@@ -1528,8 +2052,12 @@
     }
 
     setProgress(applied > 0 ? 100 : 0);
+    updateFrameAggregatePage(frameDispatch.payload && frameDispatch.payload.messageId, { applied, failed });
     if (capped) {
       setStatus(message("status.translatedCapped", { count: applied }), "ok");
+    } else if (childFrameCount > 0) {
+      setAggregateStatus(state.frameAggregates.get(frameDispatch.payload.messageId));
+      if (applied === 0) setStatus(message("status.frameDispatch"), "ok");
     } else if (applied > 0) {
       setStatus(message("status.translated", { count: applied }), "ok");
     } else {
@@ -1541,6 +2069,8 @@
 
   function restorePage(options = {}) {
     if (options.bump !== false) bumpGeneration();
+    window.clearTimeout(state.debounceTimer);
+    cancelQueuedTranslation();
     if (isTopFrame && options.broadcastFrames !== false) {
       postToChildFrames("restore");
     }
@@ -1561,6 +2091,7 @@
     }
     state.replacements = [];
     state.nodeRecords = new WeakMap();
+    clearSelectedCorrection();
     setBusy(false);
     setProgress(0);
     schedulePanelPlacement();
@@ -1572,7 +2103,7 @@
 
   function scheduleAutoTranslate(delay) {
     window.clearTimeout(state.debounceTimer);
-    state.debounceTimer = window.setTimeout(() => translatePage(), delay);
+    state.debounceTimer = window.setTimeout(() => translatePage({ reason: "auto" }), delay);
   }
 
   function handleRouteChange() {
@@ -1704,6 +2235,7 @@
   async function applySettings(nextSettings, options = {}) {
     const previousLanguage = state.settings.targetLanguage;
     const previousAutoTranslate = state.settings.autoTranslate;
+    const previousNativeDownloads = state.settings.enableBrowserTranslatorDownloads;
     state.settings = {
       ...C.DEFAULT_SETTINGS,
       ...state.settings,
@@ -1713,8 +2245,10 @@
     if (state.shadow) {
       const language = state.shadow.querySelector("[data-language]");
       const autoTranslate = state.shadow.querySelector("[data-auto-translate]");
+      const nativeDownload = state.shadow.querySelector("[data-native-download]");
       if (language && language.value !== state.settings.targetLanguage) language.value = state.settings.targetLanguage;
       if (autoTranslate) autoTranslate.checked = Boolean(state.settings.autoTranslate);
+      if (nativeDownload) nativeDownload.checked = Boolean(state.settings.enableBrowserTranslatorDownloads);
       updateLanguageSupport();
     }
 
@@ -1729,6 +2263,10 @@
         setStatus(error.message || message("status.failed"), "error");
         return;
       }
+    }
+
+    if (previousNativeDownloads !== state.settings.enableBrowserTranslatorDownloads) {
+      refreshBrowserTranslatorStatus();
     }
 
     if (
@@ -1773,6 +2311,7 @@
     window.addEventListener("pagehide", () => {
       state.observer?.disconnect();
       window.clearTimeout(state.debounceTimer);
+      window.clearTimeout(state.translationQueue.timer);
       window.clearTimeout(state.placementTimer);
       if (state.placementFrame) {
         window.cancelAnimationFrame(state.placementFrame);
@@ -1795,6 +2334,7 @@
     watchHistoryNavigation();
     watchSpaNavigation();
     watchSettingsChanges();
+    document.addEventListener("click", handleCorrectionClick, true);
     postFrameReady();
     if (state.settings.autoTranslate) {
       scheduleAutoTranslate(600);

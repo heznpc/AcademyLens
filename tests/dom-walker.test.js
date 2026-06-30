@@ -107,6 +107,33 @@ test("collectTranslatableTextNodes applies caller skips before max node limit", 
   );
 });
 
+test("collectTranslatableTextNodes can prioritize visible text beyond the retained node cap", () => {
+  withDom(
+    `
+      <main>
+        <p>Offscreen lesson sample zero</p>
+        <p>Offscreen lesson sample one</p>
+        <p>Offscreen lesson sample two</p>
+        <p>Visible lesson priority</p>
+      </main>
+    `,
+    (document) => {
+      const nodes = Text.collectTranslatableTextNodes(document.body, {
+        targetLanguage: "ko",
+        maxNodes: 2,
+        maxTextLength: 1200,
+        scoreNode(node) {
+          return Text.normalizeWhitespace(node.textContent).startsWith("Visible") ? 0 : 100;
+        }
+      });
+      const values = nodes.map((node) => Text.normalizeWhitespace(node.textContent));
+
+      assert(values.includes("Visible lesson priority"));
+      assert.equal(values.length, 2);
+    }
+  );
+});
+
 test("platform course controls are not treated as lesson copy", () => {
   for (const control of ["Start course", "START COURSE", "SKIP TO LESSON", "Continue", "CONTINUE"]) {
     assert.equal(Text.shouldTranslateText(control, "ko", 1200), false, `${control} should be skipped`);
