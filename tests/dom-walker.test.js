@@ -64,6 +64,8 @@ test("collectTranslatableTextNodes skips text hidden by ancestors and inert cont
         <section aria-hidden="true"><p>Hidden by ARIA ancestor</p></section>
         <section inert><p>Hidden by inert ancestor</p></section>
         <section style="visibility: hidden"><p>Hidden by visibility ancestor</p></section>
+        <section style="content-visibility: hidden"><p>Hidden by content visibility</p></section>
+        <details><summary>Visible summary</summary><p>Hidden by closed details</p></details>
         <section><p>Visible course explanation</p></section>
       </main>
     `,
@@ -75,7 +77,7 @@ test("collectTranslatableTextNodes skips text hidden by ancestors and inert cont
       });
       const values = nodes.map((node) => Text.normalizeWhitespace(node.textContent));
 
-      assert.deepEqual(values, ["Visible course explanation"]);
+      assert.deepEqual(values, ["Visible summary", "Visible course explanation"]);
     }
   );
 });

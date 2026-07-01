@@ -63,6 +63,14 @@ async function setNativeDownloads(page, enabled) {
   }, enabled);
 }
 
+async function setAutoTranslate(page, enabled) {
+  await page.evaluate((value) => {
+    const checkbox = document.querySelector(".academylens-root").shadowRoot.querySelector("[data-auto-translate]");
+    checkbox.checked = value;
+    checkbox.dispatchEvent(new Event("change", { bubbles: true }));
+  }, enabled);
+}
+
 async function panelSnapshot(page) {
   return page.evaluate(() => {
     const root = document.querySelector(".academylens-root");
@@ -311,9 +319,24 @@ test.describe("AcademyLens extension E2E", () => {
 
       await clickPanelButton(harness.page, "[data-delete-correction]");
       await expect.poll(async () => (await panelSnapshot(harness.page)).correctionCount).toBe("(0)");
-      await clickPanelButton(harness.page, "[data-restore]");
-      await clickPanelButton(harness.page, "[data-translate]");
       await expect(harness.page.locator("#title")).toHaveText("업무를 위한 실용 AI 기술 구축");
+    } finally {
+      await stopHarness(harness);
+    }
+  });
+
+  test("does not repopulate cleared cache from an in-flight translation", async () => {
+    const harness = await startHarness({ delayMs: 450 });
+    try {
+      await expandPanel(harness.page);
+      await clickPanelButton(harness.page, "[data-translate]");
+      await harness.page.waitForTimeout(50);
+      await clickPanelButton(harness.page, "[data-clear-cache]");
+      await expect.poll(() => translationCacheSize(harness.ext.context)).toBe(0);
+
+      await expect(harness.page.locator("#title")).toHaveText("업무를 위한 실용 AI 기술 구축");
+      await harness.page.waitForTimeout(500);
+      await expect.poll(() => translationCacheSize(harness.ext.context)).toBe(0);
     } finally {
       await stopHarness(harness);
     }
@@ -386,6 +409,24 @@ test.describe("AcademyLens extension E2E", () => {
 
       await expect(harness.page.locator("#native-only")).toHaveText("[native] Native provider unique sentence");
       expect(harness.calls.some((call) => call.text.includes("Native provider unique sentence"))).toBe(false);
+      await expect.poll(async () => (await panelSnapshot(harness.page)).providerMode).toBe("native");
+    } finally {
+      await stopHarness(harness);
+    }
+  });
+
+  test("keeps glossary and inline placeholders on the native provider path", async () => {
+    const harness = await startHarness({ browserTranslatorStub: "available" });
+    try {
+      await expandPanel(harness.page);
+      await clickPanelButton(harness.page, "[data-translate]");
+
+      await expect(harness.page.locator("#protected")).toHaveText(
+        "[native] OpenAI Academy courses use ChatGPT and GPT-5."
+      );
+      await expect(harness.page.locator("#inline")).toHaveText("[native] Use ChatGPT safely.");
+      await expect(harness.page.locator("#inline strong")).toHaveText("ChatGPT");
+      expect(harness.calls).toEqual([]);
       await expect.poll(async () => (await panelSnapshot(harness.page)).providerMode).toBe("native");
     } finally {
       await stopHarness(harness);
@@ -476,6 +517,37 @@ test.describe("AcademyLens extension E2E", () => {
       await expect(harness.page.locator("#protected")).toHaveText(
         "OpenAI Academy 강의는 JSON 및 SDK 예제를 사용합니다."
       );
+    } finally {
+      await stopHarness(harness);
+    }
+  });
+
+  test("auto-translate handles new lesson text without touching newly added platform controls", async () => {
+    const harness = await startHarness();
+    try {
+      await expandPanel(harness.page);
+      await setAutoTranslate(harness.page, true);
+      harness.calls.length = 0;
+
+      await harness.page.evaluate(() => {
+        const main = document.querySelector("#lesson-main");
+        const section = document.createElement("section");
+        section.id = "auto-section";
+        section.innerHTML = `
+          <p id="auto-copy">Review points help teams evaluate outputs responsibly.</p>
+          <div class="course-progress" role="progressbar">3/5 Lessons Completed</div>
+          <button id="auto-control">Continue</button>
+        `;
+        main.append(section);
+      });
+
+      await expect(harness.page.locator("#auto-copy")).toHaveText(
+        "검토 지점은 팀이 출력을 책임 있게 평가하도록 돕습니다."
+      );
+      await expect(harness.page.locator("#auto-control")).toHaveText("Continue");
+      await expect(harness.page.locator(".course-progress")).toContainText("3/5 Lessons Completed");
+      expect(harness.calls.some((call) => call.text.includes("help teams evaluate"))).toBe(true);
+      expect(harness.calls.some((call) => /Continue|Lessons Completed/.test(call.text))).toBe(false);
     } finally {
       await stopHarness(harness);
     }
@@ -632,6 +704,22 @@ test.describe("AcademyLens extension E2E", () => {
     }
   });
 
+  test("reports embedded frame translation failures from the top-level panel", async () => {
+    const harness = await startHarness({ path: "/learn/ai-foundations-juzjs/lessons", failAll: true });
+    try {
+      await expandPanel(harness.page);
+      const scormFrame = await waitForFrame(harness.page, /scormcontent\/index\.html/);
+      await clickPanelButton(harness.page, "[data-translate]");
+
+      await expect.poll(async () => (await panelSnapshot(harness.page)).status, { timeout: 15000 }).toMatch(/실패/);
+      await expect(scormFrame.locator("#scorm-body")).toHaveText(
+        "This course is designed to build foundations for using AI and ChatGPT safely."
+      );
+    } finally {
+      await stopHarness(harness);
+    }
+  });
+
   test("panel has viewport-safe visual smoke coverage on desktop and mobile sizes", async () => {
     const harness = await startHarness();
     try {
@@ -712,6 +800,47 @@ test.describe("AcademyLens extension E2E", () => {
         await clickPanelButton(harness.page, "[data-collapse]");
         await harness.page.waitForTimeout(150);
       }
+    } finally {
+      await stopHarness(harness);
+    }
+  });
+
+  test("keeps the collapsed panel above a bottom privacy overlay", async () => {
+    const harness = await startHarness();
+    try {
+      await harness.page.setViewportSize({ width: 1280, height: 820 });
+      await harness.page.evaluate(() => {
+        const overlay = document.createElement("div");
+        overlay.id = "privacy-overlay";
+        overlay.setAttribute("role", "dialog");
+        overlay.style.cssText = [
+          "position:fixed",
+          "left:0",
+          "right:0",
+          "bottom:0",
+          "height:116px",
+          "background:#fff",
+          "z-index:2147483646",
+          "border-top:1px solid #ddd"
+        ].join(";");
+        overlay.textContent = "We use cookies. Manage preferences. Accept all.";
+        document.body.append(overlay);
+      });
+      await harness.page.waitForTimeout(700);
+
+      const metrics = await harness.page.evaluate(() => {
+        const panel = document.querySelector(".academylens-root").shadowRoot.querySelector(".panel");
+        const overlay = document.querySelector("#privacy-overlay");
+        const panelRect = panel.getBoundingClientRect();
+        const overlayRect = overlay.getBoundingClientRect();
+        return {
+          panelBottom: panelRect.bottom,
+          overlayTop: overlayRect.top,
+          bottomOverlay: panel.dataset.bottomOverlay
+        };
+      });
+      expect(metrics.bottomOverlay).toBe("true");
+      expect(metrics.panelBottom).toBeLessThanOrEqual(metrics.overlayTop - 8);
     } finally {
       await stopHarness(harness);
     }

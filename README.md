@@ -50,8 +50,8 @@ AcademyLens is an unofficial Chrome extension for learners using OpenAI Academy.
 - Shows whether the selected language has a final/native-reviewed, community-reviewed, AI-drafted beta, or protected-term machine translation status.
 - Uses browser-native Translator when available; browser language-pack downloads require explicit opt-in, and Google Translate remains the fallback runtime.
 - Stores optional local correction overrides so a learner can fix repeated awkward translations on their own device.
-- Keeps translation cache entries scoped by provider, glossary state, and local correction state to reduce stale or surprising reuse.
-- Includes local-only correction management and diagnostics for provider, cache, fallback, context grouping, and embedded-frame translation counts.
+- Keeps translation cache entries scoped by provider and glossary state; local corrections bypass cached provider text and are applied directly.
+- Includes local-only correction management and diagnostics for provider, cache, fallback, context grouping, and embedded-frame applied/failed counts.
 - Guards against late translation responses after Restore, language switches, and Gradual/Next.js route changes.
 - Does not modify enrollment, progress tracking, certificates, account state, or Gradual platform data.
 - Does not load remote AI scripts.

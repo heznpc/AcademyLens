@@ -6,7 +6,10 @@ try {
 
 const { MESSAGE_TYPES, STORAGE_KEYS, DEFAULT_SETTINGS, LIMITS } = self.AcademyLensConstants || {
   MESSAGE_TYPES: { TRANSLATE_BATCH: "ACADEMYLENS_TRANSLATE_BATCH" },
-  STORAGE_KEYS: { CACHE: "academylens.translationCache.v1" },
+  STORAGE_KEYS: {
+    CACHE: "academylens.translationCache.v1",
+    CACHE_EPOCH: "academylens.translationCacheEpoch.v1"
+  },
   DEFAULT_SETTINGS: { targetLanguage: "ko" },
   LIMITS: { cacheEntries: 600 }
 };
@@ -35,6 +38,11 @@ function setLocal(values) {
 
 function sleep(ms) {
   return new Promise((resolve) => setTimeout(resolve, ms));
+}
+
+function cacheEpochValue(value) {
+  const numeric = Number(value);
+  return Number.isFinite(numeric) && numeric > 0 ? numeric : 0;
 }
 
 function googleCacheScope(message) {
@@ -130,12 +138,16 @@ function withCacheWriteLock(task) {
   return nextWrite;
 }
 
-async function mergeCacheUpdates(cacheUpdates) {
+async function mergeCacheUpdates(cacheUpdates, expectedEpoch) {
   if (!Object.keys(cacheUpdates).length) return { persisted: true };
 
   try {
     await withCacheWriteLock(async () => {
-      const stored = await getLocal([STORAGE_KEYS.CACHE]);
+      const stored = await getLocal([STORAGE_KEYS.CACHE, STORAGE_KEYS.CACHE_EPOCH]);
+      const currentEpoch = cacheEpochValue(stored[STORAGE_KEYS.CACHE_EPOCH]);
+      if (expectedEpoch !== undefined && cacheEpochValue(expectedEpoch) !== currentEpoch) {
+        return;
+      }
       const cache = stored[STORAGE_KEYS.CACHE] || {};
       for (const [key, update] of Object.entries(cacheUpdates)) {
         const existing = cache[key];
@@ -171,8 +183,10 @@ async function translateBatch(message) {
     ? [...new Set(message.texts.map((text) => String(text)).filter(Boolean))]
     : [];
   const texts = allTexts.slice(0, LIMITS.maxBatchSize || 40);
-  const stored = await getLocal([STORAGE_KEYS.CACHE]);
-  const cache = stored[STORAGE_KEYS.CACHE] || {};
+  const stored = await getLocal([STORAGE_KEYS.CACHE, STORAGE_KEYS.CACHE_EPOCH]);
+  const cacheEpoch = cacheEpochValue(stored[STORAGE_KEYS.CACHE_EPOCH]);
+  const expectedCacheEpoch = message.cacheEpoch === undefined ? cacheEpoch : cacheEpochValue(message.cacheEpoch);
+  const cache = expectedCacheEpoch === cacheEpoch ? stored[STORAGE_KEYS.CACHE] || {} : {};
   const translated = {};
   const errors = {};
   const cacheUpdates = {};
@@ -219,7 +233,7 @@ async function translateBatch(message) {
     })
   );
 
-  const cacheResult = await mergeCacheUpdates(cacheUpdates);
+  const cacheResult = await mergeCacheUpdates(cacheUpdates, expectedCacheEpoch);
   if (!cacheResult.persisted) {
     stats.cachePersistFailed = true;
   }

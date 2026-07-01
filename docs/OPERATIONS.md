@@ -66,14 +66,14 @@ Current runtime behavior:
 
 - Browser-native Translator API is used when already available, or when the user explicitly allows browser-managed translator downloads.
 - Google Translate endpoint is the fallback translation provider.
-- Translation cache entries are scoped by provider, glossary state, and correction state.
+- Translation cache entries are scoped by provider and glossary state; local corrections bypass cached provider text.
 - Correction management and runtime diagnostics are local-only browser storage/UI features.
 - GPT/Puter/OpenAI review is disabled.
 - No AcademyLens server is used.
 
 Before public release:
 
-1. Confirm `PRIVACY_POLICY.md` still says visible selected text can be handled by browser-native Translator or sent to Google Translate fallback.
+1. Confirm `PRIVACY_POLICY.md` still says extension-selected visible lesson text can be handled by browser-native Translator or sent to Google Translate fallback.
 2. Confirm store copy does not describe the endpoint as Google Cloud Translation API.
 3. Confirm runtime files do not load remote hosted SDK scripts.
 4. Confirm browser-native translator downloads remain explicit opt-in.

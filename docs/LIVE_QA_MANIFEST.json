@@ -89,7 +89,7 @@
     }
   ],
   "releaseRules": [
-    "Run npm run check:full before any public release.",
+    "Run npm run release:preflight before any public release.",
     "Run npm run store:screenshots and inspect dist/store-screenshots before preparing store assets.",
     "Do not commit live captures unless they are sanitized and reviewed.",
     "Do not publish screenshots containing private account, progress, certificate, notification, or profile surfaces.",

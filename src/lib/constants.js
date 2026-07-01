@@ -19,6 +19,7 @@
   const STORAGE_KEYS = Object.freeze({
     SETTINGS: "academylens.settings",
     CACHE: "academylens.translationCache.v1",
+    CACHE_EPOCH: "academylens.translationCacheEpoch.v1",
     CORRECTIONS: "academylens.localCorrections.v1"
   });
 
@@ -90,7 +91,7 @@
       "panel.diagnostics": "Diagnostics",
       "panel.diagnosticsIdle": "No translation run yet",
       "panel.diagnosticsSummary":
-        "Provider {provider}; cache {hits}/{misses}; fallback {fallback}; corrections {corrections}; groups {groups}; frames {frames}.",
+        "Provider {provider}; cache {hits}/{misses}; fallback {fallback}; corrections {corrections}; groups {groups}; frames {frameApplied}/{frameFailed}.",
       "action.saveCorrection": "Save",
       "action.cancelCorrection": "Cancel",
       "action.deleteCorrection": "Delete",
@@ -114,6 +115,7 @@
       "status.noNewText": "No new course text found.",
       "status.frameDispatch": "Sent translation to embedded course content.",
       "status.frameTranslated": "Translated {count} embedded course text blocks.",
+      "status.frameFailed": "Embedded course translation failed for {failed} text blocks.",
       "status.translatedWithFrames": "Translated {count} page and {frameCount} embedded text blocks.",
       "status.frameRestored": "Restored embedded course content.",
       "status.translating": "Translating {count} text blocks...",
@@ -149,7 +151,7 @@
       "panel.diagnostics": "진단",
       "panel.diagnosticsIdle": "아직 번역 실행 기록이 없습니다",
       "panel.diagnosticsSummary":
-        "경로 {provider}; 캐시 {hits}/{misses}; 대체 {fallback}; 보정 {corrections}; 묶음 {groups}; 프레임 {frames}.",
+        "경로 {provider}; 캐시 {hits}/{misses}; 대체 {fallback}; 보정 {corrections}; 묶음 {groups}; 프레임 {frameApplied}/{frameFailed}.",
       "action.saveCorrection": "저장",
       "action.cancelCorrection": "취소",
       "action.deleteCorrection": "삭제",
@@ -173,6 +175,7 @@
       "status.noNewText": "새로 번역할 강의 텍스트가 없습니다.",
       "status.frameDispatch": "임베드된 강의 콘텐츠에 번역을 전달했습니다.",
       "status.frameTranslated": "임베드된 강의 텍스트 {count}개를 번역했습니다.",
+      "status.frameFailed": "임베드된 강의 텍스트 {failed}개 번역에 실패했습니다.",
       "status.translatedWithFrames": "페이지 텍스트 {count}개와 임베드 텍스트 {frameCount}개를 번역했습니다.",
       "status.frameRestored": "임베드된 강의 콘텐츠를 원문으로 복원했습니다.",
       "status.translating": "텍스트 {count}개 번역 중...",
