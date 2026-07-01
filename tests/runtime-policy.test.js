@@ -128,11 +128,13 @@ test("content supports local corrections, frame aggregation, viewport priority, 
   assert.match(constants, /CORRECTIONS: "academylens\.localCorrections\.v1"/);
   assert.match(source, /function persistCorrection/);
   assert.match(source, /function deleteCorrection/);
+  assert.match(source, /function refreshCorrectionRecords/);
   assert.match(source, /function updateCorrectionsManager/);
   assert.match(source, /function correctionFor/);
   assert.match(source, /function startFrameAggregate/);
   assert.match(source, /cleanupTimer/);
   assert.match(source, /status\.translatedWithFrames/);
+  assert.match(source, /status\.frameFailed/);
   assert.match(source, /function sortCandidatesByViewport/);
   assert.match(source, /function prepareInlinePlaceholders/);
   assert.match(source, /function candidateContextKey/);
@@ -141,18 +143,23 @@ test("content supports local corrections, frame aggregation, viewport priority, 
   assert.match(source, /__AL_INLINE_/);
 });
 
-test("content cache scope tracks provider, glossary, and correction changes", () => {
+test("content cache scope tracks provider and glossary while cache clears invalidate stale writes", () => {
   const source = read("src/content/content.js");
+  const constants = read("src/lib/constants.js");
   const cache = read("src/lib/cache.js");
   const background = read("src/background/background.js");
 
+  assert.match(constants, /CACHE_EPOCH: "academylens\.translationCacheEpoch\.v1"/);
   assert.match(cache, /function normalizeScope/);
   assert.match(cache, /function entryMatches/);
   assert.match(source, /function glossarySignature/);
-  assert.match(source, /function correctionSignature/);
   assert.match(source, /function cacheScope/);
+  assert.match(source, /function cacheEpochValue/);
+  assert.match(source, /state\.cacheEpoch/);
+  assert.match(source, /cacheEpoch: state\.cacheEpoch/);
   assert.match(source, /provider: "google-translate"/);
   assert.match(background, /function googleCacheScope/);
+  assert.match(background, /expectedCacheEpoch/);
 });
 
 test("content fallback only retries texts missed by browser-native translation", () => {
@@ -164,6 +171,7 @@ test("content fallback only retries texts missed by browser-native translation",
 
   assert.match(source, /function untranslatedTexts/);
   assert.match(source, /function mergeTranslationResponses/);
+  assert.match(source, /function hasUnexpectedPlaceholderTokens/);
   assert.match(sendTranslationBatch, /const missingTexts = untranslatedTexts\(requestedTexts, browserResponse\)/);
   assert.match(sendTranslationBatch, /texts: missingTexts/);
 });
@@ -185,9 +193,17 @@ test("content mutation and placement work is throttled before expensive page sca
   );
 
   assert.match(source, /requestAnimationFrame/);
-  assert.match(source, /mutationMayContain|elementMayContainTranslatableText/);
+  assert.match(source, /queueMutationScan/);
+  assert.match(source, /runMutationScan/);
+  assert.match(source, /elementMayContainTranslatableText/);
   assert.match(source, /collectPanelOverlayCandidates/);
   assert.doesNotMatch(updatePanelPlacement, /querySelectorAll\("\*"\)/);
+});
+
+test("CI runs the release preflight gate", () => {
+  const ci = read(".github/workflows/ci.yml");
+
+  assert.match(ci, /npm run release:preflight/);
 });
 
 test("live DOM capture reports redactions and blocks risky fixture writes", () => {
@@ -220,7 +236,8 @@ test("privacy policy describes local cache contents and auto-translate behavior"
   assert.match(policy, /locally corrected original visible text/i);
   assert.match(policy, /cached original visible text/i);
   assert.match(policy, /cached translated text/i);
-  assert.match(policy, /provider, glossary, correction-state/i);
+  assert.match(policy, /extension-selected visible lesson text/i);
+  assert.match(policy, /provider, glossary state/i);
   assert.match(policy, /diagnostics are displayed locally/i);
   assert.match(policy, /do not include the translated page text/i);
   assert.match(policy, /target language, creation time, and last-access time/i);

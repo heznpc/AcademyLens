@@ -48,13 +48,17 @@
       pending: null,
       resolvers: []
     },
+    generationWaiters: new Set(),
+    cacheEpoch: 0,
     selectedCorrection: null,
     corrections: {},
     lastDiagnostics: null,
     routeVersion: 0,
     collapsed: false,
     collapseUserSet: false,
-    suppressMutationUntil: 0
+    suppressMutationUntil: 0,
+    mutationScanTimer: 0,
+    pendingMutationScanNodes: new Set()
   };
   const contentFallbackInFlight = new Map();
   const contentFallbackFetchQueue = [];
@@ -96,6 +100,9 @@
 
   function bumpGeneration() {
     state.generation += 1;
+    const waiters = Array.from(state.generationWaiters);
+    state.generationWaiters.clear();
+    for (const resolve of waiters) resolve(state.generation);
     return state.generation;
   }
 
@@ -107,6 +114,48 @@
 
   function suppressMutationReactions(durationMs = 250) {
     state.suppressMutationUntil = Math.max(state.suppressMutationUntil, Date.now() + durationMs);
+  }
+
+  function cacheEpochValue(value) {
+    const numeric = Number(value);
+    return Number.isFinite(numeric) && numeric > 0 ? numeric : 0;
+  }
+
+  function watchGenerationChange(generation) {
+    if (generation !== state.generation) {
+      return { promise: Promise.resolve(state.generation), cancel() {} };
+    }
+
+    let resolveWaiter;
+    const promise = new Promise((resolve) => {
+      resolveWaiter = resolve;
+      state.generationWaiters.add(resolveWaiter);
+    });
+    return {
+      promise,
+      cancel() {
+        state.generationWaiters.delete(resolveWaiter);
+      }
+    };
+  }
+
+  async function raceCurrentGeneration(promise, generation, targetLanguage, pageUrl) {
+    if (!isCurrentGeneration(generation, targetLanguage, pageUrl)) return undefined;
+    const watcher = watchGenerationChange(generation);
+    try {
+      const result = await Promise.race([
+        Promise.resolve(promise).then(
+          (value) => ({ type: "value", value }),
+          (error) => ({ type: "error", error })
+        ),
+        watcher.promise.then(() => ({ type: "stale" }))
+      ]);
+      if (result.type === "stale" || !isCurrentGeneration(generation, targetLanguage, pageUrl)) return undefined;
+      if (result.type === "error") throw result.error;
+      return result.value;
+    } finally {
+      watcher.cancel();
+    }
   }
 
   function setBusy(isBusy, generation) {
@@ -336,10 +385,12 @@
     return promise;
   }
 
-  async function persistContentCache(cacheUpdates) {
+  async function persistContentCache(cacheUpdates, expectedEpoch = state.cacheEpoch) {
     if (!Cache || !Object.keys(cacheUpdates).length) return false;
     try {
-      const stored = await getLocal([C.STORAGE_KEYS.CACHE]);
+      const stored = await getLocal([C.STORAGE_KEYS.CACHE, C.STORAGE_KEYS.CACHE_EPOCH]);
+      const currentEpoch = cacheEpochValue(stored[C.STORAGE_KEYS.CACHE_EPOCH]);
+      if (cacheEpochValue(expectedEpoch) !== currentEpoch) return true;
       const cache = stored[C.STORAGE_KEYS.CACHE] || {};
       for (const [key, update] of Object.entries(cacheUpdates)) {
         cache[key] = {
@@ -470,7 +521,13 @@
   }
 
   async function clearTranslationCache() {
-    await chrome.storage.local.set({ [C.STORAGE_KEYS.CACHE]: {} });
+    const stored = await getLocal([C.STORAGE_KEYS.CACHE_EPOCH]);
+    const nextEpoch = cacheEpochValue(stored[C.STORAGE_KEYS.CACHE_EPOCH]) + 1;
+    state.cacheEpoch = nextEpoch;
+    await chrome.storage.local.set({
+      [C.STORAGE_KEYS.CACHE]: {},
+      [C.STORAGE_KEYS.CACHE_EPOCH]: nextEpoch
+    });
     state.lastDiagnostics = null;
     updateDiagnosticsPanel();
   }
@@ -533,6 +590,7 @@
     const deleted = await deleteCorrection(select.value);
     if (deleted) {
       clearSelectedCorrection();
+      await refreshCorrectionRecords();
       setStatus(message("status.correctionDeleted"), "ok");
     }
   }
@@ -540,6 +598,7 @@
   async function clearAllCorrections() {
     await clearCorrections();
     clearSelectedCorrection();
+    await refreshCorrectionRecords();
     setStatus(message("status.correctionsCleared"), "ok");
   }
 
@@ -564,17 +623,20 @@
       fallback: diagnostics.fallbackTexts || 0,
       corrections: diagnostics.corrections || 0,
       groups: diagnostics.contextGroups || 0,
-      frames: diagnostics.frames || 0
+      frameApplied: diagnostics.frameApplied || 0,
+      frameFailed: diagnostics.frameFailed || 0
     });
   }
 
-  async function translateBatchInContent(texts, targetLanguage, scope = {}) {
+  async function translateBatchInContent(texts, targetLanguage, scope = {}, expectedEpoch = state.cacheEpoch) {
     if (!Cache || !GoogleTranslate || typeof fetch !== "function") {
       throw new Error(message("status.failed"));
     }
 
-    const stored = await getLocal([C.STORAGE_KEYS.CACHE]);
-    const cache = stored[C.STORAGE_KEYS.CACHE] || {};
+    const stored = await getLocal([C.STORAGE_KEYS.CACHE, C.STORAGE_KEYS.CACHE_EPOCH]);
+    const currentEpoch = cacheEpochValue(stored[C.STORAGE_KEYS.CACHE_EPOCH]);
+    const canReadCache = cacheEpochValue(expectedEpoch) === currentEpoch;
+    const cache = canReadCache ? stored[C.STORAGE_KEYS.CACHE] || {} : {};
     const translated = {};
     const errors = {};
     const cacheUpdates = {};
@@ -621,7 +683,7 @@
       })
     );
 
-    const persisted = await persistContentCache(cacheUpdates);
+    const persisted = await persistContentCache(cacheUpdates, expectedEpoch);
     if (!persisted && Object.keys(cacheUpdates).length) {
       stats.cachePersistFailed = true;
     }
@@ -634,7 +696,12 @@
     };
   }
 
-  async function translateBatchWithBrowserTranslator(texts, targetLanguage, scope = {}) {
+  async function translateBatchWithBrowserTranslator(
+    texts,
+    targetLanguage,
+    scope = {},
+    expectedEpoch = state.cacheEpoch
+  ) {
     if (
       !Cache ||
       !BrowserTranslator ||
@@ -679,8 +746,10 @@
       }
       setProviderMode(support.status === "available" ? "native" : "nativeDownloading");
 
-      const stored = await getLocal([C.STORAGE_KEYS.CACHE]);
-      const cache = stored[C.STORAGE_KEYS.CACHE] || {};
+      const stored = await getLocal([C.STORAGE_KEYS.CACHE, C.STORAGE_KEYS.CACHE_EPOCH]);
+      const currentEpoch = cacheEpochValue(stored[C.STORAGE_KEYS.CACHE_EPOCH]);
+      const canReadCache = cacheEpochValue(expectedEpoch) === currentEpoch;
+      const cache = canReadCache ? stored[C.STORAGE_KEYS.CACHE] || {} : {};
       const translated = {};
       const errors = {};
       const cacheUpdates = {};
@@ -735,7 +804,7 @@
         }
       }
 
-      const persisted = await persistContentCache(cacheUpdates);
+      const persisted = await persistContentCache(cacheUpdates, expectedEpoch);
       if (!persisted && Object.keys(cacheUpdates).length) {
         stats.cachePersistFailed = true;
       }
@@ -757,12 +826,24 @@
     return (texts || []).filter((text) => !translated[text]);
   }
 
+  function placeholderTokens(value) {
+    return new Set(String(value || "").match(/__AL_(?:TERM|INLINE)_\d+__/g) || []);
+  }
+
+  function hasUnexpectedPlaceholderTokens(original, translated) {
+    const sourceTokens = placeholderTokens(original);
+    const resultTokens = placeholderTokens(translated);
+    if (sourceTokens.size === 0) return resultTokens.size > 0;
+    if (resultTokens.size === 0) return true;
+    return Array.from(resultTokens).some((token) => !sourceTokens.has(token));
+  }
+
   function translationLooksSuspicious(original, translated, targetLanguage) {
     const source = Text.normalizeWhitespace(original || "");
     const result = Text.normalizeWhitespace(translated || "");
     if (!result) return true;
     if (targetLanguage !== "en" && result === source && Text.hasLatinLetters(source)) return true;
-    if (/__AL_(?:TERM|INLINE)_\d+__/.test(result)) return true;
+    if (hasUnexpectedPlaceholderTokens(source, result)) return true;
     return false;
   }
 
@@ -815,7 +896,7 @@
     }
 
     setProviderMode("fallback");
-    return translateBatchInContent(payload.texts || [], payload.targetLanguage, fallbackScope);
+    return translateBatchInContent(payload.texts || [], payload.targetLanguage, fallbackScope, payload.cacheEpoch);
   }
 
   async function sendTranslationBatch(payload, timeoutMs) {
@@ -828,7 +909,8 @@
     const browserResponse = await translateBatchWithBrowserTranslator(
       requestedTexts,
       payload.targetLanguage,
-      nativeScope
+      nativeScope,
+      payload.cacheEpoch
     );
     if (browserResponse) {
       const missingTexts = untranslatedTexts(requestedTexts, browserResponse);
@@ -967,6 +1049,10 @@
     const applied = aggregate.pageApplied || 0;
     const frameCount = aggregate.frameApplied || 0;
     const failed = (aggregate.pageFailed || 0) + (aggregate.frameFailed || 0);
+    if (failed > 0 && applied === 0 && frameCount === 0) {
+      setStatus(message("status.frameFailed", { failed }), "error");
+      return;
+    }
     if (applied > 0 || frameCount > 0) {
       setStatus(message("status.translatedWithFrames", { count: applied, frameCount }), failed > 0 ? "error" : "ok");
     }
@@ -980,12 +1066,20 @@
       if (data.kind === "translate") {
         aggregate.frameApplied += data.applied || 0;
         aggregate.frameFailed += data.failed || 0;
+        if (state.lastDiagnostics) {
+          state.lastDiagnostics.frameApplied = (state.lastDiagnostics.frameApplied || 0) + (data.applied || 0);
+          state.lastDiagnostics.frameFailed = (state.lastDiagnostics.frameFailed || 0) + (data.failed || 0);
+          updateDiagnosticsPanel();
+        }
         setAggregateStatus(aggregate);
       }
       return;
     }
     if (data.kind === "translate" && data.applied > 0) {
       setStatus(message("status.frameTranslated", { count: data.applied }), data.failed > 0 ? "error" : "ok");
+    }
+    if (data.kind === "translate" && data.applied === 0 && data.failed > 0) {
+      setStatus(message("status.frameFailed", { failed: data.failed }), "error");
     }
     if (data.kind === "restore") {
       setStatus(message("status.frameRestored"), "ok");
@@ -1154,6 +1248,15 @@
       ...C.DEFAULT_SETTINGS,
       ...(stored[C.STORAGE_KEYS.SETTINGS] || {})
     };
+  }
+
+  async function loadCacheEpoch() {
+    try {
+      const stored = await getLocal([C.STORAGE_KEYS.CACHE_EPOCH]);
+      state.cacheEpoch = cacheEpochValue(stored[C.STORAGE_KEYS.CACHE_EPOCH]);
+    } catch {
+      state.cacheEpoch = 0;
+    }
   }
 
   async function loadGlossaryIndex() {
@@ -1720,6 +1823,33 @@
     return target.textContent === record.translated;
   }
 
+  function restoreRecordOriginal(record) {
+    const target = recordTarget(record);
+    if (!target || !target.isConnected || !isCurrentRecordStillOwned(record)) return false;
+    suppressMutationReactions();
+    if (record.kind === "element") {
+      target.innerHTML = record.original;
+    } else {
+      target.textContent = record.original;
+    }
+    state.nodeRecords.delete(target);
+    return true;
+  }
+
+  async function refreshCorrectionRecords() {
+    let restored = 0;
+    for (const record of currentRecords()) {
+      if (record.translationSource !== "correction") continue;
+      if (correctionFor(state.corrections, state.settings.targetLanguage, record.normalized)) continue;
+      if (restoreRecordOriginal(record)) restored += 1;
+      forgetRecord(record);
+    }
+    if (restored > 0 && state.settings.targetLanguage !== "en") {
+      await translatePage({ reason: "correction-refresh" });
+    }
+    return restored;
+  }
+
   function shouldSkipRecordedTarget(target) {
     const record = state.nodeRecords.get(target);
     if (!record) return false;
@@ -1784,15 +1914,29 @@
   }
 
   function collectInlineElementCandidates() {
-    return Array.from(document.body.querySelectorAll(INLINE_MERGE_SELECTOR))
-      .filter(shouldMergeInlineElement)
-      .map((element) => ({
+    const retained = [];
+    const maxCandidates = C.LIMITS.maxCandidateScanNodes || C.LIMITS.maxTextNodesPerPass;
+    let index = 0;
+    for (const element of document.body.querySelectorAll(INLINE_MERGE_SELECTOR)) {
+      if (!shouldMergeInlineElement(element)) continue;
+      const candidate = {
         kind: "element",
         target: element,
         original: element.innerHTML,
         originalText: element.textContent,
         normalized: Text.normalizeWhitespace(element.textContent)
-      }));
+      };
+      retained.push({ candidate, index, score: candidateViewportScore(candidate) });
+      index += 1;
+      if (retained.length > maxCandidates * 2) {
+        retained.sort((a, b) => a.score - b.score || a.index - b.index);
+        retained.length = maxCandidates;
+      }
+    }
+    return retained
+      .sort((a, b) => a.score - b.score || a.index - b.index)
+      .slice(0, maxCandidates)
+      .map((item) => item.candidate);
   }
 
   function candidateRect(candidate) {
@@ -1824,6 +1968,15 @@
 
   function collectCandidates() {
     const elementCandidates = collectInlineElementCandidates();
+    const elementCandidateTargets = new WeakSet(elementCandidates.map((candidate) => candidate.target));
+    const isInsideInlineCandidate = (node) => {
+      let current = node && node.parentElement;
+      while (current && current !== document.body) {
+        if (elementCandidateTargets.has(current)) return true;
+        current = current.parentElement;
+      }
+      return false;
+    };
     const nodes = Text.collectTranslatableTextNodes(document.body, {
       targetLanguage: state.settings.targetLanguage,
       maxTextLength: C.LIMITS.maxTextLength,
@@ -1832,17 +1985,13 @@
         return candidateViewportScore({ target: node });
       },
       shouldSkipNode(node) {
-        return (
-          isInsideRecordedElement(node) ||
-          elementCandidates.some((candidate) => candidate.target.contains(node)) ||
-          shouldSkipRecordedTarget(node)
-        );
+        return isInsideRecordedElement(node) || isInsideInlineCandidate(node) || shouldSkipRecordedTarget(node);
       }
     });
 
     const nodeCandidates = nodes
       .filter((node) => !isInsideRecordedElement(node))
-      .filter((node) => !elementCandidates.some((candidate) => candidate.target.contains(node)))
+      .filter((node) => !isInsideInlineCandidate(node))
       .filter((node) => !shouldSkipRecordedTarget(node))
       .map((node) => ({
         kind: "text",
@@ -1972,7 +2121,7 @@
     element.textContent = translated;
   }
 
-  function applyCandidateTranslation(candidate, translated, inlinePlaceholders) {
+  function applyCandidateTranslation(candidate, translated, inlinePlaceholders, translationSource = "provider") {
     if (!candidate || !candidate.target || !candidate.target.isConnected) return false;
     if (Text.normalizeWhitespace(candidate.target.textContent) !== candidate.normalized) return false;
     if (!translated || translated === candidate.normalized) return false;
@@ -1985,6 +2134,8 @@
       originalText: candidate.originalText || candidate.original,
       normalized: candidate.normalized,
       translated,
+      inlinePlaceholders: inlinePlaceholders || null,
+      translationSource,
       hash: Text.stableHash(candidate.normalized)
     };
     state.nodeRecords.set(candidate.target, record);
@@ -2043,9 +2194,10 @@
     const target = recordTarget(record);
     if (!target || !target.isConnected) return false;
     record.translated = translated;
+    record.translationSource = "correction";
     suppressMutationReactions();
     if (record.kind === "element") {
-      applyTranslatedElement(target, translated);
+      applyTranslatedElement(target, translated, record.inlinePlaceholders);
     } else {
       target.textContent = translated;
     }
@@ -2128,6 +2280,8 @@
     target.corrections += source.corrections || 0;
     target.contextGroups += source.contextGroups || 0;
     target.frames += source.frames || 0;
+    target.frameApplied += source.frameApplied || 0;
+    target.frameFailed += source.frameFailed || 0;
     if (source.provider) target.provider = source.provider;
     return target;
   }
@@ -2146,6 +2300,8 @@
       corrections: 0,
       contextGroups: 0,
       frames: 0,
+      frameApplied: 0,
+      frameFailed: 0,
       provider: stats.provider || (fallbackStats ? "mixed" : state.providerMode)
     };
   }
@@ -2158,7 +2314,7 @@
     }
 
     const corrections = await loadCorrections();
-    const baseScope = cacheScope("runtime", glossary, corrections);
+    const baseScope = cacheScope("runtime", glossary, {});
     const seenTexts = new Set();
     const contextGroups = new Map();
     const preparedByCandidate = new Map();
@@ -2170,6 +2326,8 @@
       corrections: 0,
       contextGroups: 0,
       frames: 0,
+      frameApplied: 0,
+      frameFailed: 0,
       provider: ""
     };
     for (const candidate of candidates) {
@@ -2195,7 +2353,8 @@
     for (const candidate of candidates) {
       if (!isCurrentGeneration(generation, targetLanguage, pageUrl)) return;
       const directTranslation = directByCandidate.get(candidate);
-      if (directTranslation && applyCandidateTranslation(candidate, directTranslation)) {
+      const directSource = preparedByCandidate.has(candidate) ? "glossary" : "correction";
+      if (directTranslation && applyCandidateTranslation(candidate, directTranslation, null, directSource)) {
         applied += 1;
       }
     }
@@ -2210,15 +2369,22 @@
       try {
         for (let index = 0; index < textChunks.length; index += 1) {
           if (!isCurrentGeneration(generation, targetLanguage, pageUrl)) return;
-          const chunkResponse = await sendTranslationBatch(
-            {
-              type: C.MESSAGE_TYPES.TRANSLATE_BATCH,
-              targetLanguage,
-              texts: textChunks[index],
-              cacheScope: baseScope
-            },
-            90000
+          const chunkResponse = await raceCurrentGeneration(
+            sendTranslationBatch(
+              {
+                type: C.MESSAGE_TYPES.TRANSLATE_BATCH,
+                targetLanguage,
+                texts: textChunks[index],
+                cacheScope: baseScope,
+                cacheEpoch: state.cacheEpoch
+              },
+              90000
+            ),
+            generation,
+            targetLanguage,
+            pageUrl
           );
+          if (!chunkResponse) return;
           if (!chunkResponse || !chunkResponse.ok) {
             response.ok = false;
             response.error = chunkResponse && chunkResponse.error ? chunkResponse.error : message("status.failed");
@@ -2262,7 +2428,7 @@
       if (!rawTranslation) continue;
 
       const translated = Glossary.restoreProtectedTerms(rawTranslation, prepared.placeholders);
-      if (applyCandidateTranslation(candidate, translated, prepared.inlinePlaceholders)) {
+      if (applyCandidateTranslation(candidate, translated, prepared.inlinePlaceholders, "provider")) {
         applied += 1;
       }
     }
@@ -2349,6 +2515,8 @@
       corrections: 0,
       contextGroups: 0,
       frames: childFrameCount,
+      frameApplied: 0,
+      frameFailed: 0,
       provider: ""
     };
 
@@ -2394,6 +2562,7 @@
       state.lastDiagnostics = diagnostics;
       updateDiagnosticsPanel();
       updateFrameAggregatePage(frameDispatch.payload && frameDispatch.payload.messageId, { applied, failed });
+      schedulePanelPlacement();
       setStatus(
         applied > 0
           ? message("status.translatedPartial", { count: applied, failed })
@@ -2407,6 +2576,7 @@
     state.lastDiagnostics = diagnostics;
     updateDiagnosticsPanel();
     updateFrameAggregatePage(frameDispatch.payload && frameDispatch.payload.messageId, { applied, failed });
+    schedulePanelPlacement();
     if (capped) {
       setStatus(message("status.translatedCapped", { count: applied }), "ok");
     } else if (childFrameCount > 0) {
@@ -2434,12 +2604,7 @@
     for (const record of currentRecords()) {
       const target = recordTarget(record);
       if (!target || !target.isConnected) continue;
-      if (isCurrentRecordStillOwned(record)) {
-        if (record.kind === "element") {
-          target.innerHTML = record.original;
-        } else {
-          target.textContent = record.original;
-        }
+      if (restoreRecordOriginal(record)) {
         restored += 1;
       }
       state.nodeRecords.delete(target);
@@ -2516,9 +2681,51 @@
     );
   }
 
+  function queueMutationScan(node) {
+    const element = mutationElement(node);
+    if (!element || isPanelMutation(element)) return;
+    if (state.pendingMutationScanNodes.size < 80) {
+      state.pendingMutationScanNodes.add(element);
+    }
+    window.clearTimeout(state.mutationScanTimer);
+    state.mutationScanTimer = window.setTimeout(runMutationScan, 140);
+  }
+
+  function runMutationScan() {
+    state.mutationScanTimer = 0;
+    const remainingSuppression = state.suppressMutationUntil - Date.now();
+    if (remainingSuppression > 0) {
+      state.mutationScanTimer = window.setTimeout(runMutationScan, remainingSuppression + 20);
+      return;
+    }
+
+    const nodes = Array.from(state.pendingMutationScanNodes);
+    state.pendingMutationScanNodes.clear();
+
+    let sawTranslatableMutation = false;
+    let sawFrameMutation = false;
+    for (const node of nodes) {
+      if (!node || !node.isConnected || isPanelMutation(node)) continue;
+      if (node.tagName === "IFRAME" || node.querySelector?.("iframe")) sawFrameMutation = true;
+      if (elementMayContainTranslatableText(node)) sawTranslatableMutation = true;
+      if (sawTranslatableMutation && sawFrameMutation) break;
+    }
+
+    if (sawFrameMutation) {
+      window.setTimeout(() => dispatchPendingFrameCommand(), 80);
+    }
+    if (sawFrameMutation || sawTranslatableMutation) {
+      schedulePanelPlacement();
+    }
+    if (state.settings.autoTranslate && sawTranslatableMutation) {
+      scheduleAutoTranslate(800);
+    }
+  }
+
   function reconcileMutations(mutations) {
     let sawFrameMutation = false;
     let sawTranslatableMutation = false;
+    let needsDeferredScan = false;
     for (const mutation of mutations) {
       if (isPanelMutation(mutation.target)) continue;
 
@@ -2553,12 +2760,11 @@
         for (const node of mutation.addedNodes || []) {
           if (isPanelMutation(node)) continue;
           if (node.nodeType !== Node.ELEMENT_NODE) continue;
-          if (node.tagName === "IFRAME" || node.querySelector?.("iframe")) {
+          if (node.tagName === "IFRAME") {
             sawFrameMutation = true;
           }
-          if (elementMayContainTranslatableText(node)) {
-            sawTranslatableMutation = true;
-          }
+          queueMutationScan(node);
+          needsDeferredScan = true;
         }
       }
     }
@@ -2566,15 +2772,15 @@
     if (sawFrameMutation) {
       window.setTimeout(() => dispatchPendingFrameCommand(), 80);
     }
-    return { sawFrameMutation, sawTranslatableMutation };
+    return { sawFrameMutation, sawTranslatableMutation, needsDeferredScan };
   }
 
   function watchSpaNavigation() {
     state.observer = new MutationObserver((mutations) => {
-      const signal = reconcileMutations(mutations);
       const routeChanged = handleRouteChange();
       if (Date.now() < state.suppressMutationUntil) return;
-      if (signal.sawFrameMutation || signal.sawTranslatableMutation || routeChanged) {
+      const signal = reconcileMutations(mutations);
+      if (signal.sawFrameMutation || signal.sawTranslatableMutation || signal.needsDeferredScan || routeChanged) {
         schedulePanelPlacement();
       }
 
@@ -2638,8 +2844,13 @@
 
   function watchSettingsChanges() {
     chrome.storage.onChanged.addListener((changes, areaName) => {
-      if (areaName !== "local" || !changes[C.STORAGE_KEYS.SETTINGS]) return;
-      applySettings(changes[C.STORAGE_KEYS.SETTINGS].newValue);
+      if (areaName !== "local") return;
+      if (changes[C.STORAGE_KEYS.CACHE_EPOCH]) {
+        state.cacheEpoch = cacheEpochValue(changes[C.STORAGE_KEYS.CACHE_EPOCH].newValue);
+      }
+      if (changes[C.STORAGE_KEYS.SETTINGS]) {
+        applySettings(changes[C.STORAGE_KEYS.SETTINGS].newValue);
+      }
     });
   }
 
@@ -2671,6 +2882,8 @@
       window.clearTimeout(state.debounceTimer);
       window.clearTimeout(state.translationQueue.timer);
       window.clearTimeout(state.placementTimer);
+      window.clearTimeout(state.mutationScanTimer);
+      state.pendingMutationScanNodes.clear();
       if (state.placementFrame) {
         window.cancelAnimationFrame(state.placementFrame);
         state.placementFrame = 0;
@@ -2683,6 +2896,7 @@
 
   try {
     await loadSettings();
+    await loadCacheEpoch();
     await loadGlossaryIndex();
     await loadCorrections();
     await ensureGlossary(state.settings.targetLanguage);

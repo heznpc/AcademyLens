@@ -10,7 +10,7 @@ AcademyLens does not collect, sell, rent, or transfer personal data to the exten
 
 ## Data Processed By The Extension
 
-When you translate page text, the extension may translate selected visible text from `academy.openai.com` with the browser-native Translator API when that provider is available. Browser-managed translator downloads are disabled unless you explicitly turn them on. If browser-native translation is unavailable, selected visible text is sent to Google Translate through `translate.googleapis.com` as fallback. If auto-translate is enabled, newly rendered visible lesson text can be translated automatically after page changes. The DOM filtering logic is designed to avoid platform chrome such as enrollment, progress, certificate, account, form, navigation, and credential UI. Because OpenAI Academy and Gradual page markup can change, avoid translating pages that contain sensitive personal content.
+When you translate page text, the extension may translate extension-selected visible lesson text from `academy.openai.com` with the browser-native Translator API when that provider is available. Browser-managed translator downloads are disabled unless you explicitly turn them on. If browser-native translation is unavailable, extension-selected visible lesson text is sent to Google Translate through `translate.googleapis.com` as fallback. If auto-translate is enabled, newly rendered visible lesson text can be translated automatically after page changes. The DOM filtering logic is designed to avoid platform chrome such as enrollment, progress, certificate, account, form, navigation, and credential UI. Because OpenAI Academy and Gradual page markup can change, avoid translating pages that contain sensitive personal content.
 
 ## Data Stored Locally
 
@@ -24,9 +24,9 @@ AcademyLens stores settings, optional local correction overrides, and a local tr
 - target language, creation time, and last-access time for correction entries
 - cached original visible text
 - cached translated text
-- provider, glossary, correction-state, target language, creation time, and last-access time for cache entries
+- provider, glossary state, target language, creation time, and last-access time for cache entries
 
-The panel may show local diagnostics such as provider path, cache hit/miss counts, fallback count, correction count, context grouping count, and embedded-frame count. These diagnostics are displayed locally and do not include the translated page text.
+The panel may show local diagnostics such as provider path, cache hit/miss counts, fallback count, correction count, context grouping count, and embedded-frame applied/failed counts. These diagnostics are displayed locally and do not include the translated page text.
 
 Bundled glossary files are stored inside the extension package. They do not require a network request to AcademyLens or any AcademyLens server.
 

@@ -25,5 +25,5 @@ jobs:
       - name: Install Playwright Chromium
         run: npx playwright install --with-deps chromium
 
-      - name: Run full verification
-        run: xvfb-run -a npm run check:full
+      - name: Run release preflight
+        run: xvfb-run -a npm run release:preflight

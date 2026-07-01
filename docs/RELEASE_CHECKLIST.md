@@ -38,7 +38,7 @@ AcademyLens is not ready for Chrome Web Store submission just because the build 
 ## Privacy And Provider QA
 
 - Confirm whether the release still uses the Google Translate web endpoint.
-- Confirm privacy copy says selected visible text is sent to Google Translate.
+- Confirm privacy copy says extension-selected visible lesson text is sent to Google Translate fallback.
 - Confirm privacy copy says auto-translate can send newly rendered visible lesson text when enabled.
 - Confirm privacy copy says original visible text, translated text, target language, and cache timestamps may be stored locally.
 - Do not describe the current Google Translate endpoint as the official Google Cloud Translation API.

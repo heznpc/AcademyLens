@@ -175,8 +175,18 @@
         return false;
       }
       const style = window.getComputedStyle(current);
-      if (style.display === "none" || style.visibility === "hidden" || style.opacity === "0") {
+      if (
+        style.display === "none" ||
+        style.visibility === "hidden" ||
+        style.visibility === "collapse" ||
+        style.opacity === "0" ||
+        style.contentVisibility === "hidden"
+      ) {
         return false;
+      }
+      if (current.tagName === "DETAILS" && !current.open) {
+        const summary = current.querySelector("summary");
+        if (!summary || (element !== summary && !summary.contains(element))) return false;
       }
       current = current.parentElement;
     }
@@ -238,9 +248,9 @@
           index: acceptedIndex,
           score: scoreNode(node)
         });
-        if (nodes.length > maxNodes) {
+        if (nodes.length > maxNodes * 2) {
           nodes.sort((a, b) => a.score - b.score || a.index - b.index);
-          nodes.pop();
+          nodes.length = maxNodes;
         }
       } else {
         if (nodes.length >= maxNodes) break;
@@ -251,7 +261,10 @@
     }
 
     if (scoreNode) {
-      return nodes.sort((a, b) => a.score - b.score || a.index - b.index).map((item) => item.node);
+      return nodes
+        .sort((a, b) => a.score - b.score || a.index - b.index)
+        .slice(0, maxNodes)
+        .map((item) => item.node);
     }
 
     return nodes;
