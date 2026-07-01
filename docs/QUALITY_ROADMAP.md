@@ -1,19 +1,19 @@
 # Quality Roadmap
 
-Last reviewed: 2026-06-24
+Last reviewed: 2026-07-01 KST
 
 AcademyLens is usable as an open-source beta, but it should not be treated as Chrome Web Store-ready until the checks below are closed.
 
 ## Current Readiness
 
-| Area                  | Status         | Quality bar before store submission                                                                                                                                           |
-| --------------------- | -------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Runtime translation   | Good beta      | Keep `npm run check:full` green, avoid duplicate provider calls, and add fixtures when Academy markup changes.                                                                |
-| Logged-in Academy DOM | Better beta    | Keep public course, logged-in courses, study room, live lesson shell, delayed SCORM, and in-frame lesson navigation covered; add sanitized real captures when markup changes. |
-| Glossary quality      | Mixed          | Promote packs only after documented community/native review and closed QA signals.                                                                                            |
-| Privacy/store copy    | Improved draft | Re-check against actual runtime network behavior before submission.                                                                                                           |
-| UX polish             | Beta           | Keep panel compact, status-rich, keyboard accessible, and non-official in tone.                                                                                               |
-| AI review             | Disabled       | Do not enable until there is a Chrome Web Store-compliant, explicit opt-in bridge.                                                                                            |
+| Area                  | Status          | Quality bar before store submission                                                                                                                                           |
+| --------------------- | --------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Runtime translation   | Good beta       | Keep `npm run check:full` green, avoid duplicate provider calls, and add fixtures when Academy markup changes.                                                                |
+| Logged-in Academy DOM | Better beta     | Keep public course, logged-in courses, study room, live lesson shell, delayed SCORM, and in-frame lesson navigation covered; add sanitized real captures when markup changes. |
+| Glossary quality      | AI-audited beta | Keep `npm run check:glossary-quality` green; promote packs only after documented community/native review and closed QA signals.                                               |
+| Privacy/store copy    | Improved draft  | Re-check against actual runtime network behavior before submission.                                                                                                           |
+| UX polish             | Beta            | Keep panel compact, status-rich, keyboard accessible, and non-official in tone.                                                                                               |
+| AI review             | Disabled        | Do not enable until there is a Chrome Web Store-compliant, explicit opt-in bridge.                                                                                            |
 
 ## Implementation Priorities
 
@@ -25,7 +25,8 @@ AcademyLens is usable as an open-source beta, but it should not be treated as Ch
 2. Raise glossary confidence language by language.
    - Use `npm run glossary:status` to pick review targets.
    - Use `npm run glossary:audit -- --locale=<locale>` before asking for review.
-   - Promote `llm-drafted` only after the review evidence is represented in the glossary metadata.
+   - Keep `llm-audited` packs behind `npm run check:glossary-quality`.
+   - Promote `llm-audited` only after the review evidence is represented in the glossary metadata.
 
 3. Preserve Chrome Web Store policy margin.
    - Keep remote hosted scripts out of runtime files.
@@ -46,7 +47,7 @@ AcademyLens is usable as an open-source beta, but it should not be treated as Ch
 
 ## Current Blockers To "Done"
 
-- 12 of 13 premium glossary packs are still `llm-drafted`.
+- 12 of 13 premium glossary packs are now `llm-audited`, not final `reviewed` or `native-reviewed`.
 - Korean is `community-reviewed`, not final `reviewed`.
 - Real logged-in Academy DOM still needs periodic sanitized recapture from live Academy pages before a store submission.
 - Store screenshots can be generated locally, but final public screenshots still need a reviewed real-session capture pass with private account surfaces removed.

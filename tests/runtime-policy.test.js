@@ -202,8 +202,10 @@ test("content mutation and placement work is throttled before expensive page sca
 
 test("CI runs the release preflight gate", () => {
   const ci = read(".github/workflows/ci.yml");
+  const pkg = JSON.parse(read("package.json"));
 
   assert.match(ci, /npm run release:preflight/);
+  assert.match(pkg.scripts["check:all"], /check:glossary-quality/);
 });
 
 test("live DOM capture reports redactions and blocks risky fixture writes", () => {

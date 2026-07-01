@@ -2,7 +2,7 @@
   "schemaVersion": 1,
   "locale": "vi",
   "name": "Vietnamese OpenAI Academy glossary",
-  "status": "llm-drafted",
+  "status": "llm-audited",
   "sourceCatalog": {
     "academy:courses": {
       "title": "OpenAI Academy Courses",
@@ -69,9 +69,10 @@
   "qaSignals": {
     "draftMethod": "AI-assisted terminology draft",
     "officialAlignment": "partial",
-    "googleTranslateBaseline": "pending",
+    "googleTranslateBaseline": "high-risk-terms-audited",
     "xTranslationCheck": "pending",
-    "communityReview": "open"
+    "communityReview": "open",
+    "llmAudit": "codex-ai-audit-2026-07-01-high-risk-terms"
   },
   "terms": [
     {
@@ -83,10 +84,10 @@
     },
     {
       "source": "AI fluency",
-      "target": "năng lực AI",
+      "target": "khả năng sử dụng AI thành thạo",
       "category": "academy-learning",
       "sources": ["academy:courses"],
-      "note": "AI-drafted term rendering from OpenAI Academy and OpenAI developer documentation; pending X translation cross-check and community review."
+      "note": "AI-audited premium glossary: second-pass high-risk terminology audit applied; pending X translation cross-check, community review, and native review before reviewed status."
     },
     {
       "source": "large language model",
@@ -258,10 +259,10 @@
     },
     {
       "source": "delegate",
-      "target": "ủy quyền",
+      "target": "giao việc cho AI",
       "category": "academy-learning",
       "sources": ["academy:courses"],
-      "note": "AI-drafted term rendering from OpenAI Academy and OpenAI developer documentation; pending X translation cross-check and community review."
+      "note": "AI-audited premium glossary: second-pass high-risk terminology audit applied; pending X translation cross-check, community review, and native review before reviewed status."
     },
     {
       "source": "staying in control",
@@ -363,17 +364,17 @@
     },
     {
       "source": "guardrail",
-      "target": "hàng rào bảo vệ",
+      "target": "cơ chế bảo vệ",
       "category": "agents",
       "sources": ["openai-docs:guardrails", "openai-docs:observability"],
-      "note": "AI-drafted term rendering from OpenAI Academy and OpenAI developer documentation; pending X translation cross-check and community review."
+      "note": "AI-audited premium glossary: second-pass high-risk terminology audit applied; pending X translation cross-check, community review, and native review before reviewed status."
     },
     {
       "source": "guardrails",
-      "target": "hàng rào bảo vệ",
+      "target": "cơ chế bảo vệ",
       "category": "agents",
       "sources": ["openai-docs:guardrails", "openai-docs:observability"],
-      "note": "AI-drafted term rendering from OpenAI Academy and OpenAI developer documentation; pending X translation cross-check and community review."
+      "note": "AI-audited premium glossary: second-pass high-risk terminology audit applied; pending X translation cross-check, community review, and native review before reviewed status."
     },
     {
       "source": "human review",
@@ -398,17 +399,17 @@
     },
     {
       "source": "trace",
-      "target": "vết",
+      "target": "dấu vết",
       "category": "observability",
       "sources": ["openai-docs:observability"],
-      "note": "AI-drafted term rendering from OpenAI Academy and OpenAI developer documentation; pending X translation cross-check and community review."
+      "note": "AI-audited premium glossary: second-pass high-risk terminology audit applied; pending X translation cross-check, community review, and native review before reviewed status."
     },
     {
       "source": "traces",
-      "target": "vết",
+      "target": "dấu vết",
       "category": "observability",
       "sources": ["openai-docs:observability"],
-      "note": "AI-drafted term rendering from OpenAI Academy and OpenAI developer documentation; pending X translation cross-check and community review."
+      "note": "AI-audited premium glossary: second-pass high-risk terminology audit applied; pending X translation cross-check, community review, and native review before reviewed status."
     },
     {
       "source": "tracing",
@@ -454,17 +455,17 @@
     },
     {
       "source": "eval",
-      "target": "eval",
+      "target": "đánh giá",
       "category": "evaluation",
       "sources": ["openai-docs:evaluation"],
-      "note": "AI-drafted term rendering from OpenAI Academy and OpenAI developer documentation; pending X translation cross-check and community review."
+      "note": "AI-audited premium glossary: second-pass high-risk terminology audit applied; pending X translation cross-check, community review, and native review before reviewed status."
     },
     {
       "source": "evals",
-      "target": "eval",
+      "target": "đánh giá",
       "category": "evaluation",
       "sources": ["openai-docs:evaluation"],
-      "note": "AI-drafted term rendering from OpenAI Academy and OpenAI developer documentation; pending X translation cross-check and community review."
+      "note": "AI-audited premium glossary: second-pass high-risk terminology audit applied; pending X translation cross-check, community review, and native review before reviewed status."
     },
     {
       "source": "grader",
@@ -510,10 +511,10 @@
     },
     {
       "source": "AI literacy",
-      "target": "năng lực AI",
+      "target": "hiểu biết cơ bản về AI",
       "category": "academy-learning",
       "sources": ["academy:home", "academy:courses"],
-      "note": "AI-drafted term rendering from OpenAI Academy and OpenAI developer documentation; pending X translation cross-check and community review."
+      "note": "AI-audited premium glossary: second-pass high-risk terminology audit applied; pending X translation cross-check, community review, and native review before reviewed status."
     },
     {
       "source": "responsible AI",
@@ -727,10 +728,10 @@
     },
     {
       "source": "handoff target",
-      "target": "đích handoff",
+      "target": "đích bàn giao",
       "category": "agents",
       "sources": ["openai-docs:agent-definitions"],
-      "note": "AI-drafted term rendering from OpenAI Academy and OpenAI developer documentation; pending X translation cross-check and community review."
+      "note": "AI-audited premium glossary: second-pass high-risk terminology audit applied; pending X translation cross-check, community review, and native review before reviewed status."
     },
     {
       "source": "agent loop",
@@ -776,10 +777,10 @@
     },
     {
       "source": "rubric",
-      "target": "rubric",
+      "target": "bảng tiêu chí đánh giá",
       "category": "evaluation",
       "sources": ["openai-docs:evaluation"],
-      "note": "AI-drafted term rendering from OpenAI Academy and OpenAI developer documentation; pending X translation cross-check and community review."
+      "note": "AI-audited premium glossary: second-pass high-risk terminology audit applied; pending X translation cross-check, community review, and native review before reviewed status."
     },
     {
       "source": "benchmark",
@@ -832,10 +833,10 @@
     },
     {
       "source": "red teaming",
-      "target": "red teaming",
+      "target": "kiểm thử đội đỏ",
       "category": "safety",
       "sources": ["openai-docs:evaluation", "openai-docs:guardrails"],
-      "note": "AI-drafted term rendering from OpenAI Academy and OpenAI developer documentation; pending X translation cross-check and community review."
+      "note": "AI-audited premium glossary: second-pass high-risk terminology audit applied; pending X translation cross-check, community review, and native review before reviewed status."
     },
     {
       "source": "Build practical AI skills for work",

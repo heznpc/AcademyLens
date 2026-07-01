@@ -2,7 +2,7 @@
   "schemaVersion": 1,
   "locale": "zh-CN",
   "name": "Simplified Chinese OpenAI Academy glossary",
-  "status": "llm-drafted",
+  "status": "llm-audited",
   "sourceCatalog": {
     "academy:courses": {
       "title": "OpenAI Academy Courses",
@@ -69,9 +69,10 @@
   "qaSignals": {
     "draftMethod": "AI-assisted terminology draft",
     "officialAlignment": "partial",
-    "googleTranslateBaseline": "pending",
+    "googleTranslateBaseline": "high-risk-terms-audited",
     "xTranslationCheck": "pending",
-    "communityReview": "open"
+    "communityReview": "open",
+    "llmAudit": "codex-ai-audit-2026-07-01-high-risk-terms"
   },
   "terms": [
     {
@@ -118,17 +119,17 @@
     },
     {
       "source": "token",
-      "target": "token",
+      "target": "词元",
       "category": "model-concepts",
       "sources": ["openai-docs:concepts"],
-      "note": "AI-drafted term rendering from OpenAI Academy and OpenAI developer documentation; pending X translation cross-check and community review."
+      "note": "AI-audited premium glossary: second-pass high-risk terminology audit applied; pending X translation cross-check, community review, and native review before reviewed status."
     },
     {
       "source": "tokens",
-      "target": "token",
+      "target": "词元",
       "category": "model-concepts",
       "sources": ["openai-docs:concepts"],
-      "note": "AI-drafted term rendering from OpenAI Academy and OpenAI developer documentation; pending X translation cross-check and community review."
+      "note": "AI-audited premium glossary: second-pass high-risk terminology audit applied; pending X translation cross-check, community review, and native review before reviewed status."
     },
     {
       "source": "context length",
@@ -160,10 +161,10 @@
     },
     {
       "source": "prompting",
-      "target": "提示",
+      "target": "提示词编写",
       "category": "prompting",
       "sources": ["openai-docs:prompt-engineering"],
-      "note": "AI-drafted term rendering from OpenAI Academy and OpenAI developer documentation; pending X translation cross-check and community review."
+      "note": "AI-audited premium glossary: second-pass high-risk terminology audit applied; pending X translation cross-check, community review, and native review before reviewed status."
     },
     {
       "source": "instruction",
@@ -426,17 +427,17 @@
     },
     {
       "source": "schema",
-      "target": "模式",
+      "target": "架构",
       "category": "structured-output",
       "sources": ["openai-docs:structured-outputs"],
-      "note": "AI-drafted term rendering from OpenAI Academy and OpenAI developer documentation; pending X translation cross-check and community review."
+      "note": "AI-audited premium glossary: second-pass high-risk terminology audit applied; pending X translation cross-check, community review, and native review before reviewed status."
     },
     {
       "source": "schemas",
-      "target": "模式",
+      "target": "架构",
       "category": "structured-output",
       "sources": ["openai-docs:structured-outputs"],
-      "note": "AI-drafted term rendering from OpenAI Academy and OpenAI developer documentation; pending X translation cross-check and community review."
+      "note": "AI-audited premium glossary: second-pass high-risk terminology audit applied; pending X translation cross-check, community review, and native review before reviewed status."
     },
     {
       "source": "evaluation",
@@ -489,17 +490,17 @@
     },
     {
       "source": "course completion certificate",
-      "target": "课程完成证书",
+      "target": "课程结业证书",
       "category": "course-format",
       "sources": ["academy:courses"],
-      "note": "AI-drafted term rendering from OpenAI Academy and OpenAI developer documentation; pending X translation cross-check and community review."
+      "note": "AI-audited premium glossary: second-pass high-risk terminology audit applied; pending X translation cross-check, community review, and native review before reviewed status."
     },
     {
       "source": "course completion certificates",
-      "target": "课程完成证书",
+      "target": "课程结业证书",
       "category": "course-format",
       "sources": ["academy:courses"],
-      "note": "AI-drafted term rendering from OpenAI Academy and OpenAI developer documentation; pending X translation cross-check and community review."
+      "note": "AI-audited premium glossary: second-pass high-risk terminology audit applied; pending X translation cross-check, community review, and native review before reviewed status."
     },
     {
       "source": "generative AI",
@@ -650,10 +651,10 @@
     },
     {
       "source": "grounding",
-      "target": "基于依据",
+      "target": "依据锚定",
       "category": "safety",
       "sources": ["openai-docs:prompt-engineering", "openai-docs:evaluation"],
-      "note": "AI-drafted term rendering from OpenAI Academy and OpenAI developer documentation; pending X translation cross-check and community review."
+      "note": "AI-audited premium glossary: second-pass high-risk terminology audit applied; pending X translation cross-check, community review, and native review before reviewed status."
     },
     {
       "source": "embedding",
@@ -751,14 +752,14 @@
       "target": "严格架构",
       "category": "structured-output",
       "sources": ["openai-docs:structured-outputs"],
-      "note": "AI-drafted term rendering from OpenAI Academy and OpenAI developer documentation; pending X translation cross-check and community review."
+      "note": "AI-audited premium glossary: second-pass high-risk terminology audit applied; pending X translation cross-check, community review, and native review before reviewed status."
     },
     {
       "source": "schema validation",
       "target": "架构验证",
       "category": "structured-output",
       "sources": ["openai-docs:structured-outputs"],
-      "note": "AI-drafted term rendering from OpenAI Academy and OpenAI developer documentation; pending X translation cross-check and community review."
+      "note": "AI-audited premium glossary: second-pass high-risk terminology audit applied; pending X translation cross-check, community review, and native review before reviewed status."
     },
     {
       "source": "test set",

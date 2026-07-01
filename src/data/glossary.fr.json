@@ -2,7 +2,7 @@
   "schemaVersion": 1,
   "locale": "fr",
   "name": "French OpenAI Academy glossary",
-  "status": "llm-drafted",
+  "status": "llm-audited",
   "sourceCatalog": {
     "academy:courses": {
       "title": "OpenAI Academy Courses",
@@ -69,9 +69,10 @@
   "qaSignals": {
     "draftMethod": "AI-assisted terminology draft",
     "officialAlignment": "partial",
-    "googleTranslateBaseline": "pending",
+    "googleTranslateBaseline": "high-risk-terms-audited",
     "xTranslationCheck": "pending",
-    "communityReview": "open"
+    "communityReview": "open",
+    "llmAudit": "codex-ai-audit-2026-07-01-high-risk-terms"
   },
   "terms": [
     {
@@ -286,17 +287,17 @@
     },
     {
       "source": "workflow",
-      "target": "workflow",
+      "target": "flux de travail",
       "category": "workflow",
       "sources": ["academy:courses", "openai-docs:agents"],
-      "note": "AI-drafted term rendering from OpenAI Academy and OpenAI developer documentation; pending X translation cross-check and community review."
+      "note": "AI-audited premium glossary: second-pass high-risk terminology audit applied; pending X translation cross-check, community review, and native review before reviewed status."
     },
     {
       "source": "workflows",
-      "target": "workflows",
+      "target": "flux de travail",
       "category": "workflow",
       "sources": ["academy:courses", "openai-docs:agents"],
-      "note": "AI-drafted term rendering from OpenAI Academy and OpenAI developer documentation; pending X translation cross-check and community review."
+      "note": "AI-audited premium glossary: second-pass high-risk terminology audit applied; pending X translation cross-check, community review, and native review before reviewed status."
     },
     {
       "source": "agent",
@@ -314,10 +315,10 @@
     },
     {
       "source": "agentic workflows",
-      "target": "workflows agentiques",
+      "target": "flux de travail avec agents",
       "category": "agents",
       "sources": ["academy:courses", "openai-docs:agents"],
-      "note": "AI-drafted term rendering from OpenAI Academy and OpenAI developer documentation; pending X translation cross-check and community review."
+      "note": "AI-audited premium glossary: second-pass high-risk terminology audit applied; pending X translation cross-check, community review, and native review before reviewed status."
     },
     {
       "source": "tool",
@@ -377,10 +378,10 @@
     },
     {
       "source": "human review",
-      "target": "revue humaine",
+      "target": "validation humaine",
       "category": "agents",
       "sources": ["openai-docs:guardrails"],
-      "note": "AI-drafted term rendering from OpenAI Academy and OpenAI developer documentation; pending X translation cross-check and community review."
+      "note": "AI-audited premium glossary: second-pass high-risk terminology audit applied; pending X translation cross-check, community review, and native review before reviewed status."
     },
     {
       "source": "approval",
@@ -489,17 +490,17 @@
     },
     {
       "source": "course completion certificate",
-      "target": "certificat de fin de cours",
+      "target": "certificat d’achèvement du cours",
       "category": "course-format",
       "sources": ["academy:courses"],
-      "note": "AI-drafted term rendering from OpenAI Academy and OpenAI developer documentation; pending X translation cross-check and community review."
+      "note": "AI-audited premium glossary: second-pass high-risk terminology audit applied; pending X translation cross-check, community review, and native review before reviewed status."
     },
     {
       "source": "course completion certificates",
-      "target": "certificats de fin de cours",
+      "target": "certificats d’achèvement du cours",
       "category": "course-format",
       "sources": ["academy:courses"],
-      "note": "AI-drafted term rendering from OpenAI Academy and OpenAI developer documentation; pending X translation cross-check and community review."
+      "note": "AI-audited premium glossary: second-pass high-risk terminology audit applied; pending X translation cross-check, community review, and native review before reviewed status."
     },
     {
       "source": "generative AI",
@@ -587,10 +588,10 @@
     },
     {
       "source": "few-shot prompting",
-      "target": "prompting few-shot",
+      "target": "prompting avec quelques exemples",
       "category": "prompting",
       "sources": ["openai-docs:prompt-engineering"],
-      "note": "AI-drafted term rendering from OpenAI Academy and OpenAI developer documentation; pending X translation cross-check and community review."
+      "note": "AI-audited premium glossary: second-pass high-risk terminology audit applied; pending X translation cross-check, community review, and native review before reviewed status."
     },
     {
       "source": "examples",
@@ -832,10 +833,10 @@
     },
     {
       "source": "red teaming",
-      "target": "red teaming",
+      "target": "tests red team",
       "category": "safety",
       "sources": ["openai-docs:evaluation", "openai-docs:guardrails"],
-      "note": "AI-drafted term rendering from OpenAI Academy and OpenAI developer documentation; pending X translation cross-check and community review."
+      "note": "AI-audited premium glossary: second-pass high-risk terminology audit applied; pending X translation cross-check, community review, and native review before reviewed status."
     },
     {
       "source": "Build practical AI skills for work",

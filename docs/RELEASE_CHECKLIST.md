@@ -30,10 +30,10 @@ AcademyLens is not ready for Chrome Web Store submission just because the build 
 - Run `npm run glossary:status`.
 - Run `npm run glossary:scoreboard` and commit `docs/GLOSSARY_STATUS.md` when glossary metadata changes.
 - Run `npm run check:glossary-status`.
-- Keep store wording at `community-reviewed` or `AI-drafted beta` unless metadata evidence supports `reviewed`.
+- Keep store wording at `community-reviewed`, `AI-audited beta`, or `AI-drafted beta` unless metadata evidence supports `reviewed`.
 - For each promoted language, close X translation cross-check, community review, and native review notes in glossary metadata.
 - Run `npm run glossary:audit -- --locale=<locale>` before asking external reviewers.
-- Run `npm run check:glossary` and `npm run check:glossary-overreach`.
+- Run `npm run check:glossary`, `npm run check:glossary-quality`, and `npm run check:glossary-overreach`.
 
 ## Privacy And Provider QA
 

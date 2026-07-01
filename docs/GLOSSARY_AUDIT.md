@@ -24,12 +24,13 @@ Each packet includes:
 2. Check terms with Latin text in the target language. Some are intentional, such as `JSON mode`, but others may be lazy transliteration.
 3. Compare high-impact terms against OpenAI Academy pages and OpenAI developer documentation.
 4. For `llm-drafted` packs, mark issues without promoting the pack status.
-5. Promote a pack only after native/community review or a documented review process.
+5. For `llm-audited` packs, confirm the second-pass audit signal and run `npm run check:glossary-quality`.
+6. Promote a pack only after native/community review or a documented review process.
 
 ## Status Meanings
 
 - `llm-drafted`: AI-assisted draft. Good enough for beta correction, not enough to claim native quality.
-- `llm-audited`: A second AI review pass has been applied and recorded.
+- `llm-audited`: A second AI review pass has been applied, recorded, and locked by `npm run check:glossary-quality`.
 - `community-reviewed`: Reviewed by a contributor with language knowledge.
 - `native-reviewed`: Reviewed by a native or near-native speaker.
 - `reviewed`: Final project-maintainer status after review evidence is complete; community-reviewed packs remain below this level until pending QA signals are closed.

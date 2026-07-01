@@ -21,13 +21,13 @@ Features:
 - Translate OpenAI Academy course pages.
 - Preserve terms such as OpenAI, ChatGPT, GPT, LLM, API, Responses API, Agents SDK, JSON, and Gradual.
 - Apply installed premium glossary packs based on OpenAI Academy course language and OpenAI documentation terminology.
-- Show whether the selected language has final/native-reviewed, community-reviewed, AI-drafted beta, or protected-term machine translation support.
+- Show whether the selected language has final/native-reviewed, community-reviewed, AI-audited beta, AI-drafted beta, or protected-term machine translation support.
 - Restore original page text with one click.
 - Protect against stale translations after Restore, language switching, and Gradual/Next.js navigation.
 - Avoid translating Gradual progress, certificate, quiz, and account controls.
 - Keep translation settings in Chrome storage.
 
-AcademyLens includes thirteen premium glossary packs with 100+ OpenAI Academy/OpenAI Docs core terms each: German, Spanish, French, Hindi, Indonesian, Italian, Japanese, Korean, Brazilian Portuguese, Russian, Vietnamese, Simplified Chinese, and Traditional Chinese. Korean is the first community-reviewed pack; the other premium packs are AI-drafted beta glossaries that need X translation cross-checks, community review, and native review. Other languages use machine translation with protected-term preservation.
+AcademyLens includes thirteen premium glossary packs with 100+ OpenAI Academy/OpenAI Docs core terms each: German, Spanish, French, Hindi, Indonesian, Italian, Japanese, Korean, Brazilian Portuguese, Russian, Vietnamese, Simplified Chinese, and Traditional Chinese. Korean is the first community-reviewed pack; the other premium packs are AI-audited beta glossaries with a recorded second-pass high-risk terminology audit and automated quality checks. They still need X translation cross-checks, community review, and native review. Other languages use machine translation with protected-term preservation.
 
 AcademyLens does not manage enrollment, progress, certificates, accounts, or OpenAI Academy settings.
 

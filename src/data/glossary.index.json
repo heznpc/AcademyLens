@@ -25,6 +25,11 @@
       "notes": "Term choices are drafted from OpenAI Academy wording and public OpenAI developer documentation."
     },
     {
+      "id": "llm-second-pass-audit",
+      "label": "AI second-pass terminology audit",
+      "notes": "Focused audit over high-risk agent, safety, evaluation, schema, and observability terms before community/native review."
+    },
+    {
       "id": "google-translate-baseline",
       "label": "Google Translate baseline",
       "notes": "Used to identify where runtime machine translation needs glossary correction."
@@ -45,71 +50,78 @@
       "locale": "de",
       "language": "German",
       "path": "src/data/glossary.de.json",
-      "status": "llm-drafted",
+      "status": "llm-audited",
       "termCount": 115,
       "officialAlignment": "partial",
       "xTranslationCheck": "pending",
-      "notes": "AI-drafted premium glossary seed. Needs X translation cross-check, community review, and native review before reviewed status."
+      "notes": "AI-audited premium glossary: second-pass high-risk terminology audit applied; pending X translation cross-check, community review, and native review before reviewed status.",
+      "aiAudit": "codex-ai-audit-2026-07-01-high-risk-terms"
     },
     {
       "locale": "es",
       "language": "Spanish",
       "path": "src/data/glossary.es.json",
-      "status": "llm-drafted",
+      "status": "llm-audited",
       "termCount": 115,
       "officialAlignment": "partial",
       "xTranslationCheck": "pending",
-      "notes": "AI-drafted premium glossary seed. Needs X translation cross-check, community review, and native review before reviewed status."
+      "notes": "AI-audited premium glossary: second-pass high-risk terminology audit applied; pending X translation cross-check, community review, and native review before reviewed status.",
+      "aiAudit": "codex-ai-audit-2026-07-01-high-risk-terms"
     },
     {
       "locale": "fr",
       "language": "French",
       "path": "src/data/glossary.fr.json",
-      "status": "llm-drafted",
+      "status": "llm-audited",
       "termCount": 115,
       "officialAlignment": "partial",
       "xTranslationCheck": "pending",
-      "notes": "AI-drafted premium glossary seed. Needs X translation cross-check, community review, and native review before reviewed status."
+      "notes": "AI-audited premium glossary: second-pass high-risk terminology audit applied; pending X translation cross-check, community review, and native review before reviewed status.",
+      "aiAudit": "codex-ai-audit-2026-07-01-high-risk-terms"
     },
     {
       "locale": "hi",
       "language": "Hindi",
       "path": "src/data/glossary.hi.json",
-      "status": "llm-drafted",
+      "status": "llm-audited",
       "termCount": 115,
       "officialAlignment": "partial",
       "xTranslationCheck": "pending",
-      "notes": "AI-drafted premium glossary seed. Needs X translation cross-check, community review, and native review before reviewed status."
+      "notes": "AI-audited premium glossary: second-pass high-risk terminology audit applied; pending X translation cross-check, community review, and native review before reviewed status.",
+      "aiAudit": "codex-ai-audit-2026-07-01-high-risk-terms"
     },
     {
       "locale": "id",
       "language": "Indonesian",
       "path": "src/data/glossary.id.json",
-      "status": "llm-drafted",
+      "status": "llm-audited",
       "termCount": 115,
       "officialAlignment": "partial",
       "xTranslationCheck": "pending",
-      "notes": "AI-drafted premium glossary seed. Needs X translation cross-check, community review, and native review before reviewed status."
+      "notes": "AI-audited premium glossary: second-pass high-risk terminology audit applied; pending X translation cross-check, community review, and native review before reviewed status.",
+      "aiAudit": "codex-ai-audit-2026-07-01-high-risk-terms"
     },
     {
       "locale": "it",
       "language": "Italian",
       "path": "src/data/glossary.it.json",
-      "status": "llm-drafted",
+      "status": "llm-audited",
       "termCount": 115,
       "officialAlignment": "partial",
       "xTranslationCheck": "pending",
-      "notes": "AI-drafted premium glossary seed. Needs X translation cross-check, community review, and native review before reviewed status."
+      "notes": "AI-audited premium glossary: second-pass high-risk terminology audit applied; pending X translation cross-check, community review, and native review before reviewed status.",
+      "aiAudit": "codex-ai-audit-2026-07-01-high-risk-terms"
     },
     {
       "locale": "ja",
       "language": "Japanese",
       "path": "src/data/glossary.ja.json",
-      "status": "llm-drafted",
+      "status": "llm-audited",
       "termCount": 115,
       "officialAlignment": "partial",
       "xTranslationCheck": "pending",
-      "notes": "AI-drafted premium glossary seed. Needs X translation cross-check, community review, and native review before reviewed status."
+      "notes": "AI-audited premium glossary: second-pass high-risk terminology audit applied; pending X translation cross-check, community review, and native review before reviewed status.",
+      "aiAudit": "codex-ai-audit-2026-07-01-high-risk-terms"
     },
     {
       "locale": "ko",
@@ -125,51 +137,56 @@
       "locale": "pt-BR",
       "language": "Portuguese Brazil",
       "path": "src/data/glossary.pt-BR.json",
-      "status": "llm-drafted",
+      "status": "llm-audited",
       "termCount": 115,
       "officialAlignment": "partial",
       "xTranslationCheck": "pending",
-      "notes": "AI-drafted premium glossary seed. Needs X translation cross-check, community review, and native review before reviewed status."
+      "notes": "AI-audited premium glossary: second-pass high-risk terminology audit applied; pending X translation cross-check, community review, and native review before reviewed status.",
+      "aiAudit": "codex-ai-audit-2026-07-01-high-risk-terms"
     },
     {
       "locale": "ru",
       "language": "Russian",
       "path": "src/data/glossary.ru.json",
-      "status": "llm-drafted",
+      "status": "llm-audited",
       "termCount": 115,
       "officialAlignment": "partial",
       "xTranslationCheck": "pending",
-      "notes": "AI-drafted premium glossary seed. Needs X translation cross-check, community review, and native review before reviewed status."
+      "notes": "AI-audited premium glossary: second-pass high-risk terminology audit applied; pending X translation cross-check, community review, and native review before reviewed status.",
+      "aiAudit": "codex-ai-audit-2026-07-01-high-risk-terms"
     },
     {
       "locale": "vi",
       "language": "Vietnamese",
       "path": "src/data/glossary.vi.json",
-      "status": "llm-drafted",
+      "status": "llm-audited",
       "termCount": 115,
       "officialAlignment": "partial",
       "xTranslationCheck": "pending",
-      "notes": "AI-drafted premium glossary seed. Needs X translation cross-check, community review, and native review before reviewed status."
+      "notes": "AI-audited premium glossary: second-pass high-risk terminology audit applied; pending X translation cross-check, community review, and native review before reviewed status.",
+      "aiAudit": "codex-ai-audit-2026-07-01-high-risk-terms"
     },
     {
       "locale": "zh-CN",
       "language": "Chinese Simplified",
       "path": "src/data/glossary.zh-CN.json",
-      "status": "llm-drafted",
+      "status": "llm-audited",
       "termCount": 115,
       "officialAlignment": "partial",
       "xTranslationCheck": "pending",
-      "notes": "AI-drafted premium glossary seed. Needs X translation cross-check, community review, and native review before reviewed status."
+      "notes": "AI-audited premium glossary: second-pass high-risk terminology audit applied; pending X translation cross-check, community review, and native review before reviewed status.",
+      "aiAudit": "codex-ai-audit-2026-07-01-high-risk-terms"
     },
     {
       "locale": "zh-TW",
       "language": "Chinese Traditional",
       "path": "src/data/glossary.zh-TW.json",
-      "status": "llm-drafted",
+      "status": "llm-audited",
       "termCount": 115,
       "officialAlignment": "partial",
       "xTranslationCheck": "pending",
-      "notes": "AI-drafted premium glossary seed. Needs X translation cross-check, community review, and native review before reviewed status."
+      "notes": "AI-audited premium glossary: second-pass high-risk terminology audit applied; pending X translation cross-check, community review, and native review before reviewed status.",
+      "aiAudit": "codex-ai-audit-2026-07-01-high-risk-terms"
     }
   ]
 }

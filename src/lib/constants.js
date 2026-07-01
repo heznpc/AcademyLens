@@ -79,6 +79,8 @@
       "popup.nativeDownloads": "Allow built-in translator downloads",
       "popup.languageNoteGlossary": "Reviewed terminology corrections are enabled for this language.",
       "popup.languageNoteCommunity": "Community-reviewed terminology corrections are enabled for this language.",
+      "popup.languageNoteAudited":
+        "AI-audited terminology corrections are enabled. Community and native review are welcome.",
       "popup.languageNoteDraft": "AI-drafted terminology corrections are enabled. Community review is welcome.",
       "popup.languageNoteMachine":
         "Machine translation with protected terms. A reviewed glossary is not installed for this language yet.",
@@ -140,6 +142,8 @@
       "popup.nativeDownloads": "내장 번역 다운로드 허용",
       "popup.languageNoteGlossary": "이 언어에는 검토 완료된 용어 보정이 적용됩니다.",
       "popup.languageNoteCommunity": "이 언어에는 커뮤니티 검토를 거친 용어 보정이 적용됩니다.",
+      "popup.languageNoteAudited":
+        "이 언어에는 AI 2차 감사를 거친 용어 보정이 적용됩니다. 커뮤니티 및 원어민 검수를 기다리고 있습니다.",
       "popup.languageNoteDraft": "AI 초안 용어 사전 보정이 적용됩니다. 커뮤니티 검수를 기다리고 있습니다.",
       "popup.languageNoteMachine": "기계번역과 보호 용어만 적용됩니다. 이 언어의 용어 사전은 아직 없습니다.",
       "popup.languageTermCount": "{count}개 이상의 용어 보정.",
@@ -305,7 +309,9 @@
         ? "popup.languageNoteGlossary"
         : record.status === "community-reviewed"
           ? "popup.languageNoteCommunity"
-          : "popup.languageNoteDraft";
+          : record.status === "llm-audited"
+            ? "popup.languageNoteAudited"
+            : "popup.languageNoteDraft";
     const note = getMessage(statusMessageKey, locale);
     if (!record.termCount) return note;
     return `${note} ${getMessage("popup.languageTermCount", locale, { count: record.termCount })}`;

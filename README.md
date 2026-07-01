@@ -47,7 +47,7 @@ AcademyLens is an unofficial Chrome extension for learners using OpenAI Academy.
 - Preserves core OpenAI and AI terminology such as OpenAI, ChatGPT, GPT, LLM, API, Responses API, Agents SDK, JSON, and Gradual.
 - Applies installed premium glossaries built from OpenAI Academy course language and OpenAI documentation terminology before machine translation.
 - Uses native language names in the language picker.
-- Shows whether the selected language has a final/native-reviewed, community-reviewed, AI-drafted beta, or protected-term machine translation status.
+- Shows whether the selected language has a final/native-reviewed, community-reviewed, AI-audited beta, AI-drafted beta, or protected-term machine translation status.
 - Uses browser-native Translator when available; browser language-pack downloads require explicit opt-in, and Google Translate remains the fallback runtime.
 - Stores optional local correction overrides so a learner can fix repeated awkward translations on their own device.
 - Keeps translation cache entries scoped by provider and glossary state; local corrections bypass cached provider text and are applied directly.
@@ -56,7 +56,7 @@ AcademyLens is an unofficial Chrome extension for learners using OpenAI Academy.
 - Does not modify enrollment, progress tracking, certificates, account state, or Gradual platform data.
 - Does not load remote AI scripts.
 
-AcademyLens now ships thirteen premium glossary packs for `de`, `es`, `fr`, `hi`, `id`, `it`, `ja`, `ko`, `pt-BR`, `ru`, `vi`, `zh-CN`, and `zh-TW`, with 100+ OpenAI Academy/OpenAI Docs core terms in each pack. Korean is the first community-reviewed pack; the other premium packs are AI-drafted beta glossaries waiting for X translation cross-checks, community review, and native review. Hindi and French are prioritized because OpenAI Academy already exposes India/Hindi content and French Academy events. Languages outside the premium set still use machine translation plus protected-term preservation. See [docs/TERMINOLOGY_MAP.md](docs/TERMINOLOGY_MAP.md), [docs/GLOSSARY_CONTRIBUTING.md](docs/GLOSSARY_CONTRIBUTING.md), and [docs/QUALITY_ROADMAP.md](docs/QUALITY_ROADMAP.md).
+AcademyLens now ships thirteen premium glossary packs for `de`, `es`, `fr`, `hi`, `id`, `it`, `ja`, `ko`, `pt-BR`, `ru`, `vi`, `zh-CN`, and `zh-TW`, with 100+ OpenAI Academy/OpenAI Docs core terms in each pack. Korean is the first community-reviewed pack; the other premium packs are AI-audited beta glossaries with a recorded second-pass high-risk terminology audit and a quality gate for smoke terms, local-script coverage, and audit metadata. They are still waiting for X translation cross-checks, community review, and native review. Hindi and French are prioritized because OpenAI Academy already exposes India/Hindi content and French Academy events. Languages outside the premium set still use machine translation plus protected-term preservation. See [docs/TERMINOLOGY_MAP.md](docs/TERMINOLOGY_MAP.md), [docs/GLOSSARY_CONTRIBUTING.md](docs/GLOSSARY_CONTRIBUTING.md), and [docs/QUALITY_ROADMAP.md](docs/QUALITY_ROADMAP.md).
 
 ## Installation
 
@@ -209,7 +209,7 @@ AcademyLens is MIT licensed and welcomes focused contributions.
 Good first contribution paths:
 
 - glossary corrections for `src/data/glossary.<locale>.json`
-- native-language review for AI-drafted glossary packs
+- native-language review for AI-audited glossary packs
 - sanitized OpenAI Academy / Gradual fixture improvements
 - UI/accessibility QA reports
 - tests for translation, restore, cache, SPA navigation, or glossary behavior

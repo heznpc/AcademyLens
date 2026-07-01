@@ -2,7 +2,7 @@
   "schemaVersion": 1,
   "locale": "ru",
   "name": "Russian OpenAI Academy glossary",
-  "status": "llm-drafted",
+  "status": "llm-audited",
   "sourceCatalog": {
     "academy:courses": {
       "title": "OpenAI Academy Courses",
@@ -69,9 +69,10 @@
   "qaSignals": {
     "draftMethod": "AI-assisted terminology draft",
     "officialAlignment": "partial",
-    "googleTranslateBaseline": "pending",
+    "googleTranslateBaseline": "high-risk-terms-audited",
     "xTranslationCheck": "pending",
-    "communityReview": "open"
+    "communityReview": "open",
+    "llmAudit": "codex-ai-audit-2026-07-01-high-risk-terms"
   },
   "terms": [
     {
@@ -83,10 +84,10 @@
     },
     {
       "source": "AI fluency",
-      "target": "грамотность в ИИ",
+      "target": "уверенное владение ИИ",
       "category": "academy-learning",
       "sources": ["academy:courses"],
-      "note": "AI-drafted term rendering from OpenAI Academy and OpenAI developer documentation; pending X translation cross-check and community review."
+      "note": "AI-audited premium glossary: second-pass high-risk terminology audit applied; pending X translation cross-check, community review, and native review before reviewed status."
     },
     {
       "source": "large language model",
@@ -223,10 +224,10 @@
     },
     {
       "source": "review outputs",
-      "target": "проверять выводы",
+      "target": "проверка выходных данных",
       "category": "review",
       "sources": ["academy:home", "academy:courses"],
-      "note": "AI-drafted term rendering from OpenAI Academy and OpenAI developer documentation; pending X translation cross-check and community review."
+      "note": "AI-audited premium glossary: second-pass high-risk terminology audit applied; pending X translation cross-check, community review, and native review before reviewed status."
     },
     {
       "source": "reviewing outputs",
@@ -363,17 +364,17 @@
     },
     {
       "source": "guardrail",
-      "target": "ограничитель",
+      "target": "защитное ограничение",
       "category": "agents",
       "sources": ["openai-docs:guardrails", "openai-docs:observability"],
-      "note": "AI-drafted term rendering from OpenAI Academy and OpenAI developer documentation; pending X translation cross-check and community review."
+      "note": "AI-audited premium glossary: second-pass high-risk terminology audit applied; pending X translation cross-check, community review, and native review before reviewed status."
     },
     {
       "source": "guardrails",
-      "target": "ограничители",
+      "target": "защитные ограничения",
       "category": "agents",
       "sources": ["openai-docs:guardrails", "openai-docs:observability"],
-      "note": "AI-drafted term rendering from OpenAI Academy and OpenAI developer documentation; pending X translation cross-check and community review."
+      "note": "AI-audited premium glossary: second-pass high-risk terminology audit applied; pending X translation cross-check, community review, and native review before reviewed status."
     },
     {
       "source": "human review",
@@ -419,10 +420,10 @@
     },
     {
       "source": "structured outputs",
-      "target": "структурированные выводы",
+      "target": "структурированные выходные данные",
       "category": "structured-output",
       "sources": ["openai-docs:structured-outputs", "openai-docs:text-generation"],
-      "note": "AI-drafted term rendering from OpenAI Academy and OpenAI developer documentation; pending X translation cross-check and community review."
+      "note": "AI-audited premium glossary: second-pass high-risk terminology audit applied; pending X translation cross-check, community review, and native review before reviewed status."
     },
     {
       "source": "schema",
@@ -832,10 +833,10 @@
     },
     {
       "source": "red teaming",
-      "target": "red teaming",
+      "target": "редтиминг",
       "category": "safety",
       "sources": ["openai-docs:evaluation", "openai-docs:guardrails"],
-      "note": "AI-drafted term rendering from OpenAI Academy and OpenAI developer documentation; pending X translation cross-check and community review."
+      "note": "AI-audited premium glossary: second-pass high-risk terminology audit applied; pending X translation cross-check, community review, and native review before reviewed status."
     },
     {
       "source": "Build practical AI skills for work",
