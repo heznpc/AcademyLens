@@ -2,7 +2,7 @@
   "schemaVersion": 1,
   "locale": "zh-TW",
   "name": "Traditional Chinese OpenAI Academy glossary",
-  "status": "llm-drafted",
+  "status": "llm-audited",
   "sourceCatalog": {
     "academy:courses": {
       "title": "OpenAI Academy Courses",
@@ -69,9 +69,10 @@
   "qaSignals": {
     "draftMethod": "AI-assisted terminology draft",
     "officialAlignment": "partial",
-    "googleTranslateBaseline": "pending",
+    "googleTranslateBaseline": "high-risk-terms-audited",
     "xTranslationCheck": "pending",
-    "communityReview": "open"
+    "communityReview": "open",
+    "llmAudit": "codex-ai-audit-2026-07-01-high-risk-terms"
   },
   "terms": [
     {
@@ -118,17 +119,17 @@
     },
     {
       "source": "token",
-      "target": "token",
+      "target": "詞元",
       "category": "model-concepts",
       "sources": ["openai-docs:concepts"],
-      "note": "AI-drafted term rendering from OpenAI Academy and OpenAI developer documentation; pending X translation cross-check and community review."
+      "note": "AI-audited premium glossary: second-pass high-risk terminology audit applied; pending X translation cross-check, community review, and native review before reviewed status."
     },
     {
       "source": "tokens",
-      "target": "token",
+      "target": "詞元",
       "category": "model-concepts",
       "sources": ["openai-docs:concepts"],
-      "note": "AI-drafted term rendering from OpenAI Academy and OpenAI developer documentation; pending X translation cross-check and community review."
+      "note": "AI-audited premium glossary: second-pass high-risk terminology audit applied; pending X translation cross-check, community review, and native review before reviewed status."
     },
     {
       "source": "context length",
@@ -160,10 +161,10 @@
     },
     {
       "source": "prompting",
-      "target": "提示",
+      "target": "提示詞編寫",
       "category": "prompting",
       "sources": ["openai-docs:prompt-engineering"],
-      "note": "AI-drafted term rendering from OpenAI Academy and OpenAI developer documentation; pending X translation cross-check and community review."
+      "note": "AI-audited premium glossary: second-pass high-risk terminology audit applied; pending X translation cross-check, community review, and native review before reviewed status."
     },
     {
       "source": "instruction",
@@ -489,17 +490,17 @@
     },
     {
       "source": "course completion certificate",
-      "target": "課程完成證書",
+      "target": "課程結業證書",
       "category": "course-format",
       "sources": ["academy:courses"],
-      "note": "AI-drafted term rendering from OpenAI Academy and OpenAI developer documentation; pending X translation cross-check and community review."
+      "note": "AI-audited premium glossary: second-pass high-risk terminology audit applied; pending X translation cross-check, community review, and native review before reviewed status."
     },
     {
       "source": "course completion certificates",
-      "target": "課程完成證書",
+      "target": "課程結業證書",
       "category": "course-format",
       "sources": ["academy:courses"],
-      "note": "AI-drafted term rendering from OpenAI Academy and OpenAI developer documentation; pending X translation cross-check and community review."
+      "note": "AI-audited premium glossary: second-pass high-risk terminology audit applied; pending X translation cross-check, community review, and native review before reviewed status."
     },
     {
       "source": "generative AI",
@@ -650,10 +651,10 @@
     },
     {
       "source": "grounding",
-      "target": "基於依據",
+      "target": "依據錨定",
       "category": "safety",
       "sources": ["openai-docs:prompt-engineering", "openai-docs:evaluation"],
-      "note": "AI-drafted term rendering from OpenAI Academy and OpenAI developer documentation; pending X translation cross-check and community review."
+      "note": "AI-audited premium glossary: second-pass high-risk terminology audit applied; pending X translation cross-check, community review, and native review before reviewed status."
     },
     {
       "source": "embedding",
@@ -748,10 +749,10 @@
     },
     {
       "source": "strict schema",
-      "target": "嚴格結構描述",
+      "target": "嚴格的結構描述",
       "category": "structured-output",
       "sources": ["openai-docs:structured-outputs"],
-      "note": "AI-drafted term rendering from OpenAI Academy and OpenAI developer documentation; pending X translation cross-check and community review."
+      "note": "AI-audited premium glossary: second-pass high-risk terminology audit applied; pending X translation cross-check, community review, and native review before reviewed status."
     },
     {
       "source": "schema validation",

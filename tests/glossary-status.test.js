@@ -17,7 +17,7 @@ test("glossary status markdown is generated from registry rows", () => {
       {
         locale: "es",
         language: "Spanish",
-        status: "llm-drafted",
+        status: "llm-audited",
         termCount: 115,
         officialAlignment: "partial",
         xTranslationCheck: "pending"
@@ -30,14 +30,14 @@ test("glossary status markdown is generated from registry rows", () => {
   assert.match(markdown, /^# Glossary Status/);
   assert.match(
     markdown,
-    /Summary: 2 premium packs, 230 terms, 0 reviewed, 0 native-reviewed, 1 community-reviewed, 1 AI-drafted beta packs, 0 in review\./
+    /Summary: 2 premium packs, 230 terms, 0 reviewed, 0 native-reviewed, 1 community-reviewed, 1 AI-audited beta packs, 0 AI-drafted beta packs, 0 in review\./
   );
   assert.match(markdown, /## ko - Korean/);
   assert.match(markdown, /Status: `community-reviewed`/);
   assert.match(markdown, /Next action: complete X check and native review/);
   assert.match(markdown, /## es - Spanish/);
-  assert.match(markdown, /Status: `llm-drafted`/);
-  assert.match(markdown, /Next action: audit high-risk terms, then request community\/native review/);
+  assert.match(markdown, /Status: `llm-audited`/);
+  assert.match(markdown, /Next action: request community\/native review/);
   assert(!/\d{4}-\d{2}-\d{2}/.test(markdown));
 });
 
@@ -55,7 +55,7 @@ test("glossary status console summary counts review states", () => {
     {
       locale: "de",
       language: "German",
-      status: "llm-drafted",
+      status: "llm-audited",
       terms: 115,
       official: "partial",
       x: "pending",
@@ -73,7 +73,8 @@ test("glossary status console summary counts review states", () => {
   ];
 
   assert.deepEqual(GlossaryStatus.summaryFromRows(rows), {
-    draftCount: 1,
+    draftCount: 0,
+    auditedCount: 1,
     reviewedCount: 1,
     communityReviewedCount: 1,
     nativeReviewedCount: 0,
@@ -83,6 +84,6 @@ test("glossary status console summary counts review states", () => {
   });
   assert.match(
     GlossaryStatus.formatConsole(rows),
-    /summary: 3 packs, 1 reviewed, 0 native-reviewed, 1 community-reviewed, 1 llm-drafted, 0 in review/
+    /summary: 3 packs, 1 reviewed, 0 native-reviewed, 1 community-reviewed, 1 llm-audited, 0 llm-drafted, 0 in review/
   );
 });

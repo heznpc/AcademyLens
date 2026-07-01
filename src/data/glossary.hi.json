@@ -2,7 +2,7 @@
   "schemaVersion": 1,
   "locale": "hi",
   "name": "Hindi OpenAI Academy glossary",
-  "status": "llm-drafted",
+  "status": "llm-audited",
   "sourceCatalog": {
     "academy:courses": {
       "title": "OpenAI Academy Courses",
@@ -69,9 +69,10 @@
   "qaSignals": {
     "draftMethod": "AI-assisted terminology draft",
     "officialAlignment": "partial",
-    "googleTranslateBaseline": "pending",
+    "googleTranslateBaseline": "high-risk-terms-audited",
     "xTranslationCheck": "pending",
-    "communityReview": "open"
+    "communityReview": "open",
+    "llmAudit": "codex-ai-audit-2026-07-01-high-risk-terms"
   },
   "terms": [
     {
@@ -83,24 +84,24 @@
     },
     {
       "source": "AI fluency",
-      "target": "AI साक्षरता",
+      "target": "AI उपयोग दक्षता",
       "category": "academy-learning",
       "sources": ["academy:courses"],
-      "note": "AI-drafted term rendering from OpenAI Academy and OpenAI developer documentation; pending X translation cross-check and community review."
+      "note": "AI-audited premium glossary: second-pass high-risk terminology audit applied; pending X translation cross-check, community review, and native review before reviewed status."
     },
     {
       "source": "large language model",
-      "target": "बड़ा भाषा मॉडल",
+      "target": "विशाल भाषा मॉडल",
       "category": "model-concepts",
       "sources": ["academy:home", "openai-docs:text-generation"],
-      "note": "AI-drafted term rendering from OpenAI Academy and OpenAI developer documentation; pending X translation cross-check and community review."
+      "note": "AI-audited premium glossary: second-pass high-risk terminology audit applied; pending X translation cross-check, community review, and native review before reviewed status."
     },
     {
       "source": "large language models",
-      "target": "बड़े भाषा मॉडल",
+      "target": "विशाल भाषा मॉडल",
       "category": "model-concepts",
       "sources": ["academy:home", "openai-docs:text-generation"],
-      "note": "AI-drafted term rendering from OpenAI Academy and OpenAI developer documentation; pending X translation cross-check and community review."
+      "note": "AI-audited premium glossary: second-pass high-risk terminology audit applied; pending X translation cross-check, community review, and native review before reviewed status."
     },
     {
       "source": "model",
@@ -223,10 +224,10 @@
     },
     {
       "source": "review outputs",
-      "target": "आउटपुट की समीक्षा करें",
+      "target": "आउटपुट की समीक्षा",
       "category": "review",
       "sources": ["academy:home", "academy:courses"],
-      "note": "AI-drafted term rendering from OpenAI Academy and OpenAI developer documentation; pending X translation cross-check and community review."
+      "note": "AI-audited premium glossary: second-pass high-risk terminology audit applied; pending X translation cross-check, community review, and native review before reviewed status."
     },
     {
       "source": "reviewing outputs",
@@ -454,17 +455,17 @@
     },
     {
       "source": "eval",
-      "target": "eval",
+      "target": "मूल्यांकन",
       "category": "evaluation",
       "sources": ["openai-docs:evaluation"],
-      "note": "AI-drafted term rendering from OpenAI Academy and OpenAI developer documentation; pending X translation cross-check and community review."
+      "note": "AI-audited premium glossary: second-pass high-risk terminology audit applied; pending X translation cross-check, community review, and native review before reviewed status."
     },
     {
       "source": "evals",
-      "target": "evals",
+      "target": "मूल्यांकन",
       "category": "evaluation",
       "sources": ["openai-docs:evaluation"],
-      "note": "AI-drafted term rendering from OpenAI Academy and OpenAI developer documentation; pending X translation cross-check and community review."
+      "note": "AI-audited premium glossary: second-pass high-risk terminology audit applied; pending X translation cross-check, community review, and native review before reviewed status."
     },
     {
       "source": "grader",
@@ -671,17 +672,17 @@
     },
     {
       "source": "use case",
-      "target": "उपयोग मामला",
+      "target": "उपयोग परिदृश्य",
       "category": "workflow",
       "sources": ["academy:home", "academy:courses"],
-      "note": "AI-drafted term rendering from OpenAI Academy and OpenAI developer documentation; pending X translation cross-check and community review."
+      "note": "AI-audited premium glossary: second-pass high-risk terminology audit applied; pending X translation cross-check, community review, and native review before reviewed status."
     },
     {
       "source": "task decomposition",
-      "target": "कार्य विघटन",
+      "target": "कार्य विभाजन",
       "category": "workflow",
       "sources": ["academy:home", "openai-docs:agents"],
-      "note": "AI-drafted term rendering from OpenAI Academy and OpenAI developer documentation; pending X translation cross-check and community review."
+      "note": "AI-audited premium glossary: second-pass high-risk terminology audit applied; pending X translation cross-check, community review, and native review before reviewed status."
     },
     {
       "source": "automation",
@@ -832,10 +833,10 @@
     },
     {
       "source": "red teaming",
-      "target": "रेड टीमिंग",
+      "target": "रेड टीम परीक्षण",
       "category": "safety",
       "sources": ["openai-docs:evaluation", "openai-docs:guardrails"],
-      "note": "AI-drafted term rendering from OpenAI Academy and OpenAI developer documentation; pending X translation cross-check and community review."
+      "note": "AI-audited premium glossary: second-pass high-risk terminology audit applied; pending X translation cross-check, community review, and native review before reviewed status."
     },
     {
       "source": "Build practical AI skills for work",

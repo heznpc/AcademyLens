@@ -2,7 +2,7 @@
   "schemaVersion": 1,
   "locale": "de",
   "name": "German OpenAI Academy glossary",
-  "status": "llm-drafted",
+  "status": "llm-audited",
   "sourceCatalog": {
     "academy:courses": {
       "title": "OpenAI Academy Courses",
@@ -69,9 +69,10 @@
   "qaSignals": {
     "draftMethod": "AI-assisted terminology draft",
     "officialAlignment": "partial",
-    "googleTranslateBaseline": "pending",
+    "googleTranslateBaseline": "high-risk-terms-audited",
     "xTranslationCheck": "pending",
-    "communityReview": "open"
+    "communityReview": "open",
+    "llmAudit": "codex-ai-audit-2026-07-01-high-risk-terms"
   },
   "terms": [
     {
@@ -314,10 +315,10 @@
     },
     {
       "source": "agentic workflows",
-      "target": "agentische Workflows",
+      "target": "agentenbasierte Workflows",
       "category": "agents",
       "sources": ["academy:courses", "openai-docs:agents"],
-      "note": "AI-drafted term rendering from OpenAI Academy and OpenAI developer documentation; pending X translation cross-check and community review."
+      "note": "AI-audited premium glossary: second-pass high-risk terminology audit applied; pending X translation cross-check, community review, and native review before reviewed status."
     },
     {
       "source": "tool",
@@ -349,31 +350,31 @@
     },
     {
       "source": "handoff",
-      "target": "Handoff",
+      "target": "Übergabe",
       "category": "agents",
       "sources": ["openai-docs:agent-definitions", "openai-docs:observability"],
-      "note": "AI-drafted term rendering from OpenAI Academy and OpenAI developer documentation; pending X translation cross-check and community review."
+      "note": "AI-audited premium glossary: second-pass high-risk terminology audit applied; pending X translation cross-check, community review, and native review before reviewed status."
     },
     {
       "source": "handoffs",
-      "target": "Handoffs",
+      "target": "Übergaben",
       "category": "agents",
       "sources": ["openai-docs:agent-definitions", "openai-docs:observability"],
-      "note": "AI-drafted term rendering from OpenAI Academy and OpenAI developer documentation; pending X translation cross-check and community review."
+      "note": "AI-audited premium glossary: second-pass high-risk terminology audit applied; pending X translation cross-check, community review, and native review before reviewed status."
     },
     {
       "source": "guardrail",
-      "target": "Guardrail",
+      "target": "Leitplanke",
       "category": "agents",
       "sources": ["openai-docs:guardrails", "openai-docs:observability"],
-      "note": "AI-drafted term rendering from OpenAI Academy and OpenAI developer documentation; pending X translation cross-check and community review."
+      "note": "AI-audited premium glossary: second-pass high-risk terminology audit applied; pending X translation cross-check, community review, and native review before reviewed status."
     },
     {
       "source": "guardrails",
-      "target": "Guardrails",
+      "target": "Leitplanken",
       "category": "agents",
       "sources": ["openai-docs:guardrails", "openai-docs:observability"],
-      "note": "AI-drafted term rendering from OpenAI Academy and OpenAI developer documentation; pending X translation cross-check and community review."
+      "note": "AI-audited premium glossary: second-pass high-risk terminology audit applied; pending X translation cross-check, community review, and native review before reviewed status."
     },
     {
       "source": "human review",
@@ -510,10 +511,10 @@
     },
     {
       "source": "AI literacy",
-      "target": "KI-Literacy",
+      "target": "KI-Grundkompetenz",
       "category": "academy-learning",
       "sources": ["academy:home", "academy:courses"],
-      "note": "AI-drafted term rendering from OpenAI Academy and OpenAI developer documentation; pending X translation cross-check and community review."
+      "note": "AI-audited premium glossary: second-pass high-risk terminology audit applied; pending X translation cross-check, community review, and native review before reviewed status."
     },
     {
       "source": "responsible AI",
@@ -650,10 +651,10 @@
     },
     {
       "source": "grounding",
-      "target": "Grounding",
+      "target": "Kontextverankerung",
       "category": "safety",
       "sources": ["openai-docs:prompt-engineering", "openai-docs:evaluation"],
-      "note": "AI-drafted term rendering from OpenAI Academy and OpenAI developer documentation; pending X translation cross-check and community review."
+      "note": "AI-audited premium glossary: second-pass high-risk terminology audit applied; pending X translation cross-check, community review, and native review before reviewed status."
     },
     {
       "source": "embedding",
@@ -699,10 +700,10 @@
     },
     {
       "source": "review checkpoint",
-      "target": "Review-Checkpoint",
+      "target": "Prüfpunkt",
       "category": "review",
       "sources": ["academy:home", "openai-docs:guardrails"],
-      "note": "AI-drafted term rendering from OpenAI Academy and OpenAI developer documentation; pending X translation cross-check and community review."
+      "note": "AI-audited premium glossary: second-pass high-risk terminology audit applied; pending X translation cross-check, community review, and native review before reviewed status."
     },
     {
       "source": "function calling",
@@ -727,10 +728,10 @@
     },
     {
       "source": "handoff target",
-      "target": "Handoff-Ziel",
+      "target": "Übergabeziel",
       "category": "agents",
       "sources": ["openai-docs:agent-definitions"],
-      "note": "AI-drafted term rendering from OpenAI Academy and OpenAI developer documentation; pending X translation cross-check and community review."
+      "note": "AI-audited premium glossary: second-pass high-risk terminology audit applied; pending X translation cross-check, community review, and native review before reviewed status."
     },
     {
       "source": "agent loop",
@@ -832,10 +833,10 @@
     },
     {
       "source": "red teaming",
-      "target": "Red Teaming",
+      "target": "Red-Teaming",
       "category": "safety",
       "sources": ["openai-docs:evaluation", "openai-docs:guardrails"],
-      "note": "AI-drafted term rendering from OpenAI Academy and OpenAI developer documentation; pending X translation cross-check and community review."
+      "note": "AI-audited premium glossary: second-pass high-risk terminology audit applied; pending X translation cross-check, community review, and native review before reviewed status."
     },
     {
       "source": "Build practical AI skills for work",

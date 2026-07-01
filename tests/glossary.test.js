@@ -43,7 +43,7 @@ test("registers premium glossary packs with matching source keys", () => {
     const record = glossaryIndex.glossaries.find((entry) => entry.locale === locale);
     assert(record, `missing ${locale} registry entry`);
     assert.equal(record.termCount, glossary.terms.length);
-    assert(["llm-drafted", "community-reviewed", "reviewed"].includes(record.status));
+    assert(["llm-drafted", "llm-audited", "community-reviewed", "native-reviewed", "reviewed"].includes(record.status));
     assert(record.xTranslationCheck);
 
     const pack = JSON.parse(readFileSync(join(__dirname, `../src/data/glossary.${locale}.json`), "utf8"));

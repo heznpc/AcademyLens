@@ -47,7 +47,7 @@ Each term must include:
 ## Status Ladder
 
 - `llm-drafted`: AI-assisted first pass. It can ship as beta correction data, but should be clearly disclosed.
-- `llm-audited`: AI draft has received a focused second-pass audit against source docs and likely machine-translation failures.
+- `llm-audited`: AI draft has received a focused second-pass audit against source docs and likely machine-translation failures, with `npm run check:glossary-quality` enforcing the recorded audit signal and high-risk smoke terms.
 - `community-reviewed`: A fluent community reviewer has checked the language values.
 - `native-reviewed`: A native speaker has checked the language values and register.
 - `reviewed`: Project-maintainer-approved pack that has complete review evidence and tests. This is stricter than `community-reviewed`.
@@ -66,7 +66,7 @@ A `reviewed` glossary pack must have:
 - Closed `qaSignals.xTranslationCheck` and `qaSignals.communityReview`.
 - Registry `officialAlignment` marked `complete`.
 
-Use `llm-drafted` status for early community packs that need review.
+Use `llm-drafted` status for early community packs that need review. Use `llm-audited` only after high-risk terminology corrections are represented in the pack metadata and `npm run check:glossary-quality` passes.
 
 ## Status Dashboard
 

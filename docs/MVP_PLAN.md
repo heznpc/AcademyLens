@@ -19,9 +19,9 @@ Required notice: Unofficial, not affiliated with OpenAI.
 - Login-only lesson pages as best-effort DOM translation after the user signs in.
 - Thirteen premium AI terminology glossary packs.
 - Google Translate fast translation in the current runtime, with provider/privacy review before any store submission.
-- Glossary correction for reviewed packs and clearly labeled AI-drafted beta packs.
+- Glossary correction for reviewed packs and clearly labeled AI-audited beta packs.
 - Protected-term preservation for all target languages.
-- Clear UI disclosure when a selected language is using final/native-reviewed, community-reviewed, AI-drafted beta, or protected-term-only machine translation support.
+- Clear UI disclosure when a selected language is using final/native-reviewed, community-reviewed, AI-audited beta, AI-drafted beta, or protected-term-only machine translation support.
 - Generation guard for restore/language/route-change races.
 - Playwright E2E coverage for core translation flows, study-room-style DOM, and visual smoke checks.
 

@@ -4,7 +4,7 @@ AcademyLens is positioned around multilingual community glossaries that connect 
 
 This is not a claim of affiliation with OpenAI. The glossary uses public OpenAI Academy pages and OpenAI developer documentation as terminology references.
 
-AcademyLens ships thirteen premium glossary packs: `de`, `es`, `fr`, `hi`, `id`, `it`, `ja`, `ko`, `pt-BR`, `ru`, `vi`, `zh-CN`, and `zh-TW`. Each pack carries 100+ OpenAI Academy/OpenAI Docs core terms across Academy learning, prompting, model concepts, agents, structured outputs, evaluation, course format, and safety. Korean is currently the first community-reviewed pack; the other premium packs are AI-drafted beta packs waiting for X translation cross-checks, community review, and native review. Hindi and French are first-class beta packs because OpenAI Academy already exposes India/Hindi content and French Academy events.
+AcademyLens ships thirteen premium glossary packs: `de`, `es`, `fr`, `hi`, `id`, `it`, `ja`, `ko`, `pt-BR`, `ru`, `vi`, `zh-CN`, and `zh-TW`. Each pack carries 100+ OpenAI Academy/OpenAI Docs core terms across Academy learning, prompting, model concepts, agents, structured outputs, evaluation, course format, and safety. Korean is currently the first community-reviewed pack; the other premium packs are AI-audited beta packs with a recorded second-pass high-risk terminology audit and automated quality checks for smoke terms, local-script coverage, and audit metadata. Hindi and French are first-class beta packs because OpenAI Academy already exposes India/Hindi content and French Academy events.
 
 ## Source Set
 
@@ -36,7 +36,7 @@ AcademyLens ships thirteen premium glossary packs: `de`, `es`, `fr`, `hi`, `id`,
 
 - Product names and protocol/API terms stay protected: OpenAI, OpenAI Academy, ChatGPT, GPT, JSON, JSON Schema, Responses API, Agents SDK.
 - Installed glossary corrections are applied before machine translation by placeholder masking.
-- Premium languages use installed glossary corrections. The UI distinguishes reviewed, community-reviewed, and AI-drafted beta packs.
+- Premium languages use installed glossary corrections. The UI distinguishes reviewed, community-reviewed, AI-audited beta, and AI-drafted beta packs.
 - Languages outside the premium glossary set use machine translation plus protected-term preservation.
 - Every glossary term must include `category`, `sources`, and a short note explaining the translation choice.
 - `npm run check:glossary` rejects duplicate terms, unknown source IDs, protected-term collisions, thin notes, stale registry metadata, missing premium locales, source-key drift across premium packs, and insufficient Academy/OpenAI-docs coverage.
@@ -45,13 +45,14 @@ AcademyLens ships thirteen premium glossary packs: `de`, `es`, `fr`, `hi`, `id`,
 
 AcademyLens uses multiple evidence layers, each with a different job:
 
-| Layer                     | Role                                                                  |
-| ------------------------- | --------------------------------------------------------------------- |
-| AI-assisted draft         | Create the first consistent multilingual terminology map.             |
-| Google Translate baseline | Find terms where runtime machine translation likely needs help.       |
-| X translation check       | Cross-check public, user-facing machine translations of OpenAI posts. |
-| Official docs alignment   | Use official OpenAI English docs as canonical source anchors.         |
-| Community/native review   | Improve fluency, register, and local technical convention.            |
+| Layer                     | Role                                                                                         |
+| ------------------------- | -------------------------------------------------------------------------------------------- |
+| AI-assisted draft         | Create the first consistent multilingual terminology map.                                    |
+| AI second-pass audit      | Improve high-risk terminology before human review and lock the result with automated checks. |
+| Google Translate baseline | Find terms where runtime machine translation likely needs help.                              |
+| X translation check       | Cross-check public, user-facing machine translations of OpenAI posts.                        |
+| Official docs alignment   | Use official OpenAI English docs as canonical source anchors.                                |
+| Community/native review   | Improve fluency, register, and local technical convention.                                   |
 
 X translation is not treated as an official OpenAI translation. It is a practical signal for how public machine translation renders OpenAI terminology in the wild.
 

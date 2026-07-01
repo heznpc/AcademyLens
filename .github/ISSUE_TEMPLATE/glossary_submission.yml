@@ -16,7 +16,7 @@ body:
       options:
         - Correct a term
         - Add smoke-check term
-        - Review an AI-drafted pack
+        - Review an AI-audited pack
         - Native/community review
         - Request a new language
     validations:

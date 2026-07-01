@@ -54,7 +54,8 @@ npm run check:glossary-overreach
 
 Promotion rules:
 
-- `llm-drafted` is allowed as beta correction data, but public copy must call it AI-drafted beta.
+- `llm-drafted` is allowed as early beta correction data, but public copy must call it AI-drafted beta.
+- `llm-audited` requires a recorded second-pass high-risk terminology audit and passing `npm run check:glossary-quality`; public copy can call it AI-audited beta.
 - `community-reviewed` requires fluent community review evidence.
 - `native-reviewed` requires native-speaker review evidence.
 - `reviewed` requires complete official alignment, closed X translation check, closed community/native review, and passing smoke tests.
