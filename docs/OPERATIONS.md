@@ -4,6 +4,8 @@ AcademyLens is an open-source beta. Operational quality means repeatable evidenc
 
 **Unofficial, not affiliated with OpenAI.**
 
+Release evidence is summarized in [TRUST_EVIDENCE.md](TRUST_EVIDENCE.md). Keep that page aligned with the runtime provider path, glossary status, live QA manifest, and release asset readiness before any public submission.
+
 ## Routine Commands
 
 Use these commands before a public release, store asset pass, or major glossary promotion:

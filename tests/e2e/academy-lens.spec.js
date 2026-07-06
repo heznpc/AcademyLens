@@ -94,7 +94,10 @@ async function panelSnapshot(page) {
       providerMode: root ? root.dataset.provider : null,
       correctionCount: shadow ? shadow.querySelector("[data-correction-count]").textContent : null,
       diagnostics: shadow ? shadow.querySelector("[data-diagnostics-output]").textContent : null,
-      status: shadow ? shadow.querySelector("[data-status]").textContent : null
+      status: shadow ? shadow.querySelector("[data-status]").textContent : null,
+      statusRole: shadow ? shadow.querySelector("[data-status]").getAttribute("role") : null,
+      statusLive: shadow ? shadow.querySelector("[data-status]").getAttribute("aria-live") : null,
+      statusAtomic: shadow ? shadow.querySelector("[data-status]").getAttribute("aria-atomic") : null
     };
   });
 }
@@ -176,6 +179,9 @@ test.describe("AcademyLens extension E2E", () => {
       expect(snapshot.actionButtons).toEqual(["번역", "원문 복원"]);
       expect(snapshot.note).toContain("용어");
       expect(snapshot.provider).toBeTruthy();
+      expect(snapshot.statusRole).toBe("status");
+      expect(snapshot.statusLive).toBe("polite");
+      expect(snapshot.statusAtomic).toBe("true");
     } finally {
       await stopHarness(harness);
     }
@@ -249,6 +255,9 @@ test.describe("AcademyLens extension E2E", () => {
       expect(await translationCacheSize(harness.ext.context)).toBeGreaterThan(0);
 
       await clickPanelButton(harness.page, "[data-clear-cache]");
+      await expect.poll(async () => (await panelSnapshot(harness.page)).status).toMatch(/한 번 더|confirm/i);
+      expect(await translationCacheSize(harness.ext.context)).toBeGreaterThan(0);
+      await clickPanelButton(harness.page, "[data-clear-cache]");
       await expect.poll(async () => (await panelSnapshot(harness.page)).status).toMatch(/캐시/);
       expect(await translationCacheSize(harness.ext.context)).toBe(0);
     } finally {
@@ -318,6 +327,32 @@ test.describe("AcademyLens extension E2E", () => {
       await expect.poll(async () => (await panelSnapshot(harness.page)).correctionCount).toBe("(1)");
 
       await clickPanelButton(harness.page, "[data-delete-correction]");
+      await expect.poll(async () => (await panelSnapshot(harness.page)).status).toMatch(/한 번 더|confirm/i);
+      await expect.poll(async () => (await panelSnapshot(harness.page)).correctionCount).toBe("(1)");
+      await clickPanelButton(harness.page, "[data-delete-correction]");
+      await expect.poll(async () => (await panelSnapshot(harness.page)).correctionCount).toBe("(0)");
+      await expect(harness.page.locator("#title")).toHaveText("업무를 위한 실용 AI 기술 구축");
+    } finally {
+      await stopHarness(harness);
+    }
+  });
+
+  test("requires confirmation before clearing all local corrections", async () => {
+    const harness = await startHarness();
+    try {
+      await expandPanel(harness.page);
+      await clickPanelButton(harness.page, "[data-translate]");
+      await expect(harness.page.locator("#title")).toHaveText("업무를 위한 실용 AI 기술 구축");
+
+      await harness.page.locator("#title").click();
+      await savePanelCorrection(harness.page, "업무용 AI 실전 역량 만들기");
+      await expect.poll(async () => (await panelSnapshot(harness.page)).correctionCount).toBe("(1)");
+
+      await clickPanelButton(harness.page, "[data-clear-corrections]");
+      await expect.poll(async () => (await panelSnapshot(harness.page)).status).toMatch(/한 번 더|confirm/i);
+      await expect.poll(async () => (await panelSnapshot(harness.page)).correctionCount).toBe("(1)");
+
+      await clickPanelButton(harness.page, "[data-clear-corrections]");
       await expect.poll(async () => (await panelSnapshot(harness.page)).correctionCount).toBe("(0)");
       await expect(harness.page.locator("#title")).toHaveText("업무를 위한 실용 AI 기술 구축");
     } finally {
@@ -331,6 +366,8 @@ test.describe("AcademyLens extension E2E", () => {
       await expandPanel(harness.page);
       await clickPanelButton(harness.page, "[data-translate]");
       await harness.page.waitForTimeout(50);
+      await clickPanelButton(harness.page, "[data-clear-cache]");
+      await expect.poll(async () => (await panelSnapshot(harness.page)).status).toMatch(/한 번 더|confirm/i);
       await clickPanelButton(harness.page, "[data-clear-cache]");
       await expect.poll(() => translationCacheSize(harness.ext.context)).toBe(0);
 
@@ -626,7 +663,7 @@ test.describe("AcademyLens extension E2E", () => {
       await expect(harness.page.locator(".course-progress")).toContainText("4/7 Lessons Completed");
       await expect(harness.page.locator("#live-certificate")).toHaveText("Course Certificate");
       await expect(harness.page.locator("#live-quiz")).toHaveText("Knowledge Check");
-      await expect(harness.page.locator("[role='status']")).toHaveText("Saved");
+      await expect(harness.page.locator("body > [role='status']")).toHaveText("Saved");
       await expect(harness.page.locator("#live-code")).toContainText("Do not translate code");
     } finally {
       await stopHarness(harness);
@@ -659,6 +696,53 @@ test.describe("AcademyLens extension E2E", () => {
       await expect(scormFrame.locator("#scorm-body")).toHaveText(
         "This course is designed to build foundations for using AI and ChatGPT safely."
       );
+    } finally {
+      await stopHarness(harness);
+    }
+  });
+
+  test("ignores forged frame commands without the AcademyLens frame token", async () => {
+    const harness = await startHarness({ path: "/learn/ai-foundations-juzjs/lessons" });
+    try {
+      await expandPanel(harness.page);
+      const scormFrame = await waitForFrame(harness.page, /scormcontent\/index\.html/);
+      await expect(scormFrame.locator("#scorm-body")).toHaveText(
+        "This course is designed to build foundations for using AI and ChatGPT safely."
+      );
+
+      await harness.page.evaluate(() => {
+        const frame = document.querySelector("#scorm-driver");
+        frame.contentWindow.postMessage(
+          {
+            source: "AcademyLens",
+            action: "translate",
+            messageId: "forged-message",
+            targetLanguage: "ko",
+            generation: 999,
+            pageUrl: location.href,
+            routeVersion: 0
+          },
+          location.origin
+        );
+        window.postMessage(
+          {
+            source: "AcademyLens",
+            action: "frameResult",
+            messageId: "forged-result",
+            kind: "translate",
+            applied: 99,
+            failed: 0
+          },
+          location.origin
+        );
+      });
+
+      await harness.page.waitForTimeout(700);
+      await expect(scormFrame.locator("#scorm-body")).toHaveText(
+        "This course is designed to build foundations for using AI and ChatGPT safely."
+      );
+      await expect.poll(async () => (await panelSnapshot(harness.page)).status).not.toMatch(/99|임베드.*99/);
+      expect(harness.calls).toEqual([]);
     } finally {
       await stopHarness(harness);
     }

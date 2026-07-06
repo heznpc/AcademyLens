@@ -5,7 +5,10 @@ try {
 }
 
 const { MESSAGE_TYPES, STORAGE_KEYS, DEFAULT_SETTINGS, LIMITS } = self.AcademyLensConstants || {
-  MESSAGE_TYPES: { TRANSLATE_BATCH: "ACADEMYLENS_TRANSLATE_BATCH" },
+  MESSAGE_TYPES: {
+    TRANSLATE_BATCH: "ACADEMYLENS_TRANSLATE_BATCH",
+    PERSIST_CACHE_UPDATES: "ACADEMYLENS_PERSIST_CACHE_UPDATES"
+  },
   STORAGE_KEYS: {
     CACHE: "academylens.translationCache.v1",
     CACHE_EPOCH: "academylens.translationCacheEpoch.v1"
@@ -246,8 +249,24 @@ async function translateBatch(message) {
   };
 }
 
+async function persistCacheUpdates(message) {
+  return mergeCacheUpdates(message.cacheUpdates || {}, message.expectedCacheEpoch);
+}
+
 chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
-  if (!message || message.type !== MESSAGE_TYPES.TRANSLATE_BATCH) return false;
+  if (!message) return false;
+
+  if (message.type === MESSAGE_TYPES.PERSIST_CACHE_UPDATES) {
+    persistCacheUpdates(message)
+      .then(sendResponse)
+      .catch((error) => {
+        sendResponse({ persisted: false, error: error.message || String(error) });
+      });
+
+    return true;
+  }
+
+  if (message.type !== MESSAGE_TYPES.TRANSLATE_BATCH) return false;
 
   translateBatch(message)
     .then(sendResponse)

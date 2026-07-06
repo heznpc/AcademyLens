@@ -58,6 +58,8 @@ test("content translation fallback has retry, timeout, dedupe, and concurrency c
   assert.match(fallback, /AbortController/);
   assert.match(fallback, /RETRYABLE_TRANSLATE_STATUS/);
   assert.match(fallback, /runWithContentFallbackFetchLimit/);
+  assert.match(source, /currentAbortSignal/);
+  assert.match(source, /throwIfAborted/);
 });
 
 test("browser translator provider only runs when already available", () => {
@@ -150,6 +152,7 @@ test("content cache scope tracks provider and glossary while cache clears invali
   const background = read("src/background/background.js");
 
   assert.match(constants, /CACHE_EPOCH: "academylens\.translationCacheEpoch\.v1"/);
+  assert.match(constants, /PERSIST_CACHE_UPDATES: "ACADEMYLENS_PERSIST_CACHE_UPDATES"/);
   assert.match(cache, /function normalizeScope/);
   assert.match(cache, /function entryMatches/);
   assert.match(source, /function glossarySignature/);
@@ -158,7 +161,10 @@ test("content cache scope tracks provider and glossary while cache clears invali
   assert.match(source, /state\.cacheEpoch/);
   assert.match(source, /cacheEpoch: state\.cacheEpoch/);
   assert.match(source, /provider: "google-translate"/);
+  assert.match(source, /type: C\.MESSAGE_TYPES\.PERSIST_CACHE_UPDATES/);
   assert.match(background, /function googleCacheScope/);
+  assert.match(background, /async function persistCacheUpdates/);
+  assert.match(background, /message\.type === MESSAGE_TYPES\.PERSIST_CACHE_UPDATES/);
   assert.match(background, /expectedCacheEpoch/);
 });
 
@@ -181,8 +187,19 @@ test("frame commands are scoped to the current route before redispatch", () => {
 
   assert.match(source, /routeVersion/);
   assert.match(source, /pageUrl: extra\.pageUrl \|\| location\.href/);
+  assert.match(source, /frameToken: extra\.frameToken/);
+  assert.match(source, /function isTrustedParentFrameCommand/);
+  assert.match(source, /event\.source !== window\.parent/);
+  assert.match(source, /data\.frameToken !== state\.frameSessionToken/);
+  assert.match(source, /function isKnownChildFrameSource/);
   assert.match(source, /function isPendingFrameCommandCurrent/);
   assert.match(source, /function clearFrameAggregates/);
+});
+
+test("panel status is exposed as an accessible live region", () => {
+  const source = read("src/content/content.js");
+
+  assert.match(source, /data-status role="status" aria-live="polite" aria-atomic="true"/);
 });
 
 test("content mutation and placement work is throttled before expensive page scans", () => {
@@ -229,6 +246,7 @@ test("store screenshot capture only accepts routes with explicit assertions", ()
 
 test("privacy policy describes local cache contents and auto-translate behavior", () => {
   const policy = read("PRIVACY_POLICY.md");
+  const storeListing = read("store-assets/STORE_LISTING.md");
 
   assert.match(policy, /auto-translate is enabled/i);
   assert.match(policy, /newly rendered visible lesson text/i);
@@ -243,6 +261,20 @@ test("privacy policy describes local cache contents and auto-translate behavior"
   assert.match(policy, /diagnostics are displayed locally/i);
   assert.match(policy, /do not include the translated page text/i);
   assert.match(policy, /target language, creation time, and last-access time/i);
+  assert.match(storeListing, /browser-native Translator API/i);
+  assert.match(storeListing, /translate\.googleapis\.com/i);
+  assert.match(storeListing, /Browser-managed translator downloads stay off unless the user explicitly enables them/i);
+});
+
+test("trust evidence page summarizes release proof and known gaps", () => {
+  const source = read("docs/TRUST_EVIDENCE.md");
+
+  assert.match(source, /Unofficial, not affiliated with OpenAI\./);
+  assert.match(source, /Browser-native Translator API/);
+  assert.match(source, /translate\.googleapis\.com/);
+  assert.match(source, /docs\/LIVE_QA_MANIFEST\.json/);
+  assert.match(source, /npm run release:preflight/);
+  assert.match(source, /Current Known Gaps/);
 });
 
 test("runtime cannot inherit Puter app identity or auth state", () => {

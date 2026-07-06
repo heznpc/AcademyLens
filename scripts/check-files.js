@@ -204,6 +204,7 @@ assertFile("docs/OPERATIONS.md");
 assertFile("docs/QUALITY_ROADMAP.md");
 assertFile("docs/RELEASE_CHECKLIST.md");
 assertFile("docs/TECH_STACK_REVIEW.md");
+assertFile("docs/TRUST_EVIDENCE.md");
 
 const requiredPublicDisclaimers = ["README.md", "store-assets/STORE_LISTING.md", "CONTRIBUTING.md", "SECURITY.md"];
 for (const file of requiredPublicDisclaimers) {

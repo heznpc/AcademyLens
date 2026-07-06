@@ -13,7 +13,8 @@
   const DISCLAIMER = "Unofficial, not affiliated with OpenAI.";
 
   const MESSAGE_TYPES = Object.freeze({
-    TRANSLATE_BATCH: "ACADEMYLENS_TRANSLATE_BATCH"
+    TRANSLATE_BATCH: "ACADEMYLENS_TRANSLATE_BATCH",
+    PERSIST_CACHE_UPDATES: "ACADEMYLENS_PERSIST_CACHE_UPDATES"
   });
 
   const STORAGE_KEYS = Object.freeze({
@@ -99,9 +100,13 @@
       "action.deleteCorrection": "Delete",
       "action.clearCorrections": "Clear all",
       "action.clearCache": "Clear cache",
+      "action.confirmDeleteCorrection": "Confirm delete",
+      "action.confirmClearCorrections": "Confirm clear all",
+      "action.confirmClearCache": "Confirm clear cache",
       "status.cacheCleared": "Local translation cache cleared.",
       "status.correctionsCleared": "Local corrections cleared.",
       "status.correctionDeleted": "Local correction deleted.",
+      "status.confirmLocalDelete": "Click again to confirm local deletion.",
       "notice.unofficial": DISCLAIMER,
       "provider.checking": "Checking provider",
       "provider.native": "Built-in",
@@ -161,9 +166,13 @@
       "action.deleteCorrection": "삭제",
       "action.clearCorrections": "전체 삭제",
       "action.clearCache": "캐시 비우기",
+      "action.confirmDeleteCorrection": "삭제 확인",
+      "action.confirmClearCorrections": "전체 삭제 확인",
+      "action.confirmClearCache": "캐시 비우기 확인",
       "status.cacheCleared": "로컬 번역 캐시를 비웠습니다.",
       "status.correctionsCleared": "로컬 보정을 모두 삭제했습니다.",
       "status.correctionDeleted": "로컬 보정을 삭제했습니다.",
+      "status.confirmLocalDelete": "로컬 삭제를 확인하려면 한 번 더 누르세요.",
       "notice.unofficial": "비공식 확장 프로그램이며 OpenAI와 제휴되어 있지 않습니다.",
       "provider.checking": "번역 경로 확인 중",
       "provider.native": "내장 번역",
