@@ -39,6 +39,8 @@
     latestFrameCommand: null,
     frameAggregates: new Map(),
     handledFrameMessages: new Set(),
+    frameSessionToken: frameMessageId(),
+    parentFrameToken: "",
     browserTranslatorStatus: "unchecked",
     providerMode: "checking",
     providerDetail: "",
@@ -58,7 +60,10 @@
     collapseUserSet: false,
     suppressMutationUntil: 0,
     mutationScanTimer: 0,
-    pendingMutationScanNodes: new Set()
+    pendingMutationScanNodes: new Set(),
+    abortController: null,
+    pendingDangerAction: "",
+    dangerActionTimer: 0
   };
   const contentFallbackInFlight = new Map();
   const contentFallbackFetchQueue = [];
@@ -66,6 +71,20 @@
 
   function frameMessageId() {
     return `${Date.now().toString(36)}-${Math.random().toString(36).slice(2)}`;
+  }
+
+  function abortError() {
+    const error = new Error(message("status.failed"));
+    error.name = "AbortError";
+    return error;
+  }
+
+  function throwIfAborted(signal) {
+    if (signal && signal.aborted) throw abortError();
+  }
+
+  function currentAbortSignal(generation) {
+    return generation === state.generation && state.abortController ? state.abortController.signal : null;
   }
 
   function getLocal(keys) {
@@ -99,6 +118,10 @@
   }
 
   function bumpGeneration() {
+    if (state.abortController && !state.abortController.signal.aborted) {
+      state.abortController.abort();
+    }
+    state.abortController = new AbortController();
     state.generation += 1;
     const waiters = Array.from(state.generationWaiters);
     state.generationWaiters.clear();
@@ -281,19 +304,40 @@
     updateProviderModeFromBrowserStatus(result.status);
   }
 
-  function sendMessage(message, timeoutMs = 30000) {
+  function sendMessage(message, timeoutMs = 30000, signal) {
     return new Promise((resolve, reject) => {
+      if (signal && signal.aborted) {
+        reject(abortError());
+        return;
+      }
+
       let settled = false;
+      let cleanup = () => {};
       const timeoutId = window.setTimeout(() => {
         settled = true;
+        cleanup();
         const error = new Error(C.getMessage("status.timeout", uiLocale));
         error.code = BACKGROUND_TIMEOUT_CODE;
         reject(error);
       }, timeoutMs);
 
+      const abort = () => {
+        if (settled) return;
+        settled = true;
+        window.clearTimeout(timeoutId);
+        cleanup();
+        reject(abortError());
+      };
+
+      if (signal) {
+        signal.addEventListener("abort", abort, { once: true });
+        cleanup = () => signal.removeEventListener("abort", abort);
+      }
+
       chrome.runtime.sendMessage(message, (response) => {
         if (settled) return;
         window.clearTimeout(timeoutId);
+        cleanup();
         const error = chrome.runtime.lastError;
         if (error) {
           reject(new Error(error.message));
@@ -318,9 +362,20 @@
     }
   }
 
-  function runWithContentFallbackFetchLimit(task) {
+  function runWithContentFallbackFetchLimit(task, signal) {
     return new Promise((resolve, reject) => {
+      if (signal && signal.aborted) {
+        reject(abortError());
+        return;
+      }
+
+      let queued = false;
       const run = () => {
+        queued = false;
+        if (signal && signal.aborted) {
+          reject(abortError());
+          return;
+        }
         activeContentFallbackFetches += 1;
         Promise.resolve()
           .then(task)
@@ -334,16 +389,33 @@
       if (activeContentFallbackFetches < CONTENT_FALLBACK_MAX_CONCURRENT_FETCHES) {
         run();
       } else {
+        queued = true;
         contentFallbackFetchQueue.push(run);
+        if (signal) {
+          signal.addEventListener(
+            "abort",
+            () => {
+              if (!queued) return;
+              const index = contentFallbackFetchQueue.indexOf(run);
+              if (index >= 0) contentFallbackFetchQueue.splice(index, 1);
+              queued = false;
+              reject(abortError());
+            },
+            { once: true }
+          );
+        }
       }
     });
   }
 
-  async function fetchContentTranslationWithRetry(text, targetLanguage) {
+  async function fetchContentTranslationWithRetry(text, targetLanguage, signal) {
     let lastError = null;
 
     for (let attempt = 0; attempt <= CONTENT_FALLBACK_MAX_RETRIES; attempt += 1) {
+      throwIfAborted(signal);
       const controller = new AbortController();
+      const abort = () => controller.abort();
+      if (signal) signal.addEventListener("abort", abort, { once: true });
       const timeoutId = window.setTimeout(() => controller.abort(), CONTENT_FALLBACK_FETCH_TIMEOUT_MS);
 
       try {
@@ -360,8 +432,10 @@
         if (error.retryable === false || attempt === CONTENT_FALLBACK_MAX_RETRIES) throw error;
       } finally {
         window.clearTimeout(timeoutId);
+        if (signal) signal.removeEventListener("abort", abort);
       }
 
+      throwIfAborted(signal);
       const jitter = Math.floor(Math.random() * 120);
       await sleep(CONTENT_FALLBACK_BASE_BACKOFF_MS * 2 ** attempt + jitter);
     }
@@ -369,15 +443,15 @@
     throw lastError || new Error("Google Translate request failed");
   }
 
-  function translateTextInContent(text, targetLanguage) {
+  function translateTextInContent(text, targetLanguage, signal) {
     const key = Cache.cacheKey(targetLanguage, text);
     const existing = contentFallbackInFlight.get(key);
     if (existing) return existing;
 
     const promise = runWithContentFallbackFetchLimit(async () => {
-      const response = await fetchContentTranslationWithRetry(text, targetLanguage);
+      const response = await fetchContentTranslationWithRetry(text, targetLanguage, signal);
       return GoogleTranslate.parseGoogleTranslatePayload(await response.json());
-    }).finally(() => {
+    }, signal).finally(() => {
       contentFallbackInFlight.delete(key);
     });
 
@@ -385,7 +459,7 @@
     return promise;
   }
 
-  async function persistContentCache(cacheUpdates, expectedEpoch = state.cacheEpoch) {
+  async function persistContentCacheLocally(cacheUpdates, expectedEpoch = state.cacheEpoch) {
     if (!Cache || !Object.keys(cacheUpdates).length) return false;
     try {
       const stored = await getLocal([C.STORAGE_KEYS.CACHE, C.STORAGE_KEYS.CACHE_EPOCH]);
@@ -403,6 +477,26 @@
     } catch (error) {
       console.warn("[AcademyLens] content cache persistence failed", error);
       return false;
+    }
+  }
+
+  async function persistContentCache(cacheUpdates, expectedEpoch = state.cacheEpoch, signal) {
+    if (!Cache || !Object.keys(cacheUpdates).length) return false;
+    try {
+      const response = await sendMessage(
+        {
+          type: C.MESSAGE_TYPES.PERSIST_CACHE_UPDATES,
+          cacheUpdates,
+          expectedCacheEpoch: expectedEpoch
+        },
+        BACKGROUND_RESPONSE_TIMEOUT_MS,
+        signal
+      );
+      return Boolean(response && response.persisted);
+    } catch (error) {
+      if (error && error.name === "AbortError") return false;
+      console.warn("[AcademyLens] background cache persistence unavailable; trying local persistence", error);
+      return persistContentCacheLocally(cacheUpdates, expectedEpoch);
     }
   }
 
@@ -583,10 +677,42 @@
     updateCorrectionPreview();
   }
 
-  async function deleteSelectedCorrection() {
+  function restoreDangerButtons() {
+    if (!state.shadow) return;
+    const deleteButton = state.shadow.querySelector("[data-delete-correction]");
+    const clearCorrectionsButton = state.shadow.querySelector("[data-clear-corrections]");
+    const clearCacheButton = state.shadow.querySelector("[data-clear-cache]");
+    if (deleteButton) deleteButton.textContent = message("action.deleteCorrection");
+    if (clearCorrectionsButton) clearCorrectionsButton.textContent = message("action.clearCorrections");
+    if (clearCacheButton) clearCacheButton.textContent = message("action.clearCache");
+  }
+
+  function resetDangerConfirmation() {
+    window.clearTimeout(state.dangerActionTimer);
+    state.dangerActionTimer = 0;
+    state.pendingDangerAction = "";
+    restoreDangerButtons();
+  }
+
+  function confirmDangerAction(action, button, confirmLabelKey) {
+    if (state.pendingDangerAction === action) {
+      resetDangerConfirmation();
+      return true;
+    }
+
+    resetDangerConfirmation();
+    state.pendingDangerAction = action;
+    if (button && confirmLabelKey) button.textContent = message(confirmLabelKey);
+    setStatus(message("status.confirmLocalDelete"));
+    state.dangerActionTimer = window.setTimeout(resetDangerConfirmation, 5000);
+    return false;
+  }
+
+  async function deleteSelectedCorrection(event) {
     if (!state.shadow) return;
     const select = state.shadow.querySelector("[data-correction-list]");
     if (!select || !select.value) return;
+    if (!confirmDangerAction("deleteCorrection", event.currentTarget, "action.confirmDeleteCorrection")) return;
     const deleted = await deleteCorrection(select.value);
     if (deleted) {
       clearSelectedCorrection();
@@ -595,14 +721,16 @@
     }
   }
 
-  async function clearAllCorrections() {
+  async function clearAllCorrections(event) {
+    if (!confirmDangerAction("clearCorrections", event.currentTarget, "action.confirmClearCorrections")) return;
     await clearCorrections();
     clearSelectedCorrection();
     await refreshCorrectionRecords();
     setStatus(message("status.correctionsCleared"), "ok");
   }
 
-  async function clearCacheFromPanel() {
+  async function clearCacheFromPanel(event) {
+    if (!confirmDangerAction("clearCache", event.currentTarget, "action.confirmClearCache")) return;
     await clearTranslationCache();
     setStatus(message("status.cacheCleared"), "ok");
   }
@@ -628,10 +756,11 @@
     });
   }
 
-  async function translateBatchInContent(texts, targetLanguage, scope = {}, expectedEpoch = state.cacheEpoch) {
+  async function translateBatchInContent(texts, targetLanguage, scope = {}, expectedEpoch = state.cacheEpoch, signal) {
     if (!Cache || !GoogleTranslate || typeof fetch !== "function") {
       throw new Error(message("status.failed"));
     }
+    throwIfAborted(signal);
 
     const stored = await getLocal([C.STORAGE_KEYS.CACHE, C.STORAGE_KEYS.CACHE_EPOCH]);
     const currentEpoch = cacheEpochValue(stored[C.STORAGE_KEYS.CACHE_EPOCH]);
@@ -666,7 +795,8 @@
 
         stats.cacheMisses += 1;
         try {
-          const result = await translateTextInContent(text, targetLanguage);
+          const result = await translateTextInContent(text, targetLanguage, signal);
+          throwIfAborted(signal);
           translated[text] = result;
           cacheUpdates[key] = {
             original: text,
@@ -683,7 +813,7 @@
       })
     );
 
-    const persisted = await persistContentCache(cacheUpdates, expectedEpoch);
+    const persisted = await persistContentCache(cacheUpdates, expectedEpoch, signal);
     if (!persisted && Object.keys(cacheUpdates).length) {
       stats.cachePersistFailed = true;
     }
@@ -700,7 +830,8 @@
     texts,
     targetLanguage,
     scope = {},
-    expectedEpoch = state.cacheEpoch
+    expectedEpoch = state.cacheEpoch,
+    signal
   ) {
     if (
       !Cache ||
@@ -731,10 +862,12 @@
     }
 
     try {
+      throwIfAborted(signal);
       const support = await BrowserTranslator.availability({
         sourceLanguage: "en",
         targetLanguage
       });
+      throwIfAborted(signal);
       setBrowserTranslatorStatus(support.status);
       const canUseBrowserTranslator =
         support.status === "available" ||
@@ -774,6 +907,7 @@
       }
 
       if (browserTexts.length > 0) {
+        throwIfAborted(signal);
         const browserTranslations = await BrowserTranslator.translateBatch(browserTexts, {
           sourceLanguage: "en",
           targetLanguage,
@@ -783,6 +917,7 @@
             setProviderMode("nativeDownloading");
           }
         });
+        throwIfAborted(signal);
 
         for (const text of browserTexts) {
           const result = browserTranslations ? browserTranslations[text] : "";
@@ -804,7 +939,7 @@
         }
       }
 
-      const persisted = await persistContentCache(cacheUpdates, expectedEpoch);
+      const persisted = await persistContentCache(cacheUpdates, expectedEpoch, signal);
       if (!persisted && Object.keys(cacheUpdates).length) {
         stats.cachePersistFailed = true;
       }
@@ -873,7 +1008,8 @@
     };
   }
 
-  async function sendBackgroundTranslationBatch(payload, timeoutMs) {
+  async function sendBackgroundTranslationBatch(payload, timeoutMs, signal) {
+    throwIfAborted(signal);
     setProviderMode("background");
     const fallbackScope = {
       ...((payload && payload.cacheScope) || {}),
@@ -885,7 +1021,7 @@
       Math.min(requestedTimeout, BACKGROUND_RESPONSE_MAX_TIMEOUT_MS)
     );
     try {
-      const response = await sendMessage(payload, backgroundTimeout);
+      const response = await sendMessage(payload, backgroundTimeout, signal);
       if (response && response.ok) return response;
       if (response && response.translated && Object.keys(response.translated).length > 0) return response;
     } catch (error) {
@@ -896,10 +1032,17 @@
     }
 
     setProviderMode("fallback");
-    return translateBatchInContent(payload.texts || [], payload.targetLanguage, fallbackScope, payload.cacheEpoch);
+    return translateBatchInContent(
+      payload.texts || [],
+      payload.targetLanguage,
+      fallbackScope,
+      payload.cacheEpoch,
+      signal
+    );
   }
 
-  async function sendTranslationBatch(payload, timeoutMs) {
+  async function sendTranslationBatch(payload, timeoutMs, signal) {
+    throwIfAborted(signal);
     const requestedTexts = payload.texts || [];
     const nativeScope = {
       ...((payload && payload.cacheScope) || {}),
@@ -910,21 +1053,24 @@
       requestedTexts,
       payload.targetLanguage,
       nativeScope,
-      payload.cacheEpoch
+      payload.cacheEpoch,
+      signal
     );
     if (browserResponse) {
       const missingTexts = untranslatedTexts(requestedTexts, browserResponse);
       if (missingTexts.length === 0) return mergeTranslationResponses(browserResponse, null, requestedTexts);
+      throwIfAborted(signal);
       const fallbackResponse = await sendBackgroundTranslationBatch(
         {
           ...payload,
           texts: missingTexts
         },
-        timeoutMs
+        timeoutMs,
+        signal
       );
       return mergeTranslationResponses(browserResponse, fallbackResponse, requestedTexts);
     }
-    return sendBackgroundTranslationBatch(payload, timeoutMs);
+    return sendBackgroundTranslationBatch(payload, timeoutMs, signal);
   }
 
   function message(key, params) {
@@ -940,6 +1086,7 @@
       source: FRAME_MESSAGE_SOURCE,
       action,
       messageId: extra.messageId || frameMessageId(),
+      frameToken: extra.frameToken || state.parentFrameToken || state.frameSessionToken,
       targetLanguage: extra.targetLanguage || state.settings.targetLanguage,
       generation: extra.generation ?? state.generation,
       pageUrl: extra.pageUrl || location.href,
@@ -1015,6 +1162,7 @@
         source: FRAME_MESSAGE_SOURCE,
         action: "frameResult",
         messageId: state.latestFrameCommand ? state.latestFrameCommand.messageId : "",
+        frameToken: state.latestFrameCommand ? state.latestFrameCommand.frameToken : "",
         kind,
         applied: result.applied || 0,
         failed: result.failed || 0
@@ -1060,6 +1208,7 @@
 
   function handleFrameResult(data) {
     if (!isTopFrame || !data || data.action !== "frameResult") return;
+    if (data.frameToken !== state.frameSessionToken) return;
     const aggregate = data.messageId ? state.frameAggregates.get(data.messageId) : null;
     if (aggregate) {
       aggregate.received += 1;
@@ -1096,8 +1245,26 @@
     return false;
   }
 
-  async function handleFrameCommand(data) {
+  function isKnownChildFrameSource(source) {
+    if (!source) return false;
+    for (const frame of document.querySelectorAll("iframe")) {
+      if (frame.contentWindow === source) return true;
+    }
+    return false;
+  }
+
+  function isTrustedParentFrameCommand(event, data) {
+    if (isTopFrame || !event || event.source !== window.parent) return false;
+    if (!data || !["translate", "restore"].includes(data.action)) return false;
+    if (!data.frameToken) return false;
+    if (state.parentFrameToken && data.frameToken !== state.parentFrameToken) return false;
+    state.parentFrameToken = data.frameToken;
+    return true;
+  }
+
+  async function handleFrameCommand(event, data) {
     if (isTopFrame || !data || data.source !== FRAME_MESSAGE_SOURCE) return;
+    if (!isTrustedParentFrameCommand(event, data)) return;
     if (rememberHandledFrameMessage(data.messageId)) return;
     if (data.targetLanguage) {
       state.settings.targetLanguage = data.targetLanguage;
@@ -1107,6 +1274,7 @@
     if (data.action === "translate") {
       postToChildFrames("translate", {
         messageId: data.messageId,
+        frameToken: data.frameToken,
         targetLanguage: state.settings.targetLanguage,
         generation: data.generation,
         remember: true
@@ -1118,6 +1286,7 @@
     if (data.action === "restore") {
       postToChildFrames("restore", {
         messageId: data.messageId,
+        frameToken: data.frameToken,
         targetLanguage: state.settings.targetLanguage,
         generation: data.generation,
         remember: true
@@ -1133,11 +1302,12 @@
       const data = event.data || {};
       if (data.source !== FRAME_MESSAGE_SOURCE) return;
       if (data.action === "frameReady") {
+        if (!isKnownChildFrameSource(event.source)) return;
         dispatchPendingFrameCommand(event.source);
         return;
       }
       handleFrameResult(data);
-      handleFrameCommand(data);
+      handleFrameCommand(event, data);
     });
   }
 
@@ -1735,7 +1905,7 @@
             <button type="button" class="primary" data-translate>${message("action.translate")}</button>
             <button type="button" data-restore>${message("action.restore")}</button>
           </div>
-          <div class="status" data-status>${message("status.ready")}</div>
+          <div class="status" data-status role="status" aria-live="polite" aria-atomic="true">${message("status.ready")}</div>
         </div>
       </section>
     `;
@@ -2307,6 +2477,8 @@
   }
 
   async function translateCandidatePass({ generation, targetLanguage, pageUrl, glossary, childFrameCount = 0 }) {
+    const signal = currentAbortSignal(generation);
+    throwIfAborted(signal);
     const candidates = collectCandidates();
     const reachedLimit = candidates.length >= (C.LIMITS.maxTextNodesPerPass || 120);
     if (candidates.length === 0) {
@@ -2378,7 +2550,8 @@
                 cacheScope: baseScope,
                 cacheEpoch: state.cacheEpoch
               },
-              90000
+              90000,
+              signal
             ),
             generation,
             targetLanguage,
@@ -2877,12 +3050,14 @@
     window.addEventListener("resize", () => schedulePanelPlacement());
     window.addEventListener("scroll", () => schedulePanelPlacement(120), { passive: true });
     window.addEventListener("pagehide", () => {
+      state.abortController?.abort();
       state.observer?.disconnect();
       clearFrameAggregates();
       window.clearTimeout(state.debounceTimer);
       window.clearTimeout(state.translationQueue.timer);
       window.clearTimeout(state.placementTimer);
       window.clearTimeout(state.mutationScanTimer);
+      window.clearTimeout(state.dangerActionTimer);
       state.pendingMutationScanNodes.clear();
       if (state.placementFrame) {
         window.cancelAnimationFrame(state.placementFrame);

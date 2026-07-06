@@ -4,6 +4,7 @@ const { dirname, join } = require("node:path");
 const ROOT = join(__dirname, "..");
 const OUT = join(ROOT, "dist", "academy-lens.zip");
 const INPUTS = ["manifest.json", "assets", "src", "README.md", "PRIVACY_POLICY.md", "LICENSE"];
+const DEFAULT_ZIP_TIMESTAMP = new Date(Date.UTC(2026, 0, 1, 0, 0, 0));
 
 function crc32(buffer) {
   let crc = ~0;
@@ -16,10 +17,16 @@ function crc32(buffer) {
   return ~crc >>> 0;
 }
 
-function dosDateTime(date = new Date()) {
-  const year = Math.max(1980, date.getFullYear());
-  const time = (date.getHours() << 11) | (date.getMinutes() << 5) | Math.floor(date.getSeconds() / 2);
-  const day = ((year - 1980) << 9) | ((date.getMonth() + 1) << 5) | date.getDate();
+function zipTimestampDate() {
+  const epoch = Number(process.env.SOURCE_DATE_EPOCH);
+  if (Number.isFinite(epoch) && epoch > 0) return new Date(epoch * 1000);
+  return DEFAULT_ZIP_TIMESTAMP;
+}
+
+function dosDateTime(date = zipTimestampDate()) {
+  const year = Math.max(1980, date.getUTCFullYear());
+  const time = (date.getUTCHours() << 11) | (date.getUTCMinutes() << 5) | Math.floor(date.getUTCSeconds() / 2);
+  const day = ((year - 1980) << 9) | ((date.getUTCMonth() + 1) << 5) | date.getUTCDate();
   return { day, time };
 }
 
@@ -121,7 +128,7 @@ function endOfCentralDirectory(entryCount, centralSize, centralOffset) {
 }
 
 function buildZip() {
-  const timestamp = dosDateTime();
+  const timestamp = dosDateTime(zipTimestampDate());
   const locals = [];
   const centrals = [];
   let offset = 0;
@@ -153,5 +160,7 @@ if (require.main === module) {
 
 module.exports = {
   buildZip,
-  collectEntries
+  collectEntries,
+  dosDateTime,
+  zipTimestampDate
 };

@@ -19,6 +19,7 @@ function response(status, translated) {
 function loadBackground(fetchImpl, options = {}) {
   const listeners = [];
   const storage = {};
+  let storageSetCalls = 0;
   const context = {
     AbortController,
     URL,
@@ -37,6 +38,10 @@ function loadBackground(fetchImpl, options = {}) {
           },
           async set(values) {
             if (options.failStorageSet) throw new Error("storage unavailable");
+            storageSetCalls += 1;
+            if (options.delayFirstStorageSetMs && storageSetCalls === 1) {
+              await new Promise((resolve) => setTimeout(resolve, options.delayFirstStorageSetMs));
+            }
             Object.assign(storage, values);
           }
         }
@@ -212,6 +217,56 @@ test("background translation merges concurrent cache writes", async () => {
     .map((entry) => entry.original)
     .sort();
   assert.deepEqual(originals, ["First text", "Second text"]);
+});
+
+test("background cache persistence message serializes concurrent content writes", async () => {
+  const { send, storage } = loadBackground(async () => response(200), {
+    delayFirstStorageSetMs: 25
+  });
+
+  const first = send({
+    type: "ACADEMYLENS_PERSIST_CACHE_UPDATES",
+    expectedCacheEpoch: 0,
+    cacheUpdates: {
+      "ko:google-translate:g0:c0:first": {
+        original: "Frame one text",
+        translated: "프레임 1",
+        targetLanguage: "ko",
+        provider: "google-translate",
+        glossarySignature: "g0",
+        correctionSignature: "c0",
+        createdAt: 1,
+        accessedAt: 1
+      }
+    }
+  });
+  const second = send({
+    type: "ACADEMYLENS_PERSIST_CACHE_UPDATES",
+    expectedCacheEpoch: 0,
+    cacheUpdates: {
+      "ko:google-translate:g0:c0:second": {
+        original: "Frame two text",
+        translated: "프레임 2",
+        targetLanguage: "ko",
+        provider: "google-translate",
+        glossarySignature: "g0",
+        correctionSignature: "c0",
+        createdAt: 2,
+        accessedAt: 2
+      }
+    }
+  });
+
+  const results = await Promise.all([first, second]);
+  assert.deepEqual(
+    results.map((result) => result.persisted),
+    [true, true]
+  );
+
+  const originals = Object.values(storage["academylens.translationCache.v1"])
+    .map((entry) => entry.original)
+    .sort();
+  assert.deepEqual(originals, ["Frame one text", "Frame two text"]);
 });
 
 test("background translation returns fetched translations when cache persistence fails", async () => {

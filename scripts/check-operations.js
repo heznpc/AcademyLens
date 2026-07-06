@@ -16,6 +16,7 @@ const REQUIRED_OPERATION_DOCS = [
   "docs/GLOSSARY_STATUS.md",
   "docs/RELEASE_CHECKLIST.md",
   "docs/QUALITY_ROADMAP.md",
+  "docs/TRUST_EVIDENCE.md",
   "TESTING.md"
 ];
 const REQUIRED_SURFACES = [
@@ -97,6 +98,22 @@ assertContains("PRIVACY_POLICY.md", /translate\.googleapis\.com/, "Privacy polic
 assertContains("PRIVACY_POLICY.md", /local translation cache/i, "Privacy policy must describe local cache");
 assertContains("docs/OPERATIONS.md", /npm run release:preflight/, "Operations doc must document release preflight");
 assertContains("docs/OPERATIONS.md", /LIVE_QA_MANIFEST\.json/, "Operations doc must reference live QA manifest");
+assertContains("docs/OPERATIONS.md", /TRUST_EVIDENCE\.md/, "Operations doc must reference trust evidence");
+assertContains(
+  "docs/TRUST_EVIDENCE.md",
+  /Unofficial, not affiliated with OpenAI\./,
+  "Trust evidence must keep unofficial disclaimer"
+);
+assertContains(
+  "docs/TRUST_EVIDENCE.md",
+  /translate\.googleapis\.com/,
+  "Trust evidence must describe Google Translate fallback"
+);
+assertContains(
+  "docs/TRUST_EVIDENCE.md",
+  /Browser-native Translator API/i,
+  "Trust evidence must describe browser-native provider"
+);
 assertContains(
   ".github/PULL_REQUEST_TEMPLATE.md",
   /npm run release:preflight/,
