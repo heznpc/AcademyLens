@@ -1,3 +1,4 @@
+const { createHash } = require("node:crypto");
 const { existsSync, readdirSync, readFileSync, statSync } = require("node:fs");
 const { execFileSync } = require("node:child_process");
 const { dirname, join } = require("node:path");
@@ -64,6 +65,11 @@ const REQUIRED_GITIGNORE_PATTERNS = [
   "*.webm"
 ];
 const REQUIRED_PREMIUM_LOCALES = PREMIUM_LOCALE_RECORDS.map((record) => record.locale);
+const REQUIRED_EXTENSION_PERMISSIONS = ["storage"];
+const REQUIRED_HOST_PERMISSIONS = ["https://academy.openai.com/*", "https://translate.googleapis.com/*"];
+const REQUIRED_CONTENT_SCRIPT_MATCHES = ["https://academy.openai.com/*"];
+const REQUIRED_WEB_ACCESSIBLE_RESOURCES = ["src/data/*.json", "assets/icons/*"];
+const REQUIRED_WEB_ACCESSIBLE_MATCHES = ["https://academy.openai.com/*"];
 const REQUIRED_OPEN_SOURCE_FILES = [
   "LICENSE",
   "CONTRIBUTING.md",
@@ -78,6 +84,7 @@ const REQUIRED_OPEN_SOURCE_FILES = [
   ".github/ISSUE_TEMPLATE/security_disclosure_request.yml",
   ".github/ISSUE_TEMPLATE/config.yml",
   ".github/workflows/ci.yml",
+  ".github/workflows/codeql.yml",
   ".github/dependabot.yml"
 ];
 const REQUIRED_ZIP_ENTRIES = [
@@ -101,6 +108,11 @@ function assert(condition, message) {
 
 function assertFile(path) {
   assert(existsSync(join(ROOT, path)), `Missing file referenced by manifest/package: ${path}`);
+}
+
+function assertExactArray(actual, expected, message) {
+  assert(Array.isArray(actual), `${message} must be an array`);
+  assert(JSON.stringify(actual) === JSON.stringify(expected), `${message} must be ${JSON.stringify(expected)}`);
 }
 
 function listFiles(dir, predicate) {
@@ -155,6 +167,13 @@ assert(manifest.manifest_version === 3, "Manifest must be MV3");
 assert(manifest.name.includes("Unofficial"), "Manifest name must keep unofficial notice");
 assert(/not affiliated with OpenAI/i.test(manifest.description), "Manifest description must disclose non-affiliation");
 assert(!JSON.stringify(manifest).includes("js.puter.com"), "Manifest must not reference remote Puter.js");
+assertExactArray(manifest.permissions, REQUIRED_EXTENSION_PERMISSIONS, "Manifest permissions");
+assertExactArray(manifest.host_permissions, REQUIRED_HOST_PERMISSIONS, "Manifest host_permissions");
+assert(
+  manifest.content_security_policy &&
+    manifest.content_security_policy.extension_pages === "script-src 'self'; object-src 'self';",
+  "Manifest extension CSP must only allow self scripts and objects"
+);
 
 for (const size of ["16", "48", "128"]) {
   assertFile(manifest.icons[size]);
@@ -164,10 +183,17 @@ assertFile(manifest.action.default_popup);
 assertFile(manifest.background.service_worker);
 
 for (const contentScript of manifest.content_scripts || []) {
+  assertExactArray(contentScript.matches, REQUIRED_CONTENT_SCRIPT_MATCHES, "Content script matches");
   for (const js of contentScript.js || []) assertFile(js);
   for (const css of contentScript.css || []) assertFile(css);
 }
+assert(
+  Array.isArray(manifest.web_accessible_resources) && manifest.web_accessible_resources.length === 1,
+  "Manifest must keep one narrow web_accessible_resources entry"
+);
 for (const resource of manifest.web_accessible_resources || []) {
+  assertExactArray(resource.resources, REQUIRED_WEB_ACCESSIBLE_RESOURCES, "web_accessible_resources.resources");
+  assertExactArray(resource.matches, REQUIRED_WEB_ACCESSIBLE_MATCHES, "web_accessible_resources.matches");
   for (const item of resource.resources || []) {
     if (item.endsWith("/*")) {
       assert(existsSync(join(ROOT, item.slice(0, -2))), `Missing resource directory: ${item}`);
@@ -272,6 +298,11 @@ const zipPath = join(ROOT, "dist", "academy-lens.zip");
 if (existsSync(zipPath)) {
   assert(statSync(zipPath).size > 1000, "Build zip exists but looks too small");
   const zipSource = readFileSync(zipPath);
+  const checksumPath = `${zipPath}.sha256`;
+  assert(existsSync(checksumPath), "Build zip checksum must exist beside the zip");
+  const digest = createHash("sha256").update(zipSource).digest("hex");
+  const checksumSource = readFileSync(checksumPath, "utf8").trim();
+  assert(checksumSource === `${digest}  academy-lens.zip`, "Build zip checksum must match dist/academy-lens.zip");
   for (const entry of REQUIRED_ZIP_ENTRIES) {
     assert(zipSource.includes(Buffer.from(entry)), `Build zip is missing required entry: ${entry}`);
   }

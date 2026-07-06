@@ -20,6 +20,21 @@ npm run release:preflight
 
 `npm run check:full` is the product correctness gate. `npm run release:preflight` is the heavier operations gate: it runs the full product gate, generates local store screenshot drafts, and re-checks operations metadata.
 
+## Security Operations
+
+GitHub repository security should keep vulnerability alerts, Dependabot security updates, secret scanning, and push protection enabled.
+
+The CI workflow uses read-only repository permissions and disables checkout credential persistence. The CodeQL workflow analyzes JavaScript on pull requests, pushes to `main`, and a weekly schedule with `security-events: write` scoped only for SARIF upload.
+
+Release zip builds write both:
+
+```text
+dist/academy-lens.zip
+dist/academy-lens.zip.sha256
+```
+
+Keep `academy-lens.zip.sha256` beside every zip used for public release review.
+
 ## Live Academy DOM QA
 
 The required live QA surface list lives in [LIVE_QA_MANIFEST.json](LIVE_QA_MANIFEST.json). Treat it as the release checklist source of truth.
