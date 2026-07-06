@@ -1,8 +1,10 @@
+const { createHash } = require("node:crypto");
 const { mkdirSync, readdirSync, readFileSync, writeFileSync } = require("node:fs");
-const { dirname, join } = require("node:path");
+const { basename, dirname, join } = require("node:path");
 
 const ROOT = join(__dirname, "..");
 const OUT = join(ROOT, "dist", "academy-lens.zip");
+const CHECKSUM_OUT = `${OUT}.sha256`;
 const INPUTS = ["manifest.json", "assets", "src", "README.md", "PRIVACY_POLICY.md", "LICENSE"];
 const DEFAULT_ZIP_TIMESTAMP = new Date(Date.UTC(2026, 0, 1, 0, 0, 0));
 
@@ -127,6 +129,14 @@ function endOfCentralDirectory(entryCount, centralSize, centralOffset) {
   ]);
 }
 
+function sha256Hex(buffer) {
+  return createHash("sha256").update(buffer).digest("hex");
+}
+
+function checksumLine(path, digest) {
+  return `${digest}  ${basename(path)}\n`;
+}
+
 function buildZip() {
   const timestamp = dosDateTime(zipTimestampDate());
   const locals = [];
@@ -151,7 +161,10 @@ function buildZip() {
   ]);
   mkdirSync(dirname(OUT), { recursive: true });
   writeFileSync(OUT, zip);
+  const digest = sha256Hex(zip);
+  writeFileSync(CHECKSUM_OUT, checksumLine(OUT, digest));
   console.log(`wrote ${OUT} (${centrals.length} files)`);
+  console.log(`wrote ${CHECKSUM_OUT} (${digest})`);
 }
 
 if (require.main === module) {
@@ -160,7 +173,9 @@ if (require.main === module) {
 
 module.exports = {
   buildZip,
+  checksumLine,
   collectEntries,
   dosDateTime,
+  sha256Hex,
   zipTimestampDate
 };

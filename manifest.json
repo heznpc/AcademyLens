@@ -9,6 +9,9 @@
   "homepage_url": "https://github.com/heznpc/AcademyLens",
   "permissions": ["storage"],
   "host_permissions": ["https://academy.openai.com/*", "https://translate.googleapis.com/*"],
+  "content_security_policy": {
+    "extension_pages": "script-src 'self'; object-src 'self';"
+  },
   "action": {
     "default_popup": "src/popup/popup.html",
     "default_icon": {

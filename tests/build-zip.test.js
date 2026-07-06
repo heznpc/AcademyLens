@@ -1,6 +1,6 @@
 const assert = require("node:assert/strict");
 const test = require("node:test");
-const { dosDateTime, zipTimestampDate } = require("../scripts/build-zip.js");
+const { checksumLine, dosDateTime, sha256Hex, zipTimestampDate } = require("../scripts/build-zip.js");
 
 test("zip timestamp defaults to a deterministic value", () => {
   const previous = process.env.SOURCE_DATE_EPOCH;
@@ -28,4 +28,11 @@ test("zip timestamp respects SOURCE_DATE_EPOCH", () => {
     if (previous === undefined) delete process.env.SOURCE_DATE_EPOCH;
     else process.env.SOURCE_DATE_EPOCH = previous;
   }
+});
+
+test("zip checksum sidecar uses sha256 and zip basename", () => {
+  const digest = sha256Hex(Buffer.from("academy-lens"));
+
+  assert.match(digest, /^[a-f0-9]{64}$/);
+  assert.equal(checksumLine("dist/academy-lens.zip", digest), `${digest}  academy-lens.zip\n`);
 });

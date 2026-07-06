@@ -222,7 +222,38 @@ test("CI runs the release preflight gate", () => {
   const pkg = JSON.parse(read("package.json"));
 
   assert.match(ci, /npm run release:preflight/);
+  assert.match(ci, /actions\/checkout@v7[\s\S]*persist-credentials:\s*false/);
   assert.match(pkg.scripts["check:all"], /check:glossary-quality/);
+});
+
+test("GitHub security workflow runs CodeQL with least privilege", () => {
+  const codeql = read(".github/workflows/codeql.yml");
+
+  assert.match(codeql, /pull_request:/);
+  assert.match(codeql, /push:[\s\S]*branches: \[main\]/);
+  assert.match(codeql, /security-events:\s*write/);
+  assert.match(codeql, /contents:\s*read/);
+  assert.match(codeql, /actions\/checkout@v7[\s\S]*persist-credentials:\s*false/);
+  assert.match(codeql, /github\/codeql-action\/init@v4/);
+  assert.match(codeql, /languages:\s*javascript-typescript/);
+  assert.match(codeql, /github\/codeql-action\/analyze@v4/);
+  assert.doesNotMatch(codeql, /pull_request_target\s*:/);
+});
+
+test("extension manifest keeps a narrow permission, host, CSP, and WER surface", () => {
+  const manifest = JSON.parse(read("manifest.json"));
+
+  assert.deepEqual(manifest.permissions, ["storage"]);
+  assert.deepEqual(manifest.host_permissions, ["https://academy.openai.com/*", "https://translate.googleapis.com/*"]);
+  assert.equal(manifest.content_security_policy.extension_pages, "script-src 'self'; object-src 'self';");
+
+  for (const contentScript of manifest.content_scripts) {
+    assert.deepEqual(contentScript.matches, ["https://academy.openai.com/*"]);
+  }
+
+  assert.equal(manifest.web_accessible_resources.length, 1);
+  assert.deepEqual(manifest.web_accessible_resources[0].resources, ["src/data/*.json", "assets/icons/*"]);
+  assert.deepEqual(manifest.web_accessible_resources[0].matches, ["https://academy.openai.com/*"]);
 });
 
 test("live DOM capture reports redactions and blocks risky fixture writes", () => {

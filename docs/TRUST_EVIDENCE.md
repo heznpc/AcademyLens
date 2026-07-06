@@ -74,6 +74,19 @@ npm run check:operations
 npm run store:screenshots
 ```
 
+Security gates:
+
+- GitHub vulnerability alerts and Dependabot security updates are enabled for dependency vulnerability follow-up.
+- Secret scanning and push protection are enabled at the repository security settings layer.
+- `.github/workflows/codeql.yml` runs CodeQL JavaScript analysis on pull requests, pushes to `main`, and a weekly schedule.
+- GitHub Actions checkout steps disable persisted credentials.
+
+Release artifact evidence:
+
+- `npm run build:zip` creates `dist/academy-lens.zip`.
+- The same command writes `dist/academy-lens.zip.sha256` with a SHA-256 checksum for the zip.
+- `npm run check:files` verifies the checksum matches the built zip when the artifact exists.
+
 ## Current Known Gaps
 
 - Real logged-in Academy DOM needs periodic sanitized recapture before store submission.
