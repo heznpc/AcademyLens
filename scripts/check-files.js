@@ -4,6 +4,7 @@ const { execFileSync } = require("node:child_process");
 const { dirname, join } = require("node:path");
 const { collectEntries } = require("./build-zip.js");
 const { PREMIUM_LOCALE_RECORDS } = require("./lib/glossary-config.js");
+const { collectStringValues, isBlockedRemoteUrl } = require("./lib/url-policy.js");
 
 const ROOT = join(__dirname, "..");
 const REQUIRED_PACKAGE_SCRIPTS = [
@@ -70,6 +71,7 @@ const REQUIRED_HOST_PERMISSIONS = ["https://academy.openai.com/*", "https://tran
 const REQUIRED_CONTENT_SCRIPT_MATCHES = ["https://academy.openai.com/*"];
 const REQUIRED_WEB_ACCESSIBLE_RESOURCES = ["src/data/*.json", "assets/icons/*"];
 const REQUIRED_WEB_ACCESSIBLE_MATCHES = ["https://academy.openai.com/*"];
+const BLOCKED_REMOTE_RUNTIME_HOSTS = new Set(["js.puter.com"]);
 const REQUIRED_OPEN_SOURCE_FILES = [
   "LICENSE",
   "CONTRIBUTING.md",
@@ -166,7 +168,13 @@ const manifest = readJson("manifest.json");
 assert(manifest.manifest_version === 3, "Manifest must be MV3");
 assert(manifest.name.includes("Unofficial"), "Manifest name must keep unofficial notice");
 assert(/not affiliated with OpenAI/i.test(manifest.description), "Manifest description must disclose non-affiliation");
-assert(!JSON.stringify(manifest).includes("js.puter.com"), "Manifest must not reference remote Puter.js");
+const blockedManifestUrls = collectStringValues(manifest).filter((value) =>
+  isBlockedRemoteUrl(value, BLOCKED_REMOTE_RUNTIME_HOSTS)
+);
+assert(
+  blockedManifestUrls.length === 0,
+  `Manifest must not reference blocked remote runtime hosts: ${blockedManifestUrls.join(", ")}`
+);
 assertExactArray(manifest.permissions, REQUIRED_EXTENSION_PERMISSIONS, "Manifest permissions");
 assertExactArray(manifest.host_permissions, REQUIRED_HOST_PERMISSIONS, "Manifest host_permissions");
 assert(
