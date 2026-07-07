@@ -7,7 +7,8 @@ try {
 const { MESSAGE_TYPES, STORAGE_KEYS, DEFAULT_SETTINGS, LIMITS } = self.AcademyLensConstants || {
   MESSAGE_TYPES: {
     TRANSLATE_BATCH: "ACADEMYLENS_TRANSLATE_BATCH",
-    PERSIST_CACHE_UPDATES: "ACADEMYLENS_PERSIST_CACHE_UPDATES"
+    PERSIST_CACHE_UPDATES: "ACADEMYLENS_PERSIST_CACHE_UPDATES",
+    CLEAR_CACHE: "ACADEMYLENS_CLEAR_CACHE"
   },
   STORAGE_KEYS: {
     CACHE: "academylens.translationCache.v1",
@@ -253,6 +254,18 @@ async function persistCacheUpdates(message) {
   return mergeCacheUpdates(message.cacheUpdates || {}, message.expectedCacheEpoch);
 }
 
+async function clearTranslationCache() {
+  return withCacheWriteLock(async () => {
+    const stored = await getLocal([STORAGE_KEYS.CACHE_EPOCH]);
+    const nextEpoch = cacheEpochValue(stored[STORAGE_KEYS.CACHE_EPOCH]) + 1;
+    await setLocal({
+      [STORAGE_KEYS.CACHE]: {},
+      [STORAGE_KEYS.CACHE_EPOCH]: nextEpoch
+    });
+    return { cleared: true, cacheEpoch: nextEpoch };
+  });
+}
+
 chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
   if (!message) return false;
 
@@ -261,6 +274,16 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
       .then(sendResponse)
       .catch((error) => {
         sendResponse({ persisted: false, error: error.message || String(error) });
+      });
+
+    return true;
+  }
+
+  if (message.type === MESSAGE_TYPES.CLEAR_CACHE) {
+    clearTranslationCache()
+      .then(sendResponse)
+      .catch((error) => {
+        sendResponse({ cleared: false, error: error.message || String(error) });
       });
 
     return true;

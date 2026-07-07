@@ -153,6 +153,7 @@ test("content cache scope tracks provider and glossary while cache clears invali
 
   assert.match(constants, /CACHE_EPOCH: "academylens\.translationCacheEpoch\.v1"/);
   assert.match(constants, /PERSIST_CACHE_UPDATES: "ACADEMYLENS_PERSIST_CACHE_UPDATES"/);
+  assert.match(constants, /CLEAR_CACHE: "ACADEMYLENS_CLEAR_CACHE"/);
   assert.match(cache, /function normalizeScope/);
   assert.match(cache, /function entryMatches/);
   assert.match(source, /function glossarySignature/);
@@ -162,9 +163,12 @@ test("content cache scope tracks provider and glossary while cache clears invali
   assert.match(source, /cacheEpoch: state\.cacheEpoch/);
   assert.match(source, /provider: "google-translate"/);
   assert.match(source, /type: C\.MESSAGE_TYPES\.PERSIST_CACHE_UPDATES/);
+  assert.match(source, /type: C\.MESSAGE_TYPES\.CLEAR_CACHE/);
   assert.match(background, /function googleCacheScope/);
   assert.match(background, /async function persistCacheUpdates/);
+  assert.match(background, /async function clearTranslationCache/);
   assert.match(background, /message\.type === MESSAGE_TYPES\.PERSIST_CACHE_UPDATES/);
+  assert.match(background, /message\.type === MESSAGE_TYPES\.CLEAR_CACHE/);
   assert.match(background, /expectedCacheEpoch/);
 });
 
