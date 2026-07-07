@@ -33,6 +33,7 @@
     "check:glossary-overreach": "node scripts/check-glossary-overreach.js",
     "check:files": "node scripts/check-files.js",
     "check:operations": "node scripts/check-operations.js",
+    "check:github-security": "node scripts/check-github-security.js",
     "check:all": "npm run node-check && npm run lint && npm run format:check && npm test && npm run check:manifest && npm run check:glossary && npm run check:glossary-status && npm run check:glossary-quality && npm run check:glossary-overreach && npm run build:zip && npm run check:files && npm run check:operations",
     "check:full": "npm run check:all && npm run test:e2e",
     "qa:live": "npm run capture:academy -- --url https://academy.openai.com/pages/courses --out /tmp/academylens-captured-page.html --headed",
