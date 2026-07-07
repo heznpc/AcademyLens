@@ -269,6 +269,38 @@ test("background cache persistence message serializes concurrent content writes"
   assert.deepEqual(originals, ["Frame one text", "Frame two text"]);
 });
 
+test("background cache clear serializes with pending cache writes", async () => {
+  const { send, storage } = loadBackground(async () => response(200), {
+    delayFirstStorageSetMs: 25
+  });
+
+  const persist = send({
+    type: "ACADEMYLENS_PERSIST_CACHE_UPDATES",
+    expectedCacheEpoch: 0,
+    cacheUpdates: {
+      "ko:google-translate:g0:c0:stale": {
+        original: "Stale in-flight text",
+        translated: "오래된 텍스트",
+        targetLanguage: "ko",
+        provider: "google-translate",
+        glossarySignature: "g0",
+        correctionSignature: "c0",
+        createdAt: 1,
+        accessedAt: 1
+      }
+    }
+  });
+  const clear = send({ type: "ACADEMYLENS_CLEAR_CACHE" });
+
+  const [persistResult, clearResult] = await Promise.all([persist, clear]);
+
+  assert.equal(persistResult.persisted, true);
+  assert.equal(clearResult.cleared, true);
+  assert.equal(clearResult.cacheEpoch, 1);
+  assert.equal(Object.keys(storage["academylens.translationCache.v1"]).length, 0);
+  assert.equal(storage["academylens.translationCacheEpoch.v1"], 1);
+});
+
 test("background translation returns fetched translations when cache persistence fails", async () => {
   const { send } = loadBackground(
     async (url) => {

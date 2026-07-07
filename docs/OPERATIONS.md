@@ -15,6 +15,7 @@ npm run glossary:scoreboard
 npm run check:full
 npm run store:screenshots
 npm run check:operations
+npm run check:github-security
 npm run release:preflight
 ```
 
@@ -25,6 +26,16 @@ npm run release:preflight
 GitHub repository security should keep vulnerability alerts, Dependabot security updates, secret scanning, and push protection enabled.
 
 The CI workflow uses read-only repository permissions and disables checkout credential persistence. The CodeQL workflow analyzes JavaScript on pull requests, pushes to `main`, and a weekly schedule with `security-events: write` scoped only for SARIF upload.
+
+The GitHub repository ruleset `Protect main release gate` protects the default branch with pull requests, strict required status checks, linear history, deletion protection, and non-fast-forward protection. Required checks are `verify`, `Analyze JavaScript`, and `CodeQL`.
+
+Check the live GitHub settings after repo policy changes:
+
+```bash
+npm run check:github-security
+```
+
+This command requires an authenticated `gh` CLI with repository admin access. It intentionally stays out of `release:preflight` because GitHub settings checks should not depend on CI runner credentials.
 
 Release zip builds write both:
 

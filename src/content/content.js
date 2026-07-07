@@ -91,8 +91,9 @@
     return chrome.storage.local.get(keys);
   }
 
-  function setStatus(message, tone) {
+  function setStatus(message, tone, options = {}) {
     if (!state.shadow) return;
+    if (state.pendingDangerAction && !options.allowDuringDangerAction) return;
     const status = state.shadow.querySelector("[data-status]");
     if (!status) return;
     status.textContent = message;
@@ -614,7 +615,7 @@
     updateCorrectionsManager();
   }
 
-  async function clearTranslationCache() {
+  async function clearTranslationCacheLocally() {
     const stored = await getLocal([C.STORAGE_KEYS.CACHE_EPOCH]);
     const nextEpoch = cacheEpochValue(stored[C.STORAGE_KEYS.CACHE_EPOCH]) + 1;
     state.cacheEpoch = nextEpoch;
@@ -624,6 +625,21 @@
     });
     state.lastDiagnostics = null;
     updateDiagnosticsPanel();
+  }
+
+  async function clearTranslationCache() {
+    try {
+      const response = await sendMessage({ type: C.MESSAGE_TYPES.CLEAR_CACHE }, BACKGROUND_RESPONSE_TIMEOUT_MS);
+      if (!response || !response.cleared) {
+        throw new Error((response && response.error) || "cache clear failed");
+      }
+      state.cacheEpoch = cacheEpochValue(response.cacheEpoch);
+      state.lastDiagnostics = null;
+      updateDiagnosticsPanel();
+    } catch (error) {
+      console.warn("[AcademyLens] background cache clear unavailable; trying local clear", error);
+      await clearTranslationCacheLocally();
+    }
   }
 
   function correctionEntriesForPanel() {
@@ -703,7 +719,7 @@
     resetDangerConfirmation();
     state.pendingDangerAction = action;
     if (button && confirmLabelKey) button.textContent = message(confirmLabelKey);
-    setStatus(message("status.confirmLocalDelete"));
+    setStatus(message("status.confirmLocalDelete"), undefined, { allowDuringDangerAction: true });
     state.dangerActionTimer = window.setTimeout(resetDangerConfirmation, 5000);
     return false;
   }

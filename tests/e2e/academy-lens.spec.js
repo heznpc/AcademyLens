@@ -112,6 +112,12 @@ async function panelProgress(page) {
   });
 }
 
+async function waitForTranslationFinished(page) {
+  await expect
+    .poll(async () => (await panelSnapshot(page)).status)
+    .toMatch(/텍스트 \d+개를 번역했습니다\.|Translated \d+ text blocks\./);
+}
+
 async function translationCacheSize(context) {
   let [worker] = context.serviceWorkers();
   if (!worker) {
@@ -251,6 +257,7 @@ test.describe("AcademyLens extension E2E", () => {
       await expect(harness.page.locator("#protected")).toHaveText(
         "OpenAI Academy 강의는 ChatGPT와 GPT-5를 사용합니다."
       );
+      await waitForTranslationFinished(harness.page);
       expect(harness.calls.length).toBe(firstPassCalls);
       expect(await translationCacheSize(harness.ext.context)).toBeGreaterThan(0);
 
@@ -324,6 +331,7 @@ test.describe("AcademyLens extension E2E", () => {
       await expect(harness.page.locator("#title")).toHaveText("Build practical AI skills for work");
       await clickPanelButton(harness.page, "[data-translate]");
       await expect(harness.page.locator("#title")).toHaveText("업무용 AI 실전 역량 만들기");
+      await waitForTranslationFinished(harness.page);
       await expect.poll(async () => (await panelSnapshot(harness.page)).correctionCount).toBe("(1)");
 
       await clickPanelButton(harness.page, "[data-delete-correction]");

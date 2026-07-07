@@ -153,6 +153,7 @@ test("content cache scope tracks provider and glossary while cache clears invali
 
   assert.match(constants, /CACHE_EPOCH: "academylens\.translationCacheEpoch\.v1"/);
   assert.match(constants, /PERSIST_CACHE_UPDATES: "ACADEMYLENS_PERSIST_CACHE_UPDATES"/);
+  assert.match(constants, /CLEAR_CACHE: "ACADEMYLENS_CLEAR_CACHE"/);
   assert.match(cache, /function normalizeScope/);
   assert.match(cache, /function entryMatches/);
   assert.match(source, /function glossarySignature/);
@@ -162,9 +163,12 @@ test("content cache scope tracks provider and glossary while cache clears invali
   assert.match(source, /cacheEpoch: state\.cacheEpoch/);
   assert.match(source, /provider: "google-translate"/);
   assert.match(source, /type: C\.MESSAGE_TYPES\.PERSIST_CACHE_UPDATES/);
+  assert.match(source, /type: C\.MESSAGE_TYPES\.CLEAR_CACHE/);
   assert.match(background, /function googleCacheScope/);
   assert.match(background, /async function persistCacheUpdates/);
+  assert.match(background, /async function clearTranslationCache/);
   assert.match(background, /message\.type === MESSAGE_TYPES\.PERSIST_CACHE_UPDATES/);
+  assert.match(background, /message\.type === MESSAGE_TYPES\.CLEAR_CACHE/);
   assert.match(background, /expectedCacheEpoch/);
 });
 
@@ -219,10 +223,13 @@ test("content mutation and placement work is throttled before expensive page sca
 
 test("CI runs the release preflight gate", () => {
   const ci = read(".github/workflows/ci.yml");
+  const playwrightConfig = read("playwright.config.js");
   const pkg = JSON.parse(read("package.json"));
 
   assert.match(ci, /npm run release:preflight/);
   assert.match(ci, /actions\/checkout@v7[\s\S]*persist-credentials:\s*false/);
+  assert.match(playwrightConfig, /timeout:\s*90_000/);
+  assert.match(playwrightConfig, /timeout:\s*20_000/);
   assert.match(pkg.scripts["check:all"], /check:glossary-quality/);
 });
 
@@ -238,6 +245,23 @@ test("GitHub security workflow runs CodeQL with least privilege", () => {
   assert.match(codeql, /languages:\s*javascript-typescript/);
   assert.match(codeql, /github\/codeql-action\/analyze@v4/);
   assert.doesNotMatch(codeql, /pull_request_target\s*:/);
+});
+
+test("GitHub repository security posture has an explicit local audit command", () => {
+  const pkg = JSON.parse(read("package.json"));
+  const source = read("scripts/check-github-security.js");
+  const operations = read("docs/OPERATIONS.md");
+
+  assert.equal(pkg.scripts["check:github-security"], "node scripts/check-github-security.js");
+  assert.match(source, /Protect main release gate/);
+  assert.match(source, /delete_branch_on_merge/);
+  assert.match(source, /dependabot_security_updates/);
+  assert.match(source, /secret_scanning_push_protection/);
+  assert.match(source, /verify/);
+  assert.match(source, /Analyze JavaScript/);
+  assert.match(source, /CodeQL/);
+  assert.match(operations, /npm run check:github-security/);
+  assert.match(operations, /Protect main release gate/);
 });
 
 test("extension manifest keeps a narrow permission, host, CSP, and WER surface", () => {

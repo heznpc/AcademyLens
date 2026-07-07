@@ -26,6 +26,7 @@ const REQUIRED_PACKAGE_SCRIPTS = [
   "check:glossary-overreach",
   "check:files",
   "check:operations",
+  "check:github-security",
   "check:all",
   "build:zip",
   "check:full",
