@@ -91,8 +91,9 @@
     return chrome.storage.local.get(keys);
   }
 
-  function setStatus(message, tone) {
+  function setStatus(message, tone, options = {}) {
     if (!state.shadow) return;
+    if (state.pendingDangerAction && !options.allowDuringDangerAction) return;
     const status = state.shadow.querySelector("[data-status]");
     if (!status) return;
     status.textContent = message;
@@ -718,7 +719,7 @@
     resetDangerConfirmation();
     state.pendingDangerAction = action;
     if (button && confirmLabelKey) button.textContent = message(confirmLabelKey);
-    setStatus(message("status.confirmLocalDelete"));
+    setStatus(message("status.confirmLocalDelete"), undefined, { allowDuringDangerAction: true });
     state.dangerActionTimer = window.setTimeout(resetDangerConfirmation, 5000);
     return false;
   }
