@@ -21,6 +21,7 @@ test("content scripts load in dependency order", () => {
     "src/lib/glossary.js",
     "src/lib/text-utils.js",
     "src/content/dom-translation-runtime.js",
+    "src/content/frame-messenger.js",
     "src/content/panel-view.js",
     "src/content/content.js"
   ]);

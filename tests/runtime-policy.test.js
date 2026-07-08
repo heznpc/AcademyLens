@@ -132,6 +132,7 @@ test("content translation uses a queue for manual, auto, and frame requests", ()
 test("content supports local corrections, frame aggregation, viewport priority, and inline tokens", () => {
   const source = read("src/content/content.js");
   const domRuntime = read("src/content/dom-translation-runtime.js");
+  const frameMessenger = read("src/content/frame-messenger.js");
   const constants = read("src/lib/constants.js");
 
   assert.match(constants, /CORRECTIONS: "academylens\.localCorrections\.v1"/);
@@ -140,10 +141,10 @@ test("content supports local corrections, frame aggregation, viewport priority, 
   assert.match(source, /function refreshCorrectionRecords/);
   assert.match(source, /function updateCorrectionsManager/);
   assert.match(source, /function correctionFor/);
-  assert.match(source, /function startFrameAggregate/);
-  assert.match(source, /cleanupTimer/);
-  assert.match(source, /status\.translatedWithFrames/);
-  assert.match(source, /status\.frameFailed/);
+  assert.match(frameMessenger, /function startAggregate/);
+  assert.match(frameMessenger, /cleanupTimer/);
+  assert.match(frameMessenger, /status\.translatedWithFrames/);
+  assert.match(frameMessenger, /status\.frameFailed/);
   assert.match(domRuntime, /function sortCandidatesByViewport/);
   assert.match(domRuntime, /function prepareInlinePlaceholders/);
   assert.match(source, /function candidateContextKey/);
@@ -195,16 +196,17 @@ test("content fallback only retries texts missed by browser-native translation",
 
 test("frame commands are scoped to the current route before redispatch", () => {
   const source = read("src/content/content.js");
+  const frameMessenger = read("src/content/frame-messenger.js");
 
   assert.match(source, /routeVersion/);
-  assert.match(source, /pageUrl: extra\.pageUrl \|\| location\.href/);
-  assert.match(source, /frameToken: extra\.frameToken/);
-  assert.match(source, /function isTrustedParentFrameCommand/);
-  assert.match(source, /event\.source !== window\.parent/);
-  assert.match(source, /data\.frameToken !== state\.frameSessionToken/);
-  assert.match(source, /function isKnownChildFrameSource/);
-  assert.match(source, /function isPendingFrameCommandCurrent/);
-  assert.match(source, /function clearFrameAggregates/);
+  assert.match(frameMessenger, /pageUrl: extra\.pageUrl \|\| getPageUrl\(\)/);
+  assert.match(frameMessenger, /frameToken: extra\.frameToken/);
+  assert.match(frameMessenger, /function isTrustedParentCommand/);
+  assert.match(frameMessenger, /event\.source !== view\.parent/);
+  assert.match(frameMessenger, /data\.frameToken !== frameSessionToken/);
+  assert.match(frameMessenger, /function isKnownChildFrameSource/);
+  assert.match(frameMessenger, /function isPendingCommandCurrent/);
+  assert.match(frameMessenger, /function clearAggregates/);
 });
 
 test("panel status is exposed as an accessible live region", () => {
