@@ -6,6 +6,9 @@
   const BrowserTranslator = globalThis.AcademyLensBrowserTranslator;
   const GoogleTranslate = globalThis.AcademyLensGoogleTranslate;
   const Glossary = globalThis.AcademyLensGlossary;
+  const DomTranslationRuntime = globalThis.AcademyLensDomTranslationRuntime;
+  const PanelView = globalThis.AcademyLensPanelView;
+  const RemoteGoogleTranslator = globalThis.AcademyLensRemoteGoogleTranslator;
   const Text = globalThis.AcademyLensTextUtils;
   const uiLocale = C && C.getUiLocale ? C.getUiLocale(navigator.language) : "en";
   const FRAME_MESSAGE_SOURCE = "AcademyLens";
@@ -19,7 +22,7 @@
   const RETRYABLE_TRANSLATE_STATUS = new Set([408, 425, 429, 500, 502, 503, 504]);
   const isTopFrame = window.top === window;
 
-  if (!C || !Glossary || !Text || !C.isAcademyUrl(location.href)) return;
+  if (!C || !DomTranslationRuntime || !Glossary || !PanelView || !Text || !C.isAcademyUrl(location.href)) return;
 
   const state = {
     settings: { ...C.DEFAULT_SETTINGS },
@@ -27,8 +30,6 @@
     glossaries: new Map(),
     panel: null,
     shadow: null,
-    replacements: [],
-    nodeRecords: new WeakMap(),
     lastUrl: location.href,
     generation: 0,
     observer: null,
@@ -65,9 +66,31 @@
     pendingDangerAction: "",
     dangerActionTimer: 0
   };
-  const contentFallbackInFlight = new Map();
-  const contentFallbackFetchQueue = [];
-  let activeContentFallbackFetches = 0;
+  const contentFallbackTranslator =
+    RemoteGoogleTranslator && RemoteGoogleTranslator.create && Cache && GoogleTranslate && typeof fetch === "function"
+      ? RemoteGoogleTranslator.create({
+          Cache,
+          GoogleTranslate,
+          fetchImpl: (url, options) => fetch(url, options),
+          setTimeoutImpl: window.setTimeout.bind(window),
+          clearTimeoutImpl: window.clearTimeout.bind(window),
+          retryableStatus: RETRYABLE_TRANSLATE_STATUS,
+          timeoutMs: CONTENT_FALLBACK_FETCH_TIMEOUT_MS,
+          maxRetries: CONTENT_FALLBACK_MAX_RETRIES,
+          baseBackoffMs: CONTENT_FALLBACK_BASE_BACKOFF_MS,
+          maxConcurrent: CONTENT_FALLBACK_MAX_CONCURRENT_FETCHES,
+          createAbortError: abortError
+        })
+      : null;
+  const domTranslation = DomTranslationRuntime.create({
+    document,
+    window,
+    Text,
+    limits: C.LIMITS,
+    getTargetLanguage: () => state.settings.targetLanguage,
+    getPanelElement: () => state.panel,
+    suppressMutationReactions
+  });
 
   function frameMessageId() {
     return `${Date.now().toString(36)}-${Math.random().toString(36).slice(2)}`;
@@ -353,111 +376,9 @@
     return new Promise((resolve) => window.setTimeout(resolve, ms));
   }
 
-  function drainContentFallbackFetchQueue() {
-    while (
-      activeContentFallbackFetches < CONTENT_FALLBACK_MAX_CONCURRENT_FETCHES &&
-      contentFallbackFetchQueue.length > 0
-    ) {
-      const next = contentFallbackFetchQueue.shift();
-      next();
-    }
-  }
-
-  function runWithContentFallbackFetchLimit(task, signal) {
-    return new Promise((resolve, reject) => {
-      if (signal && signal.aborted) {
-        reject(abortError());
-        return;
-      }
-
-      let queued = false;
-      const run = () => {
-        queued = false;
-        if (signal && signal.aborted) {
-          reject(abortError());
-          return;
-        }
-        activeContentFallbackFetches += 1;
-        Promise.resolve()
-          .then(task)
-          .then(resolve, reject)
-          .finally(() => {
-            activeContentFallbackFetches -= 1;
-            drainContentFallbackFetchQueue();
-          });
-      };
-
-      if (activeContentFallbackFetches < CONTENT_FALLBACK_MAX_CONCURRENT_FETCHES) {
-        run();
-      } else {
-        queued = true;
-        contentFallbackFetchQueue.push(run);
-        if (signal) {
-          signal.addEventListener(
-            "abort",
-            () => {
-              if (!queued) return;
-              const index = contentFallbackFetchQueue.indexOf(run);
-              if (index >= 0) contentFallbackFetchQueue.splice(index, 1);
-              queued = false;
-              reject(abortError());
-            },
-            { once: true }
-          );
-        }
-      }
-    });
-  }
-
-  async function fetchContentTranslationWithRetry(text, targetLanguage, signal) {
-    let lastError = null;
-
-    for (let attempt = 0; attempt <= CONTENT_FALLBACK_MAX_RETRIES; attempt += 1) {
-      throwIfAborted(signal);
-      const controller = new AbortController();
-      const abort = () => controller.abort();
-      if (signal) signal.addEventListener("abort", abort, { once: true });
-      const timeoutId = window.setTimeout(() => controller.abort(), CONTENT_FALLBACK_FETCH_TIMEOUT_MS);
-
-      try {
-        const response = await fetch(GoogleTranslate.buildGoogleTranslateUrl(text, targetLanguage), {
-          signal: controller.signal
-        });
-        if (response.ok) return response;
-
-        lastError = new Error(`Google Translate request failed with ${response.status}`);
-        lastError.retryable = RETRYABLE_TRANSLATE_STATUS.has(response.status);
-        if (!lastError.retryable || attempt === CONTENT_FALLBACK_MAX_RETRIES) throw lastError;
-      } catch (error) {
-        lastError = error;
-        if (error.retryable === false || attempt === CONTENT_FALLBACK_MAX_RETRIES) throw error;
-      } finally {
-        window.clearTimeout(timeoutId);
-        if (signal) signal.removeEventListener("abort", abort);
-      }
-
-      throwIfAborted(signal);
-      const jitter = Math.floor(Math.random() * 120);
-      await sleep(CONTENT_FALLBACK_BASE_BACKOFF_MS * 2 ** attempt + jitter);
-    }
-
-    throw lastError || new Error("Google Translate request failed");
-  }
-
-  function translateTextInContent(text, targetLanguage, signal) {
-    const key = Cache.cacheKey(targetLanguage, text);
-    const existing = contentFallbackInFlight.get(key);
-    if (existing) return existing;
-
-    const promise = runWithContentFallbackFetchLimit(async () => {
-      const response = await fetchContentTranslationWithRetry(text, targetLanguage, signal);
-      return GoogleTranslate.parseGoogleTranslatePayload(await response.json());
-    }, signal).finally(() => {
-      contentFallbackInFlight.delete(key);
-    });
-
-    contentFallbackInFlight.set(key, promise);
-    return promise;
+  function translateTextInContent(text, targetLanguage, scope, signal) {
+    if (!contentFallbackTranslator) throw new Error(message("status.failed"));
+    return contentFallbackTranslator.translateText(text, targetLanguage, scope, signal);
   }
 
   async function persistContentCacheLocally(cacheUpdates, expectedEpoch = state.cacheEpoch) {
@@ -811,7 +732,7 @@
 
         stats.cacheMisses += 1;
         try {
-          const result = await translateTextInContent(text, targetLanguage, signal);
+          const result = await translateTextInContent(text, targetLanguage, scope, signal);
           throwIfAborted(signal);
           translated[text] = result;
           cacheUpdates[key] = {
@@ -1488,443 +1409,14 @@
     host.setAttribute("aria-label", message("panel.aria"));
     const shadow = host.attachShadow({ mode: "open" });
     const iconUrl = chrome.runtime.getURL("assets/icons/icon48.png");
-    shadow.innerHTML = `
-      <style>
-        :host {
-          all: initial;
-          color-scheme: light;
-          font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
-          pointer-events: none;
-        }
-        .panel {
-          position: fixed;
-          right: 22px;
-          bottom: calc(20px + var(--academylens-bottom-offset, 0px));
-          z-index: 2147483647;
-          width: min(408px, calc(100vw - 44px));
-          border: 1px solid rgba(15, 23, 42, 0.14);
-          border-radius: 8px;
-          background: rgba(255, 255, 255, 0.98);
-          box-shadow: 0 12px 28px rgba(15, 23, 42, 0.12);
-          color: #111827;
-          font-size: 14.5px;
-          line-height: 1.45;
-          overflow: hidden;
-          pointer-events: auto;
-          opacity: 0;
-          transform: translate3d(0, 10px, 0) scale(0.985);
-          transform-origin: right bottom;
-          transition:
-            bottom 180ms ease,
-            box-shadow 180ms ease,
-            width 190ms cubic-bezier(0.2, 0.8, 0.2, 1),
-            opacity 180ms ease-out,
-            transform 180ms cubic-bezier(0.2, 0.8, 0.2, 1);
-          will-change: opacity, transform;
-        }
-        .panel[data-mounted="true"] {
-          opacity: 1;
-          transform: translate3d(0, 0, 0) scale(1);
-        }
-        .top {
-          display: flex;
-          align-items: center;
-          justify-content: space-between;
-          gap: 12px;
-          min-height: 56px;
-          padding: 12px 16px;
-          border-bottom: 1px solid rgba(15, 23, 42, 0.1);
-        }
-        .brand {
-          display: inline-flex;
-          align-items: center;
-          min-width: 0;
-          gap: 9px;
-        }
-        .brand-icon {
-          width: 22px;
-          height: 22px;
-          border-radius: 7px;
-          flex: 0 0 auto;
-        }
-        .name {
-          font-size: 15.5px;
-          font-weight: 750;
-          letter-spacing: 0;
-          white-space: nowrap;
-        }
-        .badge {
-          font-size: 12.5px;
-          color: #475569;
-          white-space: nowrap;
-        }
-        .top-actions {
-          display: inline-flex;
-          align-items: center;
-          gap: 8px;
-        }
-        .icon-button {
-          display: inline-grid;
-          width: 34px;
-          min-height: 34px;
-          place-items: center;
-          border: 1px solid rgba(15, 23, 42, 0.12);
-          border-radius: 8px;
-          background: rgba(248, 250, 252, 0.9);
-          color: #334155;
-          font-size: 16px;
-          line-height: 1;
-        }
-        .toggle-icon {
-          display: none;
-          width: 24px;
-          height: 24px;
-          border-radius: 8px;
-        }
-        [data-toggle-symbol] {
-          line-height: 1;
-        }
-        .body {
-          display: grid;
-          gap: 12px;
-          max-height: min(348px, calc(100vh - 156px));
-          overflow-y: auto;
-          padding: 14px 16px;
-          opacity: 1;
-          transform: translateY(0);
-          transition:
-            max-height 190ms cubic-bezier(0.2, 0.8, 0.2, 1),
-            opacity 140ms ease,
-            padding 190ms cubic-bezier(0.2, 0.8, 0.2, 1),
-            transform 190ms cubic-bezier(0.2, 0.8, 0.2, 1);
-        }
-        .panel[data-collapsed="true"] {
-          width: 56px;
-          border-radius: 999px;
-          box-shadow: 0 8px 20px rgba(15, 23, 42, 0.12);
-        }
-        .panel[data-collapsed="true"] .top {
-          justify-content: center;
-          min-height: 54px;
-          padding: 5px;
-          border-bottom: 0;
-        }
-        .panel[data-collapsed="true"] .brand,
-        .panel[data-collapsed="true"] .badge {
-          display: none;
-        }
-        .panel[data-collapsed="true"] .top-actions {
-          gap: 0;
-        }
-        .panel[data-collapsed="true"] .icon-button {
-          width: 44px;
-          min-height: 44px;
-          border-color: #111827;
-          border-radius: 999px;
-          background: #111827;
-          color: #fff;
-          font-size: 13px;
-          font-weight: 760;
-        }
-        .panel[data-collapsed="true"] .toggle-icon {
-          display: block;
-        }
-        .panel[data-collapsed="true"] .body {
-          max-height: 0;
-          padding-top: 0;
-          padding-bottom: 0;
-          opacity: 0;
-          pointer-events: none;
-          transform: translateY(-4px);
-        }
-        .field {
-          display: grid;
-          gap: 8px;
-        }
-        .note {
-          color: #64748b;
-          font-size: 13px;
-          line-height: 1.45;
-        }
-        .note[data-glossary="true"] {
-          color: #047857;
-        }
-        .row {
-          display: grid;
-          grid-template-columns: 1fr 1fr;
-          gap: 12px;
-        }
-        .settings {
-          display: flex;
-          align-items: center;
-          justify-content: space-between;
-          gap: 12px;
-        }
-        .toggles {
-          display: inline-flex;
-          align-items: center;
-          flex-wrap: wrap;
-          gap: 10px;
-          min-width: 0;
-        }
-        .toggle {
-          display: inline-flex;
-          align-items: center;
-          gap: 8px;
-          color: #475569;
-          font-size: 13.5px;
-          line-height: 1;
-        }
-        .toggle input {
-          width: 16px;
-          height: 16px;
-          margin: 0;
-        }
-        .provider {
-          justify-self: start;
-          max-width: 100%;
-          min-height: 24px;
-          border: 1px solid rgba(15, 23, 42, 0.12);
-          border-radius: 999px;
-          padding: 3px 9px;
-          background: rgba(248, 250, 252, 0.9);
-          color: #475569;
-          font-size: 12px;
-          line-height: 1.35;
-          overflow: hidden;
-          text-overflow: ellipsis;
-          white-space: nowrap;
-        }
-        .provider[data-provider="native"],
-        .provider[data-provider="nativeReady"] {
-          border-color: rgba(4, 120, 87, 0.2);
-          color: #047857;
-        }
-        .provider[data-provider="nativeDownloadable"],
-        .provider[data-provider="nativeDownloading"] {
-          border-color: rgba(180, 83, 9, 0.22);
-          color: #92400e;
-        }
-        .correction {
-          display: none;
-          gap: 8px;
-          border-top: 1px solid rgba(15, 23, 42, 0.08);
-          padding-top: 10px;
-        }
-        .correction[data-active="true"] {
-          display: grid;
-        }
-        .correction label {
-          display: grid;
-          gap: 6px;
-          color: #475569;
-          font-size: 12px;
-        }
-        .correction textarea {
-          min-height: 56px;
-          resize: vertical;
-          border: 1px solid rgba(15, 23, 42, 0.16);
-          border-radius: 8px;
-          padding: 8px 10px;
-          color: #111827;
-          font: inherit;
-          font-size: 13px;
-          line-height: 1.4;
-        }
-        .correction-actions {
-          display: grid;
-          grid-template-columns: 1fr 1fr;
-          gap: 8px;
-        }
-        .manager {
-          display: grid;
-          gap: 8px;
-          border-top: 1px solid rgba(15, 23, 42, 0.08);
-          padding-top: 10px;
-        }
-        .manager summary {
-          cursor: pointer;
-          color: #475569;
-          font-size: 12.5px;
-          font-weight: 700;
-        }
-        .manager-body {
-          display: grid;
-          gap: 8px;
-          padding-top: 8px;
-        }
-        .manager-preview,
-        .diagnostics-output {
-          min-height: 20px;
-          color: #64748b;
-          font-size: 12px;
-          line-height: 1.45;
-          overflow-wrap: anywhere;
-        }
-        .manager-actions {
-          display: grid;
-          grid-template-columns: 1fr 1fr;
-          gap: 8px;
-        }
-        .manager-actions.single {
-          grid-template-columns: 1fr;
-        }
-        button, select {
-          min-height: 42px;
-          border-radius: 8px;
-          border: 1px solid rgba(15, 23, 42, 0.16);
-          background: #fff;
-          color: #111827;
-          font: inherit;
-          font-size: 14.5px;
-          padding: 0 14px;
-        }
-        button {
-          cursor: pointer;
-          font-weight: 650;
-        }
-        button.primary {
-          background: #111827;
-          color: #fff;
-          border-color: #111827;
-        }
-        .panel[data-busy="true"] button.primary {
-          background: #1f2937;
-        }
-        button:disabled {
-          cursor: not-allowed;
-          opacity: 0.55;
-        }
-        .status {
-          min-height: 20px;
-          color: #475569;
-          font-size: 13px;
-          line-height: 1.5;
-        }
-        .status[data-tone="error"] {
-          color: #b42318;
-        }
-        .status[data-tone="ok"] {
-          color: #047857;
-        }
-        .progress {
-          --value: 0%;
-          flex: 1;
-          height: 6px;
-          min-width: 96px;
-          overflow: hidden;
-          border-radius: 999px;
-          background: rgba(15, 23, 42, 0.08);
-        }
-        .progress::before {
-          display: block;
-          width: var(--value);
-          height: 100%;
-          border-radius: inherit;
-          background: #18b6a7;
-          content: "";
-          transition: width 160ms ease;
-        }
-        .progress[data-active="true"]::before {
-          background: #3578e5;
-        }
-        @media (max-width: 420px) {
-          .panel {
-            right: 12px;
-            bottom: calc(14px + var(--academylens-bottom-offset, 0px));
-            width: calc(100vw - 24px);
-          }
-          .panel[data-collapsed="true"] {
-            width: 56px;
-          }
-          .panel[data-bottom-overlay="true"][data-collapsed="true"] {
-            top: 84px;
-            bottom: auto;
-          }
-        }
-        @media (prefers-reduced-motion: reduce) {
-          .panel,
-          .body,
-          .progress::before {
-            transition: none;
-          }
-          .panel {
-            opacity: 1;
-            transform: none;
-          }
-        }
-      </style>
-      <section class="panel" data-collapsed="true" data-version="${extensionVersion()}" data-browser-translator="${state.browserTranslatorStatus}">
-        <div class="top">
-          <div class="brand">
-            <img class="brand-icon" src="${iconUrl}" alt="" />
-            <div class="name">AcademyLens</div>
-          </div>
-          <div class="top-actions">
-            <div class="badge">${message("badge.unofficial")}</div>
-            <button type="button" class="icon-button" data-collapse aria-expanded="true" aria-label="${message("action.collapse")}">
-              <img class="toggle-icon" src="${iconUrl}" alt="" />
-              <span data-toggle-symbol aria-hidden="true">-</span>
-            </button>
-          </div>
-        </div>
-        <div class="body">
-          <div class="field">
-            <select data-language aria-label="${message("field.targetLanguage")}"></select>
-            <div class="note" data-language-note></div>
-          </div>
-          <div class="settings">
-            <div class="toggles">
-              <label class="toggle">
-                <input type="checkbox" data-auto-translate />
-                <span>${message("panel.autoTranslate")}</span>
-              </label>
-              <label class="toggle">
-                <input type="checkbox" data-native-download />
-                <span>${message("panel.nativeDownloads")}</span>
-              </label>
-            </div>
-            <div class="progress" data-progress role="progressbar" aria-label="${message("progress.translation")}" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0"></div>
-          </div>
-          <div class="provider" data-provider-chip data-provider="${state.providerMode}">${message(providerMessageKey(state.providerMode))}</div>
-          <div class="correction" data-correction data-active="false">
-            <label>
-              <span>${message("panel.correction")}</span>
-              <textarea data-correction-input></textarea>
-            </label>
-            <div class="correction-actions">
-              <button type="button" data-save-correction>${message("action.saveCorrection")}</button>
-              <button type="button" data-cancel-correction>${message("action.cancelCorrection")}</button>
-            </div>
-          </div>
-          <details class="manager" data-corrections-manager>
-            <summary>${message("panel.corrections")} <span data-correction-count>0</span></summary>
-            <div class="manager-body">
-              <select data-correction-list aria-label="${message("panel.corrections")}"></select>
-              <div class="manager-preview" data-correction-preview>${message("panel.noCorrections")}</div>
-              <div class="manager-actions">
-                <button type="button" data-delete-correction>${message("action.deleteCorrection")}</button>
-                <button type="button" data-clear-corrections>${message("action.clearCorrections")}</button>
-              </div>
-            </div>
-          </details>
-          <details class="manager" data-diagnostics>
-            <summary>${message("panel.diagnostics")}</summary>
-            <div class="manager-body">
-              <div class="diagnostics-output" data-diagnostics-output>${message("panel.diagnosticsIdle")}</div>
-              <div class="manager-actions single">
-                <button type="button" data-clear-cache>${message("action.clearCache")}</button>
-              </div>
-            </div>
-          </details>
-          <div class="row">
-            <button type="button" class="primary" data-translate>${message("action.translate")}</button>
-            <button type="button" data-restore>${message("action.restore")}</button>
-          </div>
-          <div class="status" data-status role="status" aria-live="polite" aria-atomic="true">${message("status.ready")}</div>
-        </div>
-      </section>
-    `;
+    shadow.innerHTML = PanelView.renderPanel({
+      browserTranslatorStatus: state.browserTranslatorStatus,
+      iconUrl,
+      message,
+      providerMessageKey,
+      providerMode: state.providerMode,
+      version: extensionVersion()
+    });
 
     const language = shadow.querySelector("[data-language]");
     for (const item of C.SUPPORTED_LANGUAGES) {
@@ -1989,365 +1481,18 @@
     refreshBrowserTranslatorStatus();
   }
 
-  function currentRecords() {
-    return state.replacements.filter((record) => record.target && record.target.isConnected);
-  }
-
-  function recordTarget(record) {
-    return record ? record.target || record.node : null;
-  }
-
-  function forgetRecord(record) {
-    const target = recordTarget(record);
-    if (target) state.nodeRecords.delete(target);
-    state.replacements = state.replacements.filter((item) => item !== record);
-  }
-
-  function isCurrentRecordStillOwned(record) {
-    const target = recordTarget(record);
-    if (!target || !target.isConnected) return false;
-    return target.textContent === record.translated;
-  }
-
-  function restoreRecordOriginal(record) {
-    const target = recordTarget(record);
-    if (!target || !target.isConnected || !isCurrentRecordStillOwned(record)) return false;
-    suppressMutationReactions();
-    if (record.kind === "element") {
-      target.innerHTML = record.original;
-    } else {
-      target.textContent = record.original;
-    }
-    state.nodeRecords.delete(target);
-    return true;
-  }
-
   async function refreshCorrectionRecords() {
     let restored = 0;
-    for (const record of currentRecords()) {
+    for (const record of domTranslation.currentRecords()) {
       if (record.translationSource !== "correction") continue;
       if (correctionFor(state.corrections, state.settings.targetLanguage, record.normalized)) continue;
-      if (restoreRecordOriginal(record)) restored += 1;
-      forgetRecord(record);
+      if (domTranslation.restoreRecordOriginal(record)) restored += 1;
+      domTranslation.forgetRecord(record);
     }
     if (restored > 0 && state.settings.targetLanguage !== "en") {
       await translatePage({ reason: "correction-refresh" });
     }
     return restored;
-  }
-
-  function shouldSkipRecordedTarget(target) {
-    const record = state.nodeRecords.get(target);
-    if (!record) return false;
-    if (isCurrentRecordStillOwned(record)) return true;
-    forgetRecord(record);
-    return false;
-  }
-
-  function isInsideRecordedElement(node) {
-    let current = node && node.parentElement;
-    while (current && current !== document.body) {
-      if (shouldSkipRecordedTarget(current)) return true;
-      current = current.parentElement;
-    }
-    return false;
-  }
-
-  const INLINE_MERGE_SELECTOR = "p, li, h1, h2, h3, h4, h5, h6, blockquote, figcaption";
-  const SAFE_INLINE_TAGS = new Set(["B", "EM", "I", "MARK", "SMALL", "SPAN", "STRONG", "SUB", "SUP", "U"]);
-  const UNSAFE_INLINE_MERGE_SELECTOR = [
-    "button",
-    "canvas",
-    "code",
-    "form",
-    "iframe",
-    "input",
-    "kbd",
-    "pre",
-    "samp",
-    "script",
-    "select",
-    "svg",
-    "textarea",
-    "[contenteditable='true']",
-    "[role='button']"
-  ].join(",");
-
-  function hasOnlySafeInlineContent(element) {
-    for (const child of element.children) {
-      if (!SAFE_INLINE_TAGS.has(child.tagName)) return false;
-      if (child.matches(UNSAFE_INLINE_MERGE_SELECTOR) || child.querySelector(UNSAFE_INLINE_MERGE_SELECTOR))
-        return false;
-    }
-    return true;
-  }
-
-  function shouldMergeInlineElement(element) {
-    if (!element || !element.matches(INLINE_MERGE_SELECTOR)) return false;
-    if (state.nodeRecords.has(element)) return !shouldSkipRecordedTarget(element);
-    if (Text.isExcludedElement(element) || !Text.isElementVisible(element)) return false;
-    if (!hasOnlySafeInlineContent(element)) return false;
-    const textNodes = Array.from(element.childNodes).filter(
-      (node) => node.nodeType === Node.TEXT_NODE && Text.normalizeWhitespace(node.textContent)
-    );
-    if (textNodes.length === 0 || element.children.length === 0) return false;
-    return Text.shouldTranslateText(
-      element.textContent,
-      state.settings.targetLanguage,
-      C.LIMITS.maxTextLength,
-      element
-    );
-  }
-
-  function collectInlineElementCandidates() {
-    const retained = [];
-    const maxCandidates = C.LIMITS.maxCandidateScanNodes || C.LIMITS.maxTextNodesPerPass;
-    let index = 0;
-    for (const element of document.body.querySelectorAll(INLINE_MERGE_SELECTOR)) {
-      if (!shouldMergeInlineElement(element)) continue;
-      const candidate = {
-        kind: "element",
-        target: element,
-        original: element.innerHTML,
-        originalText: element.textContent,
-        normalized: Text.normalizeWhitespace(element.textContent)
-      };
-      retained.push({ candidate, index, score: candidateViewportScore(candidate) });
-      index += 1;
-      if (retained.length > maxCandidates * 2) {
-        retained.sort((a, b) => a.score - b.score || a.index - b.index);
-        retained.length = maxCandidates;
-      }
-    }
-    return retained
-      .sort((a, b) => a.score - b.score || a.index - b.index)
-      .slice(0, maxCandidates)
-      .map((item) => item.candidate);
-  }
-
-  function candidateRect(candidate) {
-    const target = candidate && candidate.target;
-    if (!target) return null;
-    const element = target.nodeType === Node.TEXT_NODE ? target.parentElement : target;
-    if (!element || typeof element.getBoundingClientRect !== "function") return null;
-    return element.getBoundingClientRect();
-  }
-
-  function candidateViewportScore(candidate) {
-    const rect = candidateRect(candidate);
-    if (!rect) return Number.MAX_SAFE_INTEGER;
-    if (rect.bottom >= 0 && rect.top <= window.innerHeight) {
-      return Math.max(0, rect.top);
-    }
-    if (rect.top > window.innerHeight) {
-      return 100000 + rect.top - window.innerHeight;
-    }
-    return 200000 + Math.abs(rect.bottom);
-  }
-
-  function sortCandidatesByViewport(candidates) {
-    return candidates
-      .map((candidate, index) => ({ candidate, index, score: candidateViewportScore(candidate) }))
-      .sort((a, b) => a.score - b.score || a.index - b.index)
-      .map((item) => item.candidate);
-  }
-
-  function collectCandidates() {
-    const elementCandidates = collectInlineElementCandidates();
-    const elementCandidateTargets = new WeakSet(elementCandidates.map((candidate) => candidate.target));
-    const isInsideInlineCandidate = (node) => {
-      let current = node && node.parentElement;
-      while (current && current !== document.body) {
-        if (elementCandidateTargets.has(current)) return true;
-        current = current.parentElement;
-      }
-      return false;
-    };
-    const nodes = Text.collectTranslatableTextNodes(document.body, {
-      targetLanguage: state.settings.targetLanguage,
-      maxTextLength: C.LIMITS.maxTextLength,
-      maxNodes: C.LIMITS.maxCandidateScanNodes || C.LIMITS.maxTextNodesPerPass,
-      scoreNode(node) {
-        return candidateViewportScore({ target: node });
-      },
-      shouldSkipNode(node) {
-        return isInsideRecordedElement(node) || isInsideInlineCandidate(node) || shouldSkipRecordedTarget(node);
-      }
-    });
-
-    const nodeCandidates = nodes
-      .filter((node) => !isInsideRecordedElement(node))
-      .filter((node) => !isInsideInlineCandidate(node))
-      .filter((node) => !shouldSkipRecordedTarget(node))
-      .map((node) => ({
-        kind: "text",
-        target: node,
-        node,
-        original: node.textContent,
-        normalized: Text.normalizeWhitespace(node.textContent)
-      }))
-      .filter((item) => item.normalized);
-
-    return sortCandidatesByViewport([...elementCandidates, ...nodeCandidates]).slice(0, C.LIMITS.maxTextNodesPerPass);
-  }
-
-  function directGlossaryTranslation(prepared) {
-    if (!prepared || !prepared.text || !Array.isArray(prepared.placeholders)) return "";
-    const token = prepared.text.trim();
-    if (!/^__AL_TERM_\d+__$/.test(token)) return "";
-    const placeholder = prepared.placeholders.find((item) => item.token === token);
-    return placeholder ? placeholder.value : "";
-  }
-
-  function appendTextPart(fragment, value) {
-    if (value) fragment.append(document.createTextNode(value));
-  }
-
-  function inlineChildrenFor(element) {
-    return Array.from(element.children).filter(
-      (child) =>
-        SAFE_INLINE_TAGS.has(child.tagName) &&
-        !child.matches(UNSAFE_INLINE_MERGE_SELECTOR) &&
-        !child.querySelector(UNSAFE_INLINE_MERGE_SELECTOR) &&
-        Text.normalizeWhitespace(child.textContent)
-    );
-  }
-
-  function prepareInlinePlaceholders(candidate, prepared) {
-    if (!candidate || candidate.kind !== "element" || !candidate.target || !prepared) return prepared;
-
-    const glossaryValues = new Set((prepared.placeholders || []).map((item) => Text.normalizeWhitespace(item.value)));
-    const inlinePlaceholders = [];
-    let text = prepared.text;
-    for (const child of inlineChildrenFor(candidate.target)) {
-      const childText = Text.normalizeWhitespace(child.textContent);
-      if (!childText || glossaryValues.has(childText)) continue;
-
-      const index = text.indexOf(childText);
-      if (index === -1) continue;
-
-      const token = `__AL_INLINE_${inlinePlaceholders.length}__`;
-      text = `${text.slice(0, index)}${token}${text.slice(index + childText.length)}`;
-      inlinePlaceholders.push({
-        token,
-        value: childText,
-        child
-      });
-    }
-
-    if (!inlinePlaceholders.length) return prepared;
-    return {
-      ...prepared,
-      text,
-      inlinePlaceholders
-    };
-  }
-
-  function createInlineTokenFragment(translated, inlinePlaceholders) {
-    if (!Array.isArray(inlinePlaceholders) || inlinePlaceholders.length === 0) return null;
-
-    const tokens = new Map(inlinePlaceholders.map((item) => [item.token, item]));
-    const pattern = new RegExp(
-      inlinePlaceholders.map((item) => item.token.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")).join("|"),
-      "g"
-    );
-    const fragment = document.createDocumentFragment();
-    let cursor = 0;
-    let preserved = 0;
-    for (const match of translated.matchAll(pattern)) {
-      appendTextPart(fragment, translated.slice(cursor, match.index));
-      const placeholder = tokens.get(match[0]);
-      if (placeholder && placeholder.child) {
-        const clone = placeholder.child.cloneNode(false);
-        clone.textContent = placeholder.value;
-        fragment.append(clone);
-        preserved += 1;
-      } else {
-        appendTextPart(fragment, match[0]);
-      }
-      cursor = match.index + match[0].length;
-    }
-    appendTextPart(fragment, translated.slice(cursor));
-
-    return preserved > 0 ? fragment : null;
-  }
-
-  function createInlinePreservingFragment(element, translated) {
-    const inlineChildren = inlineChildrenFor(element);
-    if (!inlineChildren.length) return null;
-
-    const fragment = document.createDocumentFragment();
-    let cursor = 0;
-    let preserved = 0;
-    for (const child of inlineChildren) {
-      const childText = Text.normalizeWhitespace(child.textContent);
-      const index = translated.indexOf(childText, cursor);
-      if (index === -1) continue;
-
-      appendTextPart(fragment, translated.slice(cursor, index));
-      const clone = child.cloneNode(false);
-      clone.textContent = translated.slice(index, index + childText.length);
-      fragment.append(clone);
-      cursor = index + childText.length;
-      preserved += 1;
-    }
-
-    if (preserved === 0) return null;
-    appendTextPart(fragment, translated.slice(cursor));
-    return fragment;
-  }
-
-  function applyTranslatedElement(element, translated, inlinePlaceholders) {
-    const fragment =
-      createInlineTokenFragment(translated, inlinePlaceholders) || createInlinePreservingFragment(element, translated);
-    if (fragment) {
-      element.replaceChildren(fragment);
-      return;
-    }
-    element.textContent = translated;
-  }
-
-  function applyCandidateTranslation(candidate, translated, inlinePlaceholders, translationSource = "provider") {
-    if (!candidate || !candidate.target || !candidate.target.isConnected) return false;
-    if (Text.normalizeWhitespace(candidate.target.textContent) !== candidate.normalized) return false;
-    if (!translated || translated === candidate.normalized) return false;
-
-    const record = {
-      kind: candidate.kind,
-      target: candidate.target,
-      node: candidate.node || null,
-      original: candidate.original,
-      originalText: candidate.originalText || candidate.original,
-      normalized: candidate.normalized,
-      translated,
-      inlinePlaceholders: inlinePlaceholders || null,
-      translationSource,
-      hash: Text.stableHash(candidate.normalized)
-    };
-    state.nodeRecords.set(candidate.target, record);
-    state.replacements.push(record);
-    suppressMutationReactions();
-    if (candidate.kind === "element") {
-      applyTranslatedElement(candidate.target, translated, inlinePlaceholders);
-    } else {
-      Text.applyTranslatedText(candidate.target, translated);
-    }
-    return true;
-  }
-
-  function recordMatchesClickedElement(record, element) {
-    if (!record || !element) return false;
-    const target = recordTarget(record);
-    if (!target || !target.isConnected) return false;
-    if (target.nodeType === Node.TEXT_NODE) {
-      return element.contains(target);
-    }
-    return target === element || target.contains(element);
-  }
-
-  function recordForClickedElement(element) {
-    if (!element || (state.panel && state.panel.contains(element))) return null;
-    return currentRecords().find((record) => recordMatchesClickedElement(record, element)) || null;
   }
 
   function updateCorrectionPanel() {
@@ -2376,20 +1521,6 @@
     updateCorrectionPanel();
   }
 
-  function applyCorrectionToRecord(record, translated) {
-    const target = recordTarget(record);
-    if (!target || !target.isConnected) return false;
-    record.translated = translated;
-    record.translationSource = "correction";
-    suppressMutationReactions();
-    if (record.kind === "element") {
-      applyTranslatedElement(target, translated, record.inlinePlaceholders);
-    } else {
-      target.textContent = translated;
-    }
-    return true;
-  }
-
   async function saveSelectedCorrection() {
     if (!state.selectedCorrection || !state.shadow) return;
     const input = state.shadow.querySelector("[data-correction-input]");
@@ -2397,7 +1528,7 @@
     if (!translated) return;
 
     const record = state.selectedCorrection;
-    if (!applyCorrectionToRecord(record, translated)) {
+    if (!domTranslation.applyCorrectionToRecord(record, translated)) {
       clearSelectedCorrection();
       return;
     }
@@ -2406,8 +1537,8 @@
     setProviderMode("local");
     setStatus(
       persisted
-        ? message("status.translated", { count: currentRecords().length })
-        : message("status.translatedPartial", { count: currentRecords().length, failed: 1 }),
+        ? message("status.translated", { count: domTranslation.currentRecords().length })
+        : message("status.translatedPartial", { count: domTranslation.currentRecords().length, failed: 1 }),
       persisted ? "ok" : "error"
     );
     clearSelectedCorrection();
@@ -2415,7 +1546,7 @@
 
   function handleCorrectionClick(event) {
     const element = mutationElement(event.target);
-    const record = recordForClickedElement(element);
+    const record = domTranslation.recordForClickedElement(element);
     if (record) {
       selectCorrectionRecord(record);
     }
@@ -2495,7 +1626,7 @@
   async function translateCandidatePass({ generation, targetLanguage, pageUrl, glossary, childFrameCount = 0 }) {
     const signal = currentAbortSignal(generation);
     throwIfAborted(signal);
-    const candidates = collectCandidates();
+    const candidates = domTranslation.collectCandidates();
     const reachedLimit = candidates.length >= (C.LIMITS.maxTextNodesPerPass || 120);
     if (candidates.length === 0) {
       return { applied: 0, failed: 0, childFrameCount, hadCandidates: false, reachedLimit: false };
@@ -2526,9 +1657,9 @@
         continue;
       }
       const prepared = Glossary.prepareForTranslation(candidate.normalized, glossary, targetLanguage);
-      const inlinePrepared = prepareInlinePlaceholders(candidate, prepared);
+      const inlinePrepared = domTranslation.prepareInlinePlaceholders(candidate, prepared);
       preparedByCandidate.set(candidate, inlinePrepared);
-      const direct = directGlossaryTranslation(inlinePrepared);
+      const direct = domTranslation.directGlossaryTranslation(inlinePrepared);
       if (direct) {
         directByCandidate.set(candidate, direct);
         continue;
@@ -2542,7 +1673,10 @@
       if (!isCurrentGeneration(generation, targetLanguage, pageUrl)) return;
       const directTranslation = directByCandidate.get(candidate);
       const directSource = preparedByCandidate.has(candidate) ? "glossary" : "correction";
-      if (directTranslation && applyCandidateTranslation(candidate, directTranslation, null, directSource)) {
+      if (
+        directTranslation &&
+        domTranslation.applyCandidateTranslation(candidate, directTranslation, null, directSource)
+      ) {
         applied += 1;
       }
     }
@@ -2617,7 +1751,7 @@
       if (!rawTranslation) continue;
 
       const translated = Glossary.restoreProtectedTerms(rawTranslation, prepared.placeholders);
-      if (applyCandidateTranslation(candidate, translated, prepared.inlinePlaceholders, "provider")) {
+      if (domTranslation.applyCandidateTranslation(candidate, translated, prepared.inlinePlaceholders, "provider")) {
         applied += 1;
       }
     }
@@ -2743,7 +1877,7 @@
     if (!isCurrentGeneration(generation, targetLanguage, pageUrl)) return;
 
     if (capped) {
-      capped = collectCandidates().length > 0;
+      capped = domTranslation.collectCandidates().length > 0;
     }
 
     if (failed > 0) {
@@ -2788,18 +1922,7 @@
     if (isTopFrame && options.broadcastFrames !== false) {
       postToChildFrames("restore");
     }
-    let restored = 0;
-    suppressMutationReactions();
-    for (const record of currentRecords()) {
-      const target = recordTarget(record);
-      if (!target || !target.isConnected) continue;
-      if (restoreRecordOriginal(record)) {
-        restored += 1;
-      }
-      state.nodeRecords.delete(target);
-    }
-    state.replacements = [];
-    state.nodeRecords = new WeakMap();
+    const restored = domTranslation.restoreAllRecords();
     clearSelectedCorrection();
     setBusy(false);
     setProgress(0);
@@ -2919,18 +2042,18 @@
       if (isPanelMutation(mutation.target)) continue;
 
       if (mutation.type === "characterData") {
-        const nodeRecord = state.nodeRecords.get(mutation.target);
-        if (nodeRecord && !isCurrentRecordStillOwned(nodeRecord)) {
-          forgetRecord(nodeRecord);
+        const nodeRecord = domTranslation.recordForTarget(mutation.target);
+        if (nodeRecord && !domTranslation.isCurrentRecordStillOwned(nodeRecord)) {
+          domTranslation.forgetRecord(nodeRecord);
           sawTranslatableMutation = true;
         } else if (!nodeRecord && textNodeMayNeedTranslation(mutation.target)) {
           sawTranslatableMutation = true;
         }
         let parent = mutation.target.parentElement;
         while (parent && parent !== document.body) {
-          const elementRecord = state.nodeRecords.get(parent);
-          if (elementRecord && !isCurrentRecordStillOwned(elementRecord)) {
-            forgetRecord(elementRecord);
+          const elementRecord = domTranslation.recordForTarget(parent);
+          if (elementRecord && !domTranslation.isCurrentRecordStillOwned(elementRecord)) {
+            domTranslation.forgetRecord(elementRecord);
             sawTranslatableMutation = true;
             break;
           }
@@ -2940,9 +2063,9 @@
 
       if (mutation.type === "childList") {
         if (mutation.target && mutation.target.nodeType === Node.ELEMENT_NODE) {
-          const elementRecord = state.nodeRecords.get(mutation.target);
-          if (elementRecord && !isCurrentRecordStillOwned(elementRecord)) {
-            forgetRecord(elementRecord);
+          const elementRecord = domTranslation.recordForTarget(mutation.target);
+          if (elementRecord && !domTranslation.isCurrentRecordStillOwned(elementRecord)) {
+            domTranslation.forgetRecord(elementRecord);
             sawTranslatableMutation = true;
           }
         }

@@ -1,5 +1,10 @@
 try {
-  importScripts("../lib/constants.js", "../lib/cache.js", "../lib/google-translate.js");
+  importScripts(
+    "../lib/constants.js",
+    "../lib/cache.js",
+    "../lib/google-translate.js",
+    "../lib/remote-google-translator.js"
+  );
 } catch (error) {
   console.warn("[AcademyLens] library fallback", error);
 }
@@ -20,7 +25,7 @@ const { MESSAGE_TYPES, STORAGE_KEYS, DEFAULT_SETTINGS, LIMITS } = self.AcademyLe
 
 const Cache = self.AcademyLensCache;
 const GoogleTranslate = self.AcademyLensGoogleTranslate;
-const inFlightTranslations = new Map();
+const RemoteGoogleTranslator = self.AcademyLensRemoteGoogleTranslator;
 
 const RETRYABLE_STATUS = new Set([408, 425, 429, 500, 502, 503, 504]);
 const FETCH_TIMEOUT_MS = 8000;
@@ -28,9 +33,22 @@ const MAX_RETRIES = 2;
 const BASE_BACKOFF_MS = 350;
 const MAX_CONCURRENT_REMOTE_FETCHES = 5;
 
-let activeRemoteFetches = 0;
 let cacheWriteChain = Promise.resolve();
-const remoteFetchQueue = [];
+const remoteTranslator =
+  RemoteGoogleTranslator && RemoteGoogleTranslator.create
+    ? RemoteGoogleTranslator.create({
+        Cache,
+        GoogleTranslate,
+        fetchImpl: (url, options) => fetch(url, options),
+        setTimeoutImpl: setTimeout,
+        clearTimeoutImpl: clearTimeout,
+        retryableStatus: RETRYABLE_STATUS,
+        timeoutMs: FETCH_TIMEOUT_MS,
+        maxRetries: MAX_RETRIES,
+        baseBackoffMs: BASE_BACKOFF_MS,
+        maxConcurrent: MAX_CONCURRENT_REMOTE_FETCHES
+      })
+    : null;
 
 function getLocal(keys) {
   return chrome.storage.local.get(keys);
@@ -38,10 +56,6 @@ function getLocal(keys) {
 
 function setLocal(values) {
   return chrome.storage.local.set(values);
-}
-
-function sleep(ms) {
-  return new Promise((resolve) => setTimeout(resolve, ms));
 }
 
 function cacheEpochValue(value) {
@@ -56,84 +70,9 @@ function googleCacheScope(message) {
   };
 }
 
-function inFlightKey(targetLanguage, text, scope) {
-  return Cache.cacheKey(targetLanguage, text, scope);
-}
-
-function drainRemoteFetchQueue() {
-  while (activeRemoteFetches < MAX_CONCURRENT_REMOTE_FETCHES && remoteFetchQueue.length > 0) {
-    const next = remoteFetchQueue.shift();
-    next();
-  }
-}
-
-function runWithRemoteFetchLimit(task) {
-  return new Promise((resolve, reject) => {
-    const run = () => {
-      activeRemoteFetches += 1;
-      Promise.resolve()
-        .then(task)
-        .then(resolve, reject)
-        .finally(() => {
-          activeRemoteFetches -= 1;
-          drainRemoteFetchQueue();
-        });
-    };
-
-    if (activeRemoteFetches < MAX_CONCURRENT_REMOTE_FETCHES) {
-      run();
-    } else {
-      remoteFetchQueue.push(run);
-    }
-  });
-}
-
-async function fetchWithRetry(url) {
-  let lastError = null;
-
-  for (let attempt = 0; attempt <= MAX_RETRIES; attempt += 1) {
-    const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), FETCH_TIMEOUT_MS);
-
-    try {
-      const response = await fetch(url, { signal: controller.signal });
-      if (response.ok) return response;
-
-      lastError = new Error(`Google Translate request failed with ${response.status}`);
-      lastError.retryable = RETRYABLE_STATUS.has(response.status);
-      if (!RETRYABLE_STATUS.has(response.status) || attempt === MAX_RETRIES) {
-        throw lastError;
-      }
-    } catch (error) {
-      lastError = error;
-      if (error.retryable === false || attempt === MAX_RETRIES) throw error;
-    } finally {
-      clearTimeout(timeoutId);
-    }
-
-    const jitter = Math.floor(Math.random() * 120);
-    await sleep(BASE_BACKOFF_MS * 2 ** attempt + jitter);
-  }
-
-  throw lastError || new Error("Google Translate request failed");
-}
-
 function remoteTranslate(text, targetLanguage, scope) {
-  const key = inFlightKey(targetLanguage, text, scope);
-  const existing = inFlightTranslations.get(key);
-  if (existing) return existing;
-
-  const promise = (async () => {
-    const response = await runWithRemoteFetchLimit(() =>
-      fetchWithRetry(GoogleTranslate.buildGoogleTranslateUrl(text, targetLanguage))
-    );
-    return GoogleTranslate.parseGoogleTranslatePayload(await response.json());
-  })().finally(() => {
-    inFlightTranslations.delete(key);
-  });
-
-  inFlightTranslations.set(key, promise);
-  return promise;
+  if (!remoteTranslator) throw new Error("Remote translator unavailable");
+  return remoteTranslator.translateText(text, targetLanguage, scope);
 }
 
 function withCacheWriteLock(task) {
