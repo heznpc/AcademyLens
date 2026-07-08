@@ -53,9 +53,11 @@ test("content translation fallback has retry, timeout, dedupe, and concurrency c
   const contentScripts = manifest.content_scripts[0].js;
 
   assert(contentScripts.includes("src/lib/remote-google-translator.js"));
+  assert(contentScripts.includes("src/content/content-helpers.js"));
   assert(
     contentScripts.indexOf("src/lib/remote-google-translator.js") < contentScripts.indexOf("src/content/content.js")
   );
+  assert(contentScripts.indexOf("src/content/content-helpers.js") < contentScripts.indexOf("src/content/content.js"));
   assert.match(source, /CONTENT_FALLBACK_MAX_CONCURRENT_FETCHES = 5/);
   assert.match(source, /AcademyLensRemoteGoogleTranslator/);
   assert.match(source, /contentFallbackTranslator\.translateText\(text, targetLanguage, scope, signal\)/);
@@ -131,6 +133,7 @@ test("content translation uses a queue for manual, auto, and frame requests", ()
 
 test("content supports local corrections, frame aggregation, viewport priority, and inline tokens", () => {
   const source = read("src/content/content.js");
+  const helpers = read("src/content/content-helpers.js");
   const domRuntime = read("src/content/dom-translation-runtime.js");
   const frameMessenger = read("src/content/frame-messenger.js");
   const constants = read("src/lib/constants.js");
@@ -140,14 +143,14 @@ test("content supports local corrections, frame aggregation, viewport priority, 
   assert.match(source, /function deleteCorrection/);
   assert.match(source, /function refreshCorrectionRecords/);
   assert.match(source, /function updateCorrectionsManager/);
-  assert.match(source, /function correctionFor/);
+  assert.match(helpers, /function correctionFor/);
   assert.match(frameMessenger, /function startAggregate/);
   assert.match(frameMessenger, /cleanupTimer/);
   assert.match(frameMessenger, /status\.translatedWithFrames/);
   assert.match(frameMessenger, /status\.frameFailed/);
   assert.match(domRuntime, /function sortCandidatesByViewport/);
   assert.match(domRuntime, /function prepareInlinePlaceholders/);
-  assert.match(source, /function candidateContextKey/);
+  assert.match(helpers, /function candidateContextKey/);
   assert.match(source, /function updateDiagnosticsPanel/);
   assert.match(source, /preparedByCandidate/);
   assert.match(domRuntime, /__AL_INLINE_/);
@@ -155,6 +158,7 @@ test("content supports local corrections, frame aggregation, viewport priority, 
 
 test("content cache scope tracks provider and glossary while cache clears invalidate stale writes", () => {
   const source = read("src/content/content.js");
+  const helpers = read("src/content/content-helpers.js");
   const constants = read("src/lib/constants.js");
   const cache = read("src/lib/cache.js");
   const background = read("src/background/background.js");
@@ -164,9 +168,9 @@ test("content cache scope tracks provider and glossary while cache clears invali
   assert.match(constants, /CLEAR_CACHE: "ACADEMYLENS_CLEAR_CACHE"/);
   assert.match(cache, /function normalizeScope/);
   assert.match(cache, /function entryMatches/);
-  assert.match(source, /function glossarySignature/);
-  assert.match(source, /function cacheScope/);
-  assert.match(source, /function cacheEpochValue/);
+  assert.match(helpers, /function glossarySignature/);
+  assert.match(helpers, /function cacheScope/);
+  assert.match(helpers, /function cacheEpochValue/);
   assert.match(source, /state\.cacheEpoch/);
   assert.match(source, /cacheEpoch: state\.cacheEpoch/);
   assert.match(source, /provider: "google-translate"/);
@@ -182,14 +186,15 @@ test("content cache scope tracks provider and glossary while cache clears invali
 
 test("content fallback only retries texts missed by browser-native translation", () => {
   const source = read("src/content/content.js");
+  const helpers = read("src/content/content-helpers.js");
   const sendTranslationBatch = source.slice(
     source.indexOf("async function sendTranslationBatch"),
     source.indexOf("function message", source.indexOf("async function sendTranslationBatch"))
   );
 
-  assert.match(source, /function untranslatedTexts/);
-  assert.match(source, /function mergeTranslationResponses/);
-  assert.match(source, /function hasUnexpectedPlaceholderTokens/);
+  assert.match(helpers, /function untranslatedTexts/);
+  assert.match(helpers, /function mergeTranslationResponses/);
+  assert.match(helpers, /function hasUnexpectedPlaceholderTokens/);
   assert.match(sendTranslationBatch, /const missingTexts = untranslatedTexts\(requestedTexts, browserResponse\)/);
   assert.match(sendTranslationBatch, /texts: missingTexts/);
 });

@@ -2,131 +2,39 @@ const { test, expect } = require("@playwright/test");
 const manifest = require("../../manifest.json");
 const { closeExtension, launchExtension } = require("./helpers/extension");
 const { startFixtureServer, stopFixtureServer } = require("./helpers/fixture-server");
+const {
+  clickPanelButton,
+  expandPanel,
+  panelProgress,
+  panelSnapshot,
+  savePanelCorrection,
+  setAutoTranslate,
+  setNativeDownloads,
+  setPanelLanguage,
+  waitForPanel,
+  waitForTranslationFinished
+} = require("./helpers/panel");
 const { registerTranslateStub } = require("./helpers/translate-stub");
 
-async function waitForPanel(page) {
-  for (let attempt = 0; attempt < 2; attempt += 1) {
-    const ready = await page
-      .locator(".academylens-root")
-      .waitFor({ state: "attached", timeout: 6000 })
-      .then(async () =>
-        page.evaluate(() => {
-          const root = document.querySelector(".academylens-root");
-          return Boolean(root && root.shadowRoot && root.shadowRoot.querySelector("[data-translate]"));
-        })
-      )
-      .catch(() => false);
-    if (ready) return;
-    await page.reload({ waitUntil: "load" });
-  }
-
-  await page.locator(".academylens-root").waitFor({ state: "attached" });
-  await expect
-    .poll(() =>
-      page.evaluate(() => {
-        const root = document.querySelector(".academylens-root");
-        return Boolean(root && root.shadowRoot && root.shadowRoot.querySelector("[data-translate]"));
-      })
-    )
-    .toBe(true);
-}
-
-async function clickPanelButton(page, selector) {
-  await page.evaluate((innerSelector) => {
-    document.querySelector(".academylens-root").shadowRoot.querySelector(innerSelector).click();
-  }, selector);
-}
-
-async function expandPanel(page) {
-  const collapsed = await page.evaluate(() => {
-    const panel = document.querySelector(".academylens-root").shadowRoot.querySelector(".panel");
-    return panel.dataset.collapsed === "true";
-  });
-  if (collapsed) {
-    await clickPanelButton(page, "[data-collapse]");
-  }
-}
-
-async function setPanelLanguage(page, language) {
-  await page.evaluate((targetLanguage) => {
-    const select = document.querySelector(".academylens-root").shadowRoot.querySelector("[data-language]");
-    select.value = targetLanguage;
-    select.dispatchEvent(new Event("change", { bubbles: true }));
-  }, language);
-}
-
-async function setNativeDownloads(page, enabled) {
-  await page.evaluate((value) => {
-    const checkbox = document.querySelector(".academylens-root").shadowRoot.querySelector("[data-native-download]");
-    checkbox.checked = value;
-    checkbox.dispatchEvent(new Event("change", { bubbles: true }));
-  }, enabled);
-}
-
-async function setAutoTranslate(page, enabled) {
-  await page.evaluate((value) => {
-    const checkbox = document.querySelector(".academylens-root").shadowRoot.querySelector("[data-auto-translate]");
-    checkbox.checked = value;
-    checkbox.dispatchEvent(new Event("change", { bubbles: true }));
-  }, enabled);
-}
-
-async function panelSnapshot(page) {
-  return page.evaluate(() => {
-    const root = document.querySelector(".academylens-root");
-    const shadow = root && root.shadowRoot;
-    const select = shadow && shadow.querySelector("[data-language]");
-    const body = shadow && shadow.querySelector(".body");
-    return {
-      exists: Boolean(root),
-      collapsed: shadow ? shadow.querySelector(".panel").dataset.collapsed : null,
-      bodyVisible: body ? !body.hasAttribute("inert") && body.getAttribute("aria-hidden") !== "true" : null,
-      selected: select ? select.value : null,
-      options: select ? Array.from(select.options).map((option) => option.textContent) : [],
-      buttons: shadow ? Array.from(shadow.querySelectorAll("button")).map((button) => button.textContent.trim()) : [],
-      actionButtons: shadow
-        ? Array.from(shadow.querySelectorAll("[data-translate], [data-restore]")).map((button) =>
-            button.textContent.trim()
-          )
-        : [],
-      note: shadow ? shadow.querySelector("[data-language-note]").textContent : null,
-      provider: shadow ? shadow.querySelector("[data-provider-chip]").textContent : null,
-      providerMode: root ? root.dataset.provider : null,
-      correctionCount: shadow ? shadow.querySelector("[data-correction-count]").textContent : null,
-      diagnostics: shadow ? shadow.querySelector("[data-diagnostics-output]").textContent : null,
-      status: shadow ? shadow.querySelector("[data-status]").textContent : null,
-      statusRole: shadow ? shadow.querySelector("[data-status]").getAttribute("role") : null,
-      statusLive: shadow ? shadow.querySelector("[data-status]").getAttribute("aria-live") : null,
-      statusAtomic: shadow ? shadow.querySelector("[data-status]").getAttribute("aria-atomic") : null
-    };
-  });
-}
-
-async function panelProgress(page) {
-  return page.evaluate(() => {
-    const shadow = document.querySelector(".academylens-root").shadowRoot;
-    return {
-      value: shadow.querySelector("[data-progress]").getAttribute("aria-valuenow"),
-      status: shadow.querySelector("[data-status]").textContent
-    };
-  });
-}
-
-async function waitForTranslationFinished(page) {
-  await expect
-    .poll(async () => (await panelSnapshot(page)).status)
-    .toMatch(/텍스트 \d+개를 번역했습니다\.|Translated \d+ text blocks\./);
-}
-
-async function translationCacheSize(context) {
+async function translationCacheState(context) {
   let [worker] = context.serviceWorkers();
   if (!worker) {
     worker = await context.waitForEvent("serviceworker", { timeout: 5000 });
   }
   return worker.evaluate(async () => {
-    const stored = await chrome.storage.local.get(["academylens.translationCache.v1"]);
-    return Object.keys(stored["academylens.translationCache.v1"] || {}).length;
+    const stored = await chrome.storage.local.get([
+      "academylens.translationCache.v1",
+      "academylens.translationCacheEpoch.v1"
+    ]);
+    return {
+      epoch: Number(stored["academylens.translationCacheEpoch.v1"]) || 0,
+      size: Object.keys(stored["academylens.translationCache.v1"] || {}).length
+    };
   });
+}
+
+async function translationCacheSize(context) {
+  return (await translationCacheState(context)).size;
 }
 
 async function startHarness(options = {}) {
@@ -148,16 +56,6 @@ async function waitForFrame(page, pattern) {
 async function stopHarness(harness) {
   if (harness.ext) await closeExtension(harness.ext);
   if (harness.fixture) await stopFixtureServer(harness.fixture.server);
-}
-
-async function savePanelCorrection(page, value) {
-  await page.evaluate((translated) => {
-    const shadow = document.querySelector(".academylens-root").shadowRoot;
-    const input = shadow.querySelector("[data-correction-input]");
-    input.value = translated;
-    input.dispatchEvent(new Event("input", { bubbles: true }));
-    shadow.querySelector("[data-save-correction]").click();
-  }, value);
 }
 
 test.describe("AcademyLens extension E2E", () => {
@@ -372,16 +270,27 @@ test.describe("AcademyLens extension E2E", () => {
     const harness = await startHarness({ delayMs: 450 });
     try {
       await expandPanel(harness.page);
+      const initialCache = await translationCacheState(harness.ext.context);
       await clickPanelButton(harness.page, "[data-translate]");
       await harness.page.waitForTimeout(50);
       await clickPanelButton(harness.page, "[data-clear-cache]");
       await expect.poll(async () => (await panelSnapshot(harness.page)).status).toMatch(/한 번 더|confirm/i);
       await clickPanelButton(harness.page, "[data-clear-cache]");
-      await expect.poll(() => translationCacheSize(harness.ext.context)).toBe(0);
+      await expect
+        .poll(
+          async () => {
+            const cache = await translationCacheState(harness.ext.context);
+            return cache.epoch > initialCache.epoch && cache.size === 0;
+          },
+          { timeout: 30_000 }
+        )
+        .toBe(true);
 
       await expect(harness.page.locator("#title")).toHaveText("업무를 위한 실용 AI 기술 구축");
       await harness.page.waitForTimeout(500);
-      await expect.poll(() => translationCacheSize(harness.ext.context)).toBe(0);
+      await expect
+        .poll(async () => (await translationCacheState(harness.ext.context)).size, { timeout: 30_000 })
+        .toBe(0);
     } finally {
       await stopHarness(harness);
     }

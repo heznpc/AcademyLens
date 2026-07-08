@@ -4,6 +4,7 @@
   const C = globalThis.AcademyLensConstants;
   const Cache = globalThis.AcademyLensCache;
   const BrowserTranslator = globalThis.AcademyLensBrowserTranslator;
+  const ContentHelpers = globalThis.AcademyLensContentHelpers;
   const GoogleTranslate = globalThis.AcademyLensGoogleTranslate;
   const Glossary = globalThis.AcademyLensGlossary;
   const DomTranslationRuntime = globalThis.AcademyLensDomTranslationRuntime;
@@ -24,6 +25,7 @@
 
   if (
     !C ||
+    !ContentHelpers ||
     !DomTranslationRuntime ||
     !FrameMessenger ||
     !Glossary ||
@@ -32,6 +34,21 @@
     !C.isAcademyUrl(location.href)
   )
     return;
+
+  const H = ContentHelpers.create({ Cache, Text, Node: window.Node });
+  const cacheEpochValue = H.cacheEpochValue;
+  const chunks = H.chunks;
+  const cacheScope = H.cacheScope;
+  const cacheHasTranslation = H.cacheHasTranslation;
+  const cacheUpdateMeta = H.cacheUpdateMeta;
+  const correctionKey = H.correctionKey;
+  const correctionFor = H.correctionFor;
+  const untranslatedTexts = H.untranslatedTexts;
+  const translationLooksSuspicious = H.translationLooksSuspicious;
+  const mergeTranslationResponses = H.mergeTranslationResponses;
+  const appendContextText = H.appendContextText;
+  const orderedContextTexts = H.orderedContextTexts;
+  const mergeDiagnostics = H.mergeDiagnostics;
 
   const state = {
     settings: { ...C.DEFAULT_SETTINGS },
@@ -183,11 +200,6 @@
 
   function suppressMutationReactions(durationMs = 250) {
     state.suppressMutationUntil = Math.max(state.suppressMutationUntil, Date.now() + durationMs);
-  }
-
-  function cacheEpochValue(value) {
-    const numeric = Number(value);
-    return Number.isFinite(numeric) && numeric > 0 ? numeric : 0;
   }
 
   function watchGenerationChange(generation) {
@@ -444,59 +456,6 @@
     }
   }
 
-  function glossarySignature(glossary) {
-    if (!glossary) return "g0";
-    const parts = [
-      glossary.locale || "unknown",
-      (glossary.protectedTerms || []).length,
-      (glossary.terms || []).length,
-      Cache && typeof Cache.stableHash === "function"
-        ? Cache.stableHash(
-            (glossary.terms || []).map((entry) => `${entry.source}->${entry.target}`).join("|") +
-              "|" +
-              (glossary.protectedTerms || []).join("|")
-          )
-        : "h0"
-    ];
-    return `g-${parts.join("-")}`;
-  }
-
-  function correctionSignature(corrections) {
-    const entries = Object.entries(corrections || {}).sort(([a], [b]) => a.localeCompare(b));
-    if (!entries.length) return "c0";
-    const payload = entries
-      .map(([key, value]) => `${key}:${value.targetLanguage}:${value.original}:${value.translated}`)
-      .join("|");
-    return `c-${entries.length}-${Cache && typeof Cache.stableHash === "function" ? Cache.stableHash(payload) : "h0"}`;
-  }
-
-  function cacheScope(provider, glossary, corrections) {
-    return {
-      provider,
-      glossarySignature: glossarySignature(glossary),
-      correctionSignature: correctionSignature(corrections)
-    };
-  }
-
-  function cacheHasTranslation(cache, key, text, targetLanguage, scope) {
-    return Cache && typeof Cache.entryMatches === "function"
-      ? Cache.entryMatches(cache[key], text, targetLanguage, scope)
-      : Boolean(
-          cache[key] &&
-          cache[key].translated &&
-          cache[key].original === text &&
-          cache[key].targetLanguage === targetLanguage
-        );
-  }
-
-  function cacheUpdateMeta(scope) {
-    return Cache && typeof Cache.normalizeScope === "function" ? Cache.normalizeScope(scope) : {};
-  }
-
-  function correctionKey(targetLanguage, text) {
-    return `${targetLanguage}:${Text.stableHash(Text.normalizeWhitespace(text))}`;
-  }
-
   async function loadCorrections() {
     try {
       const stored = await getLocal([C.STORAGE_KEYS.CORRECTIONS]);
@@ -508,13 +467,6 @@
       updateCorrectionsManager();
       return {};
     }
-  }
-
-  function correctionFor(corrections, targetLanguage, text) {
-    const normalized = Text.normalizeWhitespace(text);
-    const correction = corrections[correctionKey(targetLanguage, normalized)];
-    if (!correction || correction.original !== normalized || correction.targetLanguage !== targetLanguage) return "";
-    return correction.translated || "";
   }
 
   async function persistCorrection(record, translated) {
@@ -585,17 +537,6 @@
     }
   }
 
-  function correctionEntriesForPanel() {
-    return Object.entries(state.corrections || {}).sort((a, b) => {
-      const left = a[1] || {};
-      const right = b[1] || {};
-      return (
-        String(left.targetLanguage || "").localeCompare(String(right.targetLanguage || "")) ||
-        String(left.original || "").localeCompare(String(right.original || ""))
-      );
-    });
-  }
-
   function updateCorrectionPreview() {
     if (!state.shadow) return;
     const select = state.shadow.querySelector("[data-correction-list]");
@@ -618,7 +559,7 @@
     if (!select || !count || !deleteButton || !clearButton) return;
 
     const previousValue = select.value;
-    const entries = correctionEntriesForPanel();
+    const entries = H.correctionEntries(state.corrections);
     count.textContent = `(${entries.length})`;
     select.replaceChildren();
     for (const [key, correction] of entries) {
@@ -913,58 +854,6 @@
       console.warn("[AcademyLens] browser translator unavailable; trying background translation", error);
       return null;
     }
-  }
-
-  function untranslatedTexts(texts, response) {
-    const translated = (response && response.translated) || {};
-    return (texts || []).filter((text) => !translated[text]);
-  }
-
-  function placeholderTokens(value) {
-    return new Set(String(value || "").match(/__AL_(?:TERM|INLINE)_\d+__/g) || []);
-  }
-
-  function hasUnexpectedPlaceholderTokens(original, translated) {
-    const sourceTokens = placeholderTokens(original);
-    const resultTokens = placeholderTokens(translated);
-    if (sourceTokens.size === 0) return resultTokens.size > 0;
-    if (resultTokens.size === 0) return true;
-    return Array.from(resultTokens).some((token) => !sourceTokens.has(token));
-  }
-
-  function translationLooksSuspicious(original, translated, targetLanguage) {
-    const source = Text.normalizeWhitespace(original || "");
-    const result = Text.normalizeWhitespace(translated || "");
-    if (!result) return true;
-    if (targetLanguage !== "en" && result === source && Text.hasLatinLetters(source)) return true;
-    if (hasUnexpectedPlaceholderTokens(source, result)) return true;
-    return false;
-  }
-
-  function mergeTranslationResponses(primary, secondary, requestedTexts) {
-    const translated = {
-      ...((primary && primary.translated) || {}),
-      ...((secondary && secondary.translated) || {})
-    };
-    const errors = {
-      ...((primary && primary.errors) || {})
-    };
-    for (const text of Object.keys((secondary && secondary.translated) || {})) {
-      delete errors[text];
-    }
-    Object.assign(errors, (secondary && secondary.errors) || {});
-
-    return {
-      ok: Object.keys(translated).length > 0 || (requestedTexts || []).length === 0,
-      translated,
-      errors,
-      stats: {
-        ...((primary && primary.stats) || {}),
-        fallback: (secondary && secondary.stats) || null,
-        requested: (requestedTexts || []).length,
-        failed: Object.keys(errors).length
-      }
-    };
   }
 
   async function sendBackgroundTranslationBatch(payload, timeoutMs, signal) {
@@ -1333,75 +1222,8 @@
     }
   }
 
-  function chunks(values, size) {
-    const result = [];
-    for (let index = 0; index < values.length; index += size) {
-      result.push(values.slice(index, index + size));
-    }
-    return result;
-  }
-
-  function candidateElement(candidate) {
-    const target = candidate && candidate.target;
-    return target && target.nodeType === Node.TEXT_NODE ? target.parentElement : target;
-  }
-
-  function candidateContextKey(candidate) {
-    const element = candidateElement(candidate);
-    const context = element?.closest?.("[data-testid], article, section, main") || element?.parentElement || element;
-    if (!context) return "page";
-    return [
-      context.tagName || "node",
-      context.id || "",
-      context.getAttribute?.("data-testid") || "",
-      context.getAttribute?.("aria-label") || ""
-    ].join(":");
-  }
-
-  function appendContextText(groups, seen, candidate, text) {
-    if (!text || seen.has(text)) return;
-    seen.add(text);
-    const key = candidateContextKey(candidate);
-    if (!groups.has(key)) groups.set(key, []);
-    groups.get(key).push(text);
-  }
-
-  function orderedContextTexts(groups) {
-    return Array.from(groups.values()).flat();
-  }
-
-  function mergeDiagnostics(target, source) {
-    if (!source) return target;
-    target.cacheHits += source.cacheHits || 0;
-    target.cacheMisses += source.cacheMisses || 0;
-    target.fallbackTexts += source.fallbackTexts || 0;
-    target.corrections += source.corrections || 0;
-    target.contextGroups += source.contextGroups || 0;
-    target.frames += source.frames || 0;
-    target.frameApplied += source.frameApplied || 0;
-    target.frameFailed += source.frameFailed || 0;
-    if (source.provider) target.provider = source.provider;
-    return target;
-  }
-
   function diagnosticsFromResponse(response, requestedCount) {
-    const stats = (response && response.stats) || {};
-    const fallbackStats = stats.fallback || null;
-    return {
-      cacheHits: stats.cacheHits || 0,
-      cacheMisses: stats.cacheMisses || 0,
-      fallbackTexts: fallbackStats
-        ? fallbackStats.requested || requestedCount || 0
-        : stats.fallback
-          ? requestedCount || 0
-          : 0,
-      corrections: 0,
-      contextGroups: 0,
-      frames: 0,
-      frameApplied: 0,
-      frameFailed: 0,
-      provider: stats.provider || (fallbackStats ? "mixed" : state.providerMode)
-    };
+    return H.diagnosticsFromResponse(response, requestedCount, state.providerMode);
   }
 
   async function translateCandidatePass({ generation, targetLanguage, pageUrl, glossary, childFrameCount = 0 }) {

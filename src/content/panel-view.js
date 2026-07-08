@@ -8,16 +8,7 @@
 })(typeof globalThis !== "undefined" ? globalThis : this, function panelViewFactory() {
   "use strict";
 
-  function renderPanel(options = {}) {
-    const message = typeof options.message === "function" ? options.message : (key) => key;
-    const providerMessageKey =
-      typeof options.providerMessageKey === "function" ? options.providerMessageKey : (mode) => mode;
-    const version = options.version || "dev";
-    const iconUrl = options.iconUrl || "";
-    const browserTranslatorStatus = options.browserTranslatorStatus || "unchecked";
-    const providerMode = options.providerMode || "checking";
-
-    return `
+  const PANEL_STYLES = String.raw`
       <style>
         :host {
           all: initial;
@@ -383,6 +374,19 @@
           }
         }
       </style>
+  `;
+
+  function renderPanel(options = {}) {
+    const message = typeof options.message === "function" ? options.message : (key) => key;
+    const providerMessageKey =
+      typeof options.providerMessageKey === "function" ? options.providerMessageKey : (mode) => mode;
+    const version = options.version || "dev";
+    const iconUrl = options.iconUrl || "";
+    const browserTranslatorStatus = options.browserTranslatorStatus || "unchecked";
+    const providerMode = options.providerMode || "checking";
+
+    return `
+${PANEL_STYLES}
       <section class="panel" data-collapsed="true" data-version="${version}" data-browser-translator="${browserTranslatorStatus}">
         <div class="top">
           <div class="brand">

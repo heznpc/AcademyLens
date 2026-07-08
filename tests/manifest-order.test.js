@@ -20,6 +20,7 @@ test("content scripts load in dependency order", () => {
     "src/lib/remote-google-translator.js",
     "src/lib/glossary.js",
     "src/lib/text-utils.js",
+    "src/content/content-helpers.js",
     "src/content/dom-translation-runtime.js",
     "src/content/frame-messenger.js",
     "src/content/panel-view.js",
