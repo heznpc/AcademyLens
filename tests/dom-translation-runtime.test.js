@@ -194,3 +194,39 @@ test("directGlossaryTranslation returns glossary-only protected terms", () => {
     );
   });
 });
+
+test("collectCandidates orders visible lesson text ahead of off-screen text", () => {
+  withDom(
+    `
+      <main>
+        <p id="above">OpenAI Academy above the fold scrolled far past the top edge.</p>
+        <p id="visible">OpenAI Academy visible lesson text inside the current viewport.</p>
+        <p id="below">OpenAI Academy below the fold waiting further down the page.</p>
+      </main>
+    `,
+    (document) => {
+      document.defaultView.innerHeight = 800;
+      const rects = {
+        above: { top: -900, bottom: -840 },
+        visible: { top: 120, bottom: 180 },
+        below: { top: 5000, bottom: 5060 }
+      };
+      for (const id of Object.keys(rects)) {
+        const rect = rects[id];
+        document.querySelector(`#${id}`).getBoundingClientRect = () => ({
+          top: rect.top,
+          bottom: rect.bottom,
+          left: 0,
+          right: 0,
+          width: 0,
+          height: rect.bottom - rect.top
+        });
+      }
+
+      const { runtime } = createRuntime(document);
+      const order = runtime.collectCandidates().map((candidate) => candidate.target.parentElement.id);
+
+      assert.deepEqual(order, ["visible", "below", "above"]);
+    }
+  );
+});

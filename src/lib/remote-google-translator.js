@@ -184,6 +184,11 @@
 
     function translateText(text, targetLanguage, scope, signal) {
       assertReady();
+      // In-flight de-duplication is intentionally keyed by scope so it matches the
+      // cache's storage granularity (the same key the background caller uses). The
+      // raw Google payload only depends on text + targetLanguage, so sharing across
+      // scopes would still be correct; scoping just keeps the two paths aligned and
+      // is covered by the "dedupes requests by cache scope" test. Do not drop scope.
       const key = Cache.cacheKey(targetLanguage, text, scope);
       const existing = inFlightTranslations.get(key);
       if (existing) return existing;
