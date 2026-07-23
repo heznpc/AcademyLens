@@ -48,16 +48,23 @@ test("content translation fallback does not race background translation by defau
 
 test("content translation fallback has retry, timeout, dedupe, and concurrency controls", () => {
   const source = read("src/content/content.js");
-  const fallback = source.slice(
-    source.indexOf("async function fetchContentTranslationWithRetry"),
-    source.indexOf("async function persistContentCache")
-  );
+  const remote = read("src/lib/remote-google-translator.js");
+  const manifest = JSON.parse(read("manifest.json"));
+  const contentScripts = manifest.content_scripts[0].js;
 
+  assert(contentScripts.includes("src/lib/remote-google-translator.js"));
+  assert(contentScripts.includes("src/content/content-helpers.js"));
+  assert(
+    contentScripts.indexOf("src/lib/remote-google-translator.js") < contentScripts.indexOf("src/content/content.js")
+  );
+  assert(contentScripts.indexOf("src/content/content-helpers.js") < contentScripts.indexOf("src/content/content.js"));
   assert.match(source, /CONTENT_FALLBACK_MAX_CONCURRENT_FETCHES = 5/);
-  assert.match(source, /contentFallbackInFlight/);
-  assert.match(fallback, /AbortController/);
-  assert.match(fallback, /RETRYABLE_TRANSLATE_STATUS/);
-  assert.match(fallback, /runWithContentFallbackFetchLimit/);
+  assert.match(source, /AcademyLensRemoteGoogleTranslator/);
+  assert.match(source, /contentFallbackTranslator\.translateText\(text, targetLanguage, scope, signal\)/);
+  assert.match(remote, /inFlightTranslations/);
+  assert.match(remote, /AbortController/);
+  assert.match(remote, /retryableStatus/);
+  assert.match(remote, /runWithFetchLimit/);
   assert.match(source, /currentAbortSignal/);
   assert.match(source, /throwIfAborted/);
 });
@@ -97,6 +104,7 @@ test("browser translator downloads require explicit user opt-in", () => {
 test("content translation keeps scanning bounded passes beyond one node cap", () => {
   const constants = read("src/lib/constants.js");
   const source = read("src/content/content.js");
+  const domRuntime = read("src/content/dom-translation-runtime.js");
   const translatePage = source.slice(
     source.indexOf("async function performTranslatePage"),
     source.indexOf("function restorePage", source.indexOf("async function performTranslatePage"))
@@ -105,7 +113,7 @@ test("content translation keeps scanning bounded passes beyond one node cap", ()
   assert.match(constants, /maxTranslationPasses: 8/);
   assert.match(constants, /maxCandidateScanNodes: 600/);
   assert.match(source, /async function translateCandidatePass/);
-  assert.match(source, /scoreNode\(node\)/);
+  assert.match(domRuntime, /scoreNode\(node\)/);
   assert.match(translatePage, /for \(let passIndex = 0; passIndex < maxPasses; passIndex \+= 1\)/);
   assert.match(translatePage, /result\.reachedLimit/);
   assert.match(translatePage, /status\.translatedCapped/);
@@ -125,6 +133,9 @@ test("content translation uses a queue for manual, auto, and frame requests", ()
 
 test("content supports local corrections, frame aggregation, viewport priority, and inline tokens", () => {
   const source = read("src/content/content.js");
+  const helpers = read("src/content/content-helpers.js");
+  const domRuntime = read("src/content/dom-translation-runtime.js");
+  const frameMessenger = read("src/content/frame-messenger.js");
   const constants = read("src/lib/constants.js");
 
   assert.match(constants, /CORRECTIONS: "academylens\.localCorrections\.v1"/);
@@ -132,21 +143,22 @@ test("content supports local corrections, frame aggregation, viewport priority, 
   assert.match(source, /function deleteCorrection/);
   assert.match(source, /function refreshCorrectionRecords/);
   assert.match(source, /function updateCorrectionsManager/);
-  assert.match(source, /function correctionFor/);
-  assert.match(source, /function startFrameAggregate/);
-  assert.match(source, /cleanupTimer/);
-  assert.match(source, /status\.translatedWithFrames/);
-  assert.match(source, /status\.frameFailed/);
-  assert.match(source, /function sortCandidatesByViewport/);
-  assert.match(source, /function prepareInlinePlaceholders/);
-  assert.match(source, /function candidateContextKey/);
+  assert.match(helpers, /function correctionFor/);
+  assert.match(frameMessenger, /function startAggregate/);
+  assert.match(frameMessenger, /cleanupTimer/);
+  assert.match(frameMessenger, /status\.translatedWithFrames/);
+  assert.match(frameMessenger, /status\.frameFailed/);
+  assert.match(domRuntime, /function sortCandidatesByViewport/);
+  assert.match(domRuntime, /function prepareInlinePlaceholders/);
+  assert.match(helpers, /function candidateContextKey/);
   assert.match(source, /function updateDiagnosticsPanel/);
   assert.match(source, /preparedByCandidate/);
-  assert.match(source, /__AL_INLINE_/);
+  assert.match(domRuntime, /__AL_INLINE_/);
 });
 
 test("content cache scope tracks provider and glossary while cache clears invalidate stale writes", () => {
   const source = read("src/content/content.js");
+  const helpers = read("src/content/content-helpers.js");
   const constants = read("src/lib/constants.js");
   const cache = read("src/lib/cache.js");
   const background = read("src/background/background.js");
@@ -156,9 +168,9 @@ test("content cache scope tracks provider and glossary while cache clears invali
   assert.match(constants, /CLEAR_CACHE: "ACADEMYLENS_CLEAR_CACHE"/);
   assert.match(cache, /function normalizeScope/);
   assert.match(cache, /function entryMatches/);
-  assert.match(source, /function glossarySignature/);
-  assert.match(source, /function cacheScope/);
-  assert.match(source, /function cacheEpochValue/);
+  assert.match(helpers, /function glossarySignature/);
+  assert.match(helpers, /function cacheScope/);
+  assert.match(helpers, /function cacheEpochValue/);
   assert.match(source, /state\.cacheEpoch/);
   assert.match(source, /cacheEpoch: state\.cacheEpoch/);
   assert.match(source, /provider: "google-translate"/);
@@ -174,34 +186,36 @@ test("content cache scope tracks provider and glossary while cache clears invali
 
 test("content fallback only retries texts missed by browser-native translation", () => {
   const source = read("src/content/content.js");
+  const helpers = read("src/content/content-helpers.js");
   const sendTranslationBatch = source.slice(
     source.indexOf("async function sendTranslationBatch"),
     source.indexOf("function message", source.indexOf("async function sendTranslationBatch"))
   );
 
-  assert.match(source, /function untranslatedTexts/);
-  assert.match(source, /function mergeTranslationResponses/);
-  assert.match(source, /function hasUnexpectedPlaceholderTokens/);
+  assert.match(helpers, /function untranslatedTexts/);
+  assert.match(helpers, /function mergeTranslationResponses/);
+  assert.match(helpers, /function hasUnexpectedPlaceholderTokens/);
   assert.match(sendTranslationBatch, /const missingTexts = untranslatedTexts\(requestedTexts, browserResponse\)/);
   assert.match(sendTranslationBatch, /texts: missingTexts/);
 });
 
 test("frame commands are scoped to the current route before redispatch", () => {
   const source = read("src/content/content.js");
+  const frameMessenger = read("src/content/frame-messenger.js");
 
   assert.match(source, /routeVersion/);
-  assert.match(source, /pageUrl: extra\.pageUrl \|\| location\.href/);
-  assert.match(source, /frameToken: extra\.frameToken/);
-  assert.match(source, /function isTrustedParentFrameCommand/);
-  assert.match(source, /event\.source !== window\.parent/);
-  assert.match(source, /data\.frameToken !== state\.frameSessionToken/);
-  assert.match(source, /function isKnownChildFrameSource/);
-  assert.match(source, /function isPendingFrameCommandCurrent/);
-  assert.match(source, /function clearFrameAggregates/);
+  assert.match(frameMessenger, /pageUrl: extra\.pageUrl \|\| getPageUrl\(\)/);
+  assert.match(frameMessenger, /frameToken: extra\.frameToken/);
+  assert.match(frameMessenger, /function isTrustedParentCommand/);
+  assert.match(frameMessenger, /event\.source !== view\.parent/);
+  assert.match(frameMessenger, /data\.frameToken !== frameSessionToken/);
+  assert.match(frameMessenger, /function isKnownChildFrameSource/);
+  assert.match(frameMessenger, /function isPendingCommandCurrent/);
+  assert.match(frameMessenger, /function clearAggregates/);
 });
 
 test("panel status is exposed as an accessible live region", () => {
-  const source = read("src/content/content.js");
+  const source = read("src/content/panel-view.js");
 
   assert.match(source, /data-status role="status" aria-live="polite" aria-atomic="true"/);
 });
