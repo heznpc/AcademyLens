@@ -128,3 +128,82 @@ test("content helpers group translation context and diagnostics", () => {
   assert.equal(diagnostics.cacheMisses, 1);
   assert.equal(diagnostics.provider, "native");
 });
+
+test("chunks splits values into fixed-size batches", () => {
+  assert.deepEqual(ContentHelpers.chunks([1, 2, 3, 4, 5], 2), [[1, 2], [3, 4], [5]]);
+  assert.deepEqual(ContentHelpers.chunks([], 3), []);
+  assert.deepEqual(ContentHelpers.chunks(["a", "b"], 5), [["a", "b"]]);
+});
+
+test("cacheEpochValue keeps only positive finite epochs", () => {
+  assert.equal(ContentHelpers.cacheEpochValue(7), 7);
+  assert.equal(ContentHelpers.cacheEpochValue(2.5), 2.5);
+  assert.equal(ContentHelpers.cacheEpochValue(0), 0);
+  assert.equal(ContentHelpers.cacheEpochValue(-3), 0);
+  assert.equal(ContentHelpers.cacheEpochValue("nope"), 0);
+  assert.equal(ContentHelpers.cacheEpochValue(undefined), 0);
+});
+
+test("candidateElement resolves text nodes to their parent element", () => {
+  const NodeRef = { TEXT_NODE: 3 };
+  const parent = { tagName: "P" };
+  const textNode = { nodeType: 3, parentElement: parent };
+  const element = { nodeType: 1 };
+
+  assert.equal(ContentHelpers.candidateElement(NodeRef, { target: textNode }), parent);
+  assert.equal(ContentHelpers.candidateElement(NodeRef, { target: element }), element);
+  assert.equal(ContentHelpers.candidateElement(NodeRef, {}), undefined);
+});
+
+test("hasUnexpectedPlaceholderTokens detects protected-term drift", () => {
+  assert.equal(ContentHelpers.hasUnexpectedPlaceholderTokens("Learn ChatGPT", "안녕하세요"), false);
+  assert.equal(ContentHelpers.hasUnexpectedPlaceholderTokens("Learn ChatGPT", "__AL_TERM_0__ 학습"), true);
+  assert.equal(ContentHelpers.hasUnexpectedPlaceholderTokens("__AL_TERM_0__", "번역됨"), true);
+  assert.equal(ContentHelpers.hasUnexpectedPlaceholderTokens("__AL_TERM_0__", "__AL_TERM_0__ 번역"), false);
+  assert.equal(ContentHelpers.hasUnexpectedPlaceholderTokens("__AL_TERM_0__", "__AL_TERM_1__"), true);
+});
+
+test("cacheHasTranslation delegates to Cache.entryMatches and falls back safely", () => {
+  const cache = {
+    k1: { translated: "AI 기초", original: "AI Foundations", targetLanguage: "ko" },
+    k2: { translated: "", original: "AI Foundations", targetLanguage: "ko" }
+  };
+
+  // The delegate keys off the scope argument (which the built-in fallback ignores)
+  // and deliberately accepts a query whose text does NOT match the stored entry —
+  // an outcome the fallback can never produce. So these assertions fail if the
+  // Cache.entryMatches delegation is dropped or the scope argument is not threaded.
+  const delegatingCache = {
+    entryMatches(entry, text, targetLanguage, scope) {
+      return Boolean(entry && entry.translated) && Boolean(scope) && scope.provider === "browser-translator";
+    }
+  };
+  assert.equal(
+    ContentHelpers.cacheHasTranslation(delegatingCache, cache, "k1", "different query", "ko", {
+      provider: "browser-translator"
+    }),
+    true
+  );
+  assert.equal(
+    ContentHelpers.cacheHasTranslation(delegatingCache, cache, "k1", "different query", "ko", { provider: "google" }),
+    false
+  );
+
+  // Fallback branch: Cache without entryMatches uses the built-in guard.
+  assert.equal(ContentHelpers.cacheHasTranslation({}, cache, "k1", "AI Foundations", "ko", {}), true);
+  assert.equal(ContentHelpers.cacheHasTranslation({}, cache, "k1", "Other text", "ko", {}), false);
+  assert.equal(ContentHelpers.cacheHasTranslation({}, cache, "k2", "AI Foundations", "ko", {}), false);
+  assert.equal(ContentHelpers.cacheHasTranslation({}, cache, "missing", "AI Foundations", "ko", {}), false);
+});
+
+test("cacheUpdateMeta delegates to Cache.normalizeScope and falls back to empty meta", () => {
+  const normalizingCache = {
+    normalizeScope(scope) {
+      return { provider: scope.provider };
+    }
+  };
+  assert.deepEqual(ContentHelpers.cacheUpdateMeta(normalizingCache, { provider: "google-translate" }), {
+    provider: "google-translate"
+  });
+  assert.deepEqual(ContentHelpers.cacheUpdateMeta({}, { provider: "google-translate" }), {});
+});

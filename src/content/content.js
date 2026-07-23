@@ -23,6 +23,12 @@
   const RETRYABLE_TRANSLATE_STATUS = new Set([408, 425, 429, 500, 502, 503, 504]);
   const isTopFrame = window.top === window;
 
+  // This guard lists only the modules the panel cannot run without. Cache,
+  // GoogleTranslate, and RemoteGoogleTranslator are deliberately absent: the
+  // remote Google fallback is optional and degrades gracefully when they are
+  // missing (contentFallbackTranslator stays null and sendTranslationBatch
+  // reports status.failed instead of crashing), matching the existing
+  // treatment of BrowserTranslator.
   if (
     !C ||
     !ContentHelpers ||
