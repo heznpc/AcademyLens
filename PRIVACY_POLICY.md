@@ -52,4 +52,4 @@ AcademyLens currently uses:
 
 Review those services and browser features before using translation with sensitive content. The current runtime does not use Google Cloud Translation credentials, an AcademyLens server, or an OpenAI API key.
 
-If AI-assisted terminology review is added later, it will require explicit opt-in wording before use.
+An optional AI tutor is planned and will ship off by default. When you turn on its cloud engine, your question and the relevant lesson text for that request are sent through a locally bundled Puter.js bridge to a remote model, and a free Puter sign-in is required. Its on-device engine (Chrome Gemini Nano) needs no account and keeps everything on your device. By default, and for the translation features described above, no text is sent to any AI tutor service, and learners who use neither engine keep the full no-account baseline.
