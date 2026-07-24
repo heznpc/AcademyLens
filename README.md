@@ -105,7 +105,12 @@ AcademyLens is an open-source beta. It should not be treated as Chrome Web Store
 
 ## Planned v1.1
 
-AI-assisted terminology review may return only if it can be implemented without remote hosted code risk, such as a reviewed local bundle or another compliant opt-in bridge.
+An optional AI tutor, **off by default**, with two interchangeable engines and no change to the core:
+
+- **Cloud engine** — a locally bundled Puter.js bridge (no remotely-hosted code) that runs a stronger remote model. Requires a free Puter sign-in and sends your question plus the relevant lesson text for that request.
+- **On-device engine** — Chrome's built-in Gemini Nano (Prompt API), which needs no account and keeps everything on the device, where hardware and region allow.
+
+The tutor is additive. Translation, protected AI terminology, local corrections, and glossary term reference keep working with no account and no AI engine, so learners who can run neither engine still get the full baseline. Tutor answers are grounded in the curated glossary and the current lesson, and never surface quiz answers.
 
 ## Development
 

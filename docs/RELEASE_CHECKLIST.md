@@ -12,7 +12,7 @@ AcademyLens is not ready for Chrome Web Store submission just because the build 
 - `git status --short` is clean after verification, except for intentional release artifacts.
 - CI is green on the pushed commit.
 - The manifest, README, store listing, and privacy policy all keep `Unofficial, not affiliated with OpenAI.`
-- Runtime files contain no remote hosted SDK scripts, including Puter.js.
+- Runtime files execute no remotely-hosted or CDN scripts. If the optional AI tutor is enabled, its SDK (for example Puter) is bundled inside the extension package and loaded only from `'self'` — never from a remote origin.
 
 ## Academy DOM QA
 
@@ -42,7 +42,7 @@ AcademyLens is not ready for Chrome Web Store submission just because the build 
 - Confirm privacy copy says auto-translate can send newly rendered visible lesson text when enabled.
 - Confirm privacy copy says original visible text, translated text, target language, and cache timestamps may be stored locally.
 - Do not describe the current Google Translate endpoint as the official Google Cloud Translation API.
-- Do not enable GPT/Puter/OpenAI review without an explicit opt-in UX, updated privacy text, and Chrome Web Store policy review.
+- Do not enable a cloud AI engine (Puter/GPT) for the tutor or terminology review without an explicit opt-in UX, updated privacy text, and Chrome Web Store policy review. The on-device engine (Chrome Gemini Nano) requires no account and sends no data; both engines stay off by default with a working no-tutor baseline (translation plus glossary term reference), so a device that can run neither still gets the full baseline.
 
 ## Store Assets
 
