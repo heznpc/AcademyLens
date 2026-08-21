@@ -121,12 +121,15 @@ test("content translation keeps scanning bounded passes beyond one node cap", ()
 
 test("content translation uses a queue for manual, auto, and frame requests", () => {
   const source = read("src/content/content.js");
+  const translationController = read("src/content/translation-controller.js");
 
-  assert.match(source, /translationQueue/);
-  assert.match(source, /function enqueueTranslation/);
-  assert.match(source, /async function runTranslationQueue/);
+  assert.match(translationController, /const queue =/);
+  assert.match(translationController, /function enqueue/);
+  assert.match(translationController, /async function runQueue/);
+  assert.match(translationController, /queue\.active/);
   assert.match(source, /async function performTranslatePage/);
   assert.match(source, /function translatePage\(options = \{\}\)/);
+  assert.match(source, /translationController\.enqueue/);
   assert.match(source, /scheduleAutoTranslate\(delay\)/);
   assert.match(source, /window\.clearTimeout\(state\.debounceTimer\)/);
 });
@@ -222,28 +225,40 @@ test("panel status is exposed as an accessible live region", () => {
 
 test("content mutation and placement work is throttled before expensive page scans", () => {
   const source = read("src/content/content.js");
+  const domObserver = read("src/content/content-dom-observer.js");
   const updatePanelPlacement = source.slice(
     source.indexOf("function updatePanelPlacement"),
     source.indexOf("function requestPanelPlacementFrame")
   );
 
   assert.match(source, /requestAnimationFrame/);
-  assert.match(source, /queueMutationScan/);
-  assert.match(source, /runMutationScan/);
+  assert.match(domObserver, /function queueScan/);
+  assert.match(domObserver, /function runScan/);
+  assert.match(domObserver, /pendingMutationScanNodes/);
   assert.match(source, /elementMayContainTranslatableText/);
   assert.match(source, /collectPanelOverlayCandidates/);
   assert.doesNotMatch(updatePanelPlacement, /querySelectorAll\("\*"\)/);
 });
 
-test("CI runs the release preflight gate", () => {
+test("CI separates validation, unit, build, and browser failure diagnostics", () => {
   const ci = read(".github/workflows/ci.yml");
   const playwrightConfig = read("playwright.config.js");
   const pkg = JSON.parse(read("package.json"));
 
-  assert.match(ci, /npm run release:preflight/);
+  assert.match(ci, /\n {2}validate:/);
+  assert.match(ci, /\n {2}unit:/);
+  assert.match(ci, /\n {2}build:/);
+  assert.match(ci, /\n {2}e2e:/);
+  assert.match(ci, /npm run check:operations/);
+  assert.match(ci, /npm test/);
+  assert.match(ci, /npm run build:zip && npm run check:files/);
+  assert.match(ci, /npm run test:e2e/);
+  assert.match(ci, /if: failure\(\)[\s\S]*actions\/upload-artifact@v7/);
   assert.match(ci, /actions\/checkout@v7[\s\S]*persist-credentials:\s*false/);
   assert.match(playwrightConfig, /timeout:\s*90_000/);
   assert.match(playwrightConfig, /timeout:\s*20_000/);
+  assert.match(playwrightConfig, /trace: "retain-on-failure"/);
+  assert.match(playwrightConfig, /screenshot: "only-on-failure"/);
   assert.match(pkg.scripts["check:all"], /check:glossary-quality/);
 });
 

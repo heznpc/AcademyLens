@@ -8,5 +8,9 @@ module.exports = defineConfig({
   },
   fullyParallel: false,
   workers: 1,
-  reporter: [["list"]]
+  reporter: process.env.CI ? [["github"], ["list"]] : [["list"]],
+  use: {
+    trace: "retain-on-failure",
+    screenshot: "only-on-failure"
+  }
 });

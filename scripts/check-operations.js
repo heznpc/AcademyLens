@@ -144,6 +144,17 @@ assert(
   /actions\/checkout@v7[\s\S]*persist-credentials:\s*false/.test(ciWorkflow),
   "CI checkout must disable credential persistence"
 );
+for (const job of ["validate", "unit", "build", "e2e"]) {
+  assert(new RegExp(`\\n  ${job}:`).test(ciWorkflow), `CI must define an independent ${job} job`);
+}
+assert(/npm run check:operations/.test(ciWorkflow), "CI validate job must enforce operational contracts");
+assert(/npm test/.test(ciWorkflow), "CI unit job must run unit tests");
+assert(/npm run build:zip && npm run check:files/.test(ciWorkflow), "CI build job must verify the release archive");
+assert(/npm run test:e2e/.test(ciWorkflow), "CI e2e job must run browser tests");
+assert(
+  /if: failure\(\)[\s\S]*actions\/upload-artifact@v7/.test(ciWorkflow),
+  "CI e2e job must retain failure artifacts"
+);
 
 const codeqlWorkflow = read(".github/workflows/codeql.yml");
 assert(!/pull_request_target\s*:/.test(codeqlWorkflow), "CodeQL must not run on pull_request_target");

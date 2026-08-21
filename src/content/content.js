@@ -7,6 +7,9 @@
   const ContentHelpers = globalThis.AcademyLensContentHelpers;
   const GoogleTranslate = globalThis.AcademyLensGoogleTranslate;
   const Glossary = globalThis.AcademyLensGlossary;
+  const ContentLifecycle = globalThis.AcademyLensContentLifecycle;
+  const ContentDomObserver = globalThis.AcademyLensContentDomObserver;
+  const TranslationController = globalThis.AcademyLensTranslationController;
   const DomTranslationRuntime = globalThis.AcademyLensDomTranslationRuntime;
   const FrameMessenger = globalThis.AcademyLensFrameMessenger;
   const PanelView = globalThis.AcademyLensPanelView;
@@ -32,6 +35,9 @@
   if (
     !C ||
     !ContentHelpers ||
+    !ContentLifecycle ||
+    !ContentDomObserver ||
+    !TranslationController ||
     !DomTranslationRuntime ||
     !FrameMessenger ||
     !Glossary ||
@@ -62,9 +68,6 @@
     glossaries: new Map(),
     panel: null,
     shadow: null,
-    lastUrl: location.href,
-    generation: 0,
-    observer: null,
     debounceTimer: 0,
     placementTimer: 0,
     placementFrame: 0,
@@ -72,24 +75,12 @@
     browserTranslatorStatus: "unchecked",
     providerMode: "checking",
     providerDetail: "",
-    translationQueue: {
-      timer: 0,
-      active: false,
-      pending: null,
-      resolvers: []
-    },
-    generationWaiters: new Set(),
     cacheEpoch: 0,
     selectedCorrection: null,
     corrections: {},
     lastDiagnostics: null,
-    routeVersion: 0,
     collapsed: false,
     collapseUserSet: false,
-    suppressMutationUntil: 0,
-    mutationScanTimer: 0,
-    pendingMutationScanNodes: new Set(),
-    abortController: null,
     pendingDangerAction: "",
     dangerActionTimer: 0
   };
@@ -109,6 +100,15 @@
           createAbortError: abortError
         })
       : null;
+  let lifecycleController = null;
+  let domObserverController = null;
+  const translationController = TranslationController.create({
+    window,
+    AbortController: window.AbortController,
+    runTranslation: (options) => performTranslatePage(options),
+    isContextCurrent: (targetLanguage, pageUrl) =>
+      targetLanguage === state.settings.targetLanguage && pageUrl === location.href
+  });
   const domTranslation = DomTranslationRuntime.create({
     document,
     window,
@@ -127,8 +127,8 @@
     setTargetLanguage: (targetLanguage) => {
       state.settings.targetLanguage = targetLanguage;
     },
-    getGeneration: () => state.generation,
-    getRouteVersion: () => state.routeVersion,
+    getGeneration: () => translationController.generation,
+    getRouteVersion: () => lifecycleController?.routeVersion || 0,
     getPageUrl: () => location.href,
     translatePage: (options) => translatePage(options),
     restorePage: (options) => restorePage(options),
@@ -139,6 +139,30 @@
       state.lastDiagnostics.frameFailed = (state.lastDiagnostics.frameFailed || 0) + (failed || 0);
       updateDiagnosticsPanel();
     }
+  });
+  lifecycleController = ContentLifecycle.create({
+    window,
+    history,
+    location,
+    onRouteChange: handleRouteTransition,
+    onResize: () => schedulePanelPlacement(),
+    onScroll: () => schedulePanelPlacement(120),
+    onPageHide: teardownContent
+  });
+  domObserverController = ContentDomObserver.create({
+    document,
+    window,
+    MutationObserver: window.MutationObserver,
+    mutationElement,
+    shouldIgnore: isPanelMutation,
+    inspectNode: (node) => ({
+      sawFrameMutation: node.tagName === "IFRAME" || Boolean(node.querySelector?.("iframe")),
+      sawTranslatableMutation: elementMayContainTranslatableText(node)
+    }),
+    reconcileMutations,
+    checkRouteChange: () => lifecycleController.checkRouteChange(),
+    dispatchPendingFrameCommand: () => frameMessenger.dispatchPendingCommand(),
+    onSignals: handleMutationSignals
   });
 
   function abortError() {
@@ -152,7 +176,7 @@
   }
 
   function currentAbortSignal(generation) {
-    return generation === state.generation && state.abortController ? state.abortController.signal : null;
+    return translationController.currentAbortSignal(generation);
   }
 
   function getLocal(keys) {
@@ -187,66 +211,23 @@
   }
 
   function bumpGeneration() {
-    if (state.abortController && !state.abortController.signal.aborted) {
-      state.abortController.abort();
-    }
-    state.abortController = new AbortController();
-    state.generation += 1;
-    const waiters = Array.from(state.generationWaiters);
-    state.generationWaiters.clear();
-    for (const resolve of waiters) resolve(state.generation);
-    return state.generation;
+    return translationController.bumpGeneration();
   }
 
   function isCurrentGeneration(generation, targetLanguage, pageUrl) {
-    return (
-      generation === state.generation && targetLanguage === state.settings.targetLanguage && pageUrl === location.href
-    );
+    return translationController.isCurrent(generation, targetLanguage, pageUrl);
   }
 
   function suppressMutationReactions(durationMs = 250) {
-    state.suppressMutationUntil = Math.max(state.suppressMutationUntil, Date.now() + durationMs);
-  }
-
-  function watchGenerationChange(generation) {
-    if (generation !== state.generation) {
-      return { promise: Promise.resolve(state.generation), cancel() {} };
-    }
-
-    let resolveWaiter;
-    const promise = new Promise((resolve) => {
-      resolveWaiter = resolve;
-      state.generationWaiters.add(resolveWaiter);
-    });
-    return {
-      promise,
-      cancel() {
-        state.generationWaiters.delete(resolveWaiter);
-      }
-    };
+    domObserverController?.suppress(durationMs);
   }
 
   async function raceCurrentGeneration(promise, generation, targetLanguage, pageUrl) {
-    if (!isCurrentGeneration(generation, targetLanguage, pageUrl)) return undefined;
-    const watcher = watchGenerationChange(generation);
-    try {
-      const result = await Promise.race([
-        Promise.resolve(promise).then(
-          (value) => ({ type: "value", value }),
-          (error) => ({ type: "error", error })
-        ),
-        watcher.promise.then(() => ({ type: "stale" }))
-      ]);
-      if (result.type === "stale" || !isCurrentGeneration(generation, targetLanguage, pageUrl)) return undefined;
-      if (result.type === "error") throw result.error;
-      return result.value;
-    } finally {
-      watcher.cancel();
-    }
+    return translationController.raceCurrent(promise, generation, targetLanguage, pageUrl);
   }
 
   function setBusy(isBusy, generation) {
-    if (generation && generation !== state.generation) return;
+    if (generation && generation !== translationController.generation) return;
     if (!state.shadow) return;
     const panel = state.shadow.querySelector(".panel");
     const translate = state.shadow.querySelector("[data-translate]");
@@ -1433,47 +1414,12 @@
     return { applied, failed, childFrameCount, hadCandidates: true, reachedLimit, diagnostics };
   }
 
-  function enqueueTranslation(options = {}, delay = 0) {
-    return new Promise((resolve) => {
-      state.translationQueue.pending = {
-        ...(state.translationQueue.pending || {}),
-        ...(options || {})
-      };
-      state.translationQueue.resolvers.push(resolve);
-      window.clearTimeout(state.translationQueue.timer);
-      state.translationQueue.timer = window.setTimeout(runTranslationQueue, Math.max(0, delay || 0));
-    });
-  }
-
   function cancelQueuedTranslation() {
-    window.clearTimeout(state.translationQueue.timer);
-    state.translationQueue.pending = null;
-    const resolvers = state.translationQueue.resolvers.splice(0);
-    for (const resolve of resolvers) resolve(undefined);
-  }
-
-  async function runTranslationQueue() {
-    if (state.translationQueue.active) return;
-    const options = state.translationQueue.pending || {};
-    if (!state.translationQueue.pending) return;
-    const resolvers = state.translationQueue.resolvers.splice(0);
-    state.translationQueue.pending = null;
-    state.translationQueue.active = true;
-
-    let result;
-    try {
-      result = await performTranslatePage(options);
-    } finally {
-      state.translationQueue.active = false;
-      for (const resolve of resolvers) resolve(result);
-      if (state.translationQueue.pending) {
-        state.translationQueue.timer = window.setTimeout(runTranslationQueue, 0);
-      }
-    }
+    translationController.cancelQueued();
   }
 
   function translatePage(options = {}) {
-    return enqueueTranslation(options, options.delay || 0);
+    return translationController.enqueue(options, options.delay || 0);
   }
 
   async function performTranslatePage(options = {}) {
@@ -1611,10 +1557,7 @@
     state.debounceTimer = window.setTimeout(() => translatePage({ reason: "auto" }), delay);
   }
 
-  function handleRouteChange() {
-    if (location.href === state.lastUrl) return false;
-    state.lastUrl = location.href;
-    state.routeVersion += 1;
+  function handleRouteTransition() {
     frameMessenger.clearAggregates();
     bumpGeneration();
     restorePage({ bump: false, silent: true });
@@ -1623,7 +1566,6 @@
     if (state.settings.autoTranslate && state.settings.targetLanguage !== "en") {
       scheduleAutoTranslate(900);
     }
-    return true;
   }
 
   function mutationElement(node) {
@@ -1666,48 +1608,7 @@
     );
   }
 
-  function queueMutationScan(node) {
-    const element = mutationElement(node);
-    if (!element || isPanelMutation(element)) return;
-    if (state.pendingMutationScanNodes.size < 80) {
-      state.pendingMutationScanNodes.add(element);
-    }
-    window.clearTimeout(state.mutationScanTimer);
-    state.mutationScanTimer = window.setTimeout(runMutationScan, 140);
-  }
-
-  function runMutationScan() {
-    state.mutationScanTimer = 0;
-    const remainingSuppression = state.suppressMutationUntil - Date.now();
-    if (remainingSuppression > 0) {
-      state.mutationScanTimer = window.setTimeout(runMutationScan, remainingSuppression + 20);
-      return;
-    }
-
-    const nodes = Array.from(state.pendingMutationScanNodes);
-    state.pendingMutationScanNodes.clear();
-
-    let sawTranslatableMutation = false;
-    let sawFrameMutation = false;
-    for (const node of nodes) {
-      if (!node || !node.isConnected || isPanelMutation(node)) continue;
-      if (node.tagName === "IFRAME" || node.querySelector?.("iframe")) sawFrameMutation = true;
-      if (elementMayContainTranslatableText(node)) sawTranslatableMutation = true;
-      if (sawTranslatableMutation && sawFrameMutation) break;
-    }
-
-    if (sawFrameMutation) {
-      window.setTimeout(() => frameMessenger.dispatchPendingCommand(), 80);
-    }
-    if (sawFrameMutation || sawTranslatableMutation) {
-      schedulePanelPlacement();
-    }
-    if (state.settings.autoTranslate && sawTranslatableMutation) {
-      scheduleAutoTranslate(800);
-    }
-  }
-
-  function reconcileMutations(mutations) {
+  function reconcileMutations(mutations, queueMutationScan) {
     let sawFrameMutation = false;
     let sawTranslatableMutation = false;
     let needsDeferredScan = false;
@@ -1754,30 +1655,15 @@
       }
     }
 
-    if (sawFrameMutation) {
-      window.setTimeout(() => frameMessenger.dispatchPendingCommand(), 80);
-    }
     return { sawFrameMutation, sawTranslatableMutation, needsDeferredScan };
   }
 
-  function watchSpaNavigation() {
-    state.observer = new MutationObserver((mutations) => {
-      const routeChanged = handleRouteChange();
-      if (Date.now() < state.suppressMutationUntil) return;
-      const signal = reconcileMutations(mutations);
-      if (signal.sawFrameMutation || signal.sawTranslatableMutation || signal.needsDeferredScan || routeChanged) {
-        schedulePanelPlacement();
-      }
-
-      if (!state.settings.autoTranslate || routeChanged || !signal.sawTranslatableMutation) return;
-      scheduleAutoTranslate(800);
-    });
-
-    state.observer.observe(document.body, {
-      childList: true,
-      characterData: true,
-      subtree: true
-    });
+  function handleMutationSignals(signal = {}, routeChanged = false) {
+    if (signal.sawFrameMutation || signal.sawTranslatableMutation || signal.needsDeferredScan || routeChanged) {
+      schedulePanelPlacement();
+    }
+    if (!state.settings.autoTranslate || routeChanged || !signal.sawTranslatableMutation) return;
+    scheduleAutoTranslate(800);
   }
 
   async function applySettings(nextSettings, options = {}) {
@@ -1852,46 +1738,20 @@
     });
   }
 
-  function watchHistoryNavigation() {
-    if (history.pushState.__academylensWrapped) return;
-    const originalPushState = history.pushState;
-    const originalReplaceState = history.replaceState;
-
-    history.pushState = function pushStateWithAcademyLens() {
-      const result = originalPushState.apply(this, arguments);
-      window.setTimeout(handleRouteChange, 0);
-      return result;
-    };
-    history.replaceState = function replaceStateWithAcademyLens() {
-      const result = originalReplaceState.apply(this, arguments);
-      window.setTimeout(handleRouteChange, 0);
-      return result;
-    };
-    history.pushState.__academylensWrapped = true;
-    history.replaceState.__academylensWrapped = true;
-
-    window.addEventListener("popstate", handleRouteChange);
-    window.addEventListener("hashchange", handleRouteChange);
-    window.addEventListener("resize", () => schedulePanelPlacement());
-    window.addEventListener("scroll", () => schedulePanelPlacement(120), { passive: true });
-    window.addEventListener("pagehide", () => {
-      state.abortController?.abort();
-      state.observer?.disconnect();
-      frameMessenger.clearAggregates();
-      window.clearTimeout(state.debounceTimer);
-      window.clearTimeout(state.translationQueue.timer);
-      window.clearTimeout(state.placementTimer);
-      window.clearTimeout(state.mutationScanTimer);
-      window.clearTimeout(state.dangerActionTimer);
-      state.pendingMutationScanNodes.clear();
-      if (state.placementFrame) {
-        window.cancelAnimationFrame(state.placementFrame);
-        state.placementFrame = 0;
-      }
-      for (const timer of state.placementSettleTimers) {
-        window.clearTimeout(timer);
-      }
-    });
+  function teardownContent() {
+    translationController.stop();
+    domObserverController.stop();
+    frameMessenger.clearAggregates();
+    window.clearTimeout(state.debounceTimer);
+    window.clearTimeout(state.placementTimer);
+    window.clearTimeout(state.dangerActionTimer);
+    if (state.placementFrame) {
+      window.cancelAnimationFrame(state.placementFrame);
+      state.placementFrame = 0;
+    }
+    for (const timer of state.placementSettleTimers) {
+      window.clearTimeout(timer);
+    }
   }
 
   try {
@@ -1904,8 +1764,8 @@
       createPanel();
     }
     frameMessenger.watchMessages();
-    watchHistoryNavigation();
-    watchSpaNavigation();
+    lifecycleController.start();
+    domObserverController.start();
     watchSettingsChanges();
     document.addEventListener("click", handleCorrectionClick, true);
     frameMessenger.postReady();
