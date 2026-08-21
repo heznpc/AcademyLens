@@ -282,8 +282,18 @@ test("extension manifest keeps a narrow permission, host, CSP, and WER surface",
   const manifest = JSON.parse(read("manifest.json"));
 
   assert.deepEqual(manifest.permissions, ["storage"]);
-  assert.deepEqual(manifest.host_permissions, ["https://academy.openai.com/*", "https://translate.googleapis.com/*"]);
+  // The academy host is required; the remote translation host must stay opt-in.
+  assert.deepEqual(manifest.host_permissions, ["https://academy.openai.com/*"]);
+  assert.deepEqual(manifest.optional_host_permissions, [
+    "https://translate.googleapis.com/*",
+    "http://localhost:11434/*"
+  ]);
   assert.equal(manifest.content_security_policy.extension_pages, "script-src 'self'; object-src 'self';");
+
+  // Store listing name/description are localized through _locales.
+  assert.equal(manifest.default_locale, "en");
+  assert.equal(manifest.name, "__MSG_extName__");
+  assert.equal(manifest.description, "__MSG_extDescription__");
 
   for (const contentScript of manifest.content_scripts) {
     assert.deepEqual(contentScript.matches, ["https://academy.openai.com/*"]);

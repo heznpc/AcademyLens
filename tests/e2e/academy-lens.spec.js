@@ -39,7 +39,10 @@ async function translationCacheSize(context) {
 
 async function startHarness(options = {}) {
   const fixture = await startFixtureServer();
-  const ext = await launchExtension({ browserTranslatorStub: options.browserTranslatorStub });
+  const ext = await launchExtension({
+    browserTranslatorStub: options.browserTranslatorStub,
+    translationEngine: options.translationEngine
+  });
   const calls = await registerTranslateStub(ext.context, options);
   const page = await ext.context.newPage();
   await page.goto(`${fixture.baseUrl}${options.path || "/course"}`);
@@ -450,6 +453,34 @@ test.describe("AcademyLens extension E2E", () => {
         "[native] Downloadable native second sentence"
       );
       expect(harness.calls).toEqual([]);
+    } finally {
+      await stopHarness(harness);
+    }
+  });
+
+  test("routes the selected Ollama model through the OpenAI-compatible local endpoint", async () => {
+    const harness = await startHarness({
+      translationEngine: "ollama",
+      ollamaResponse: "[ollama] 로컬 모델 번역"
+    });
+    try {
+      await harness.page.evaluate(() => {
+        document.querySelector("#lesson-main").innerHTML = `<p id="ollama-only">Birds fly over hills</p>`;
+      });
+      await expandPanel(harness.page);
+      await clickPanelButton(harness.page, "[data-translate]");
+
+      await expect(harness.page.locator("#ollama-only")).toHaveText("[ollama] 로컬 모델 번역");
+      expect(harness.calls).toEqual([
+        {
+          provider: "ollama",
+          model: "qwen3.5:4b",
+          reasoningEffort: "none",
+          text: "Birds fly over hills",
+          targetLanguage: "ko"
+        }
+      ]);
+      await expect.poll(async () => (await panelSnapshot(harness.page)).providerMode).toBe("ollama");
     } finally {
       await stopHarness(harness);
     }

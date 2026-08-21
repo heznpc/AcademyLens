@@ -1,0 +1,14 @@
+{
+  "extName": {
+    "message": "AcademyLens — AI Course Translator (Unofficial)",
+    "description": "Chrome Web Store extension name. Keeps the AcademyLens brand plus a plain descriptor and the unofficial notice. Does not use another company's trademark."
+  },
+  "extShortName": {
+    "message": "AcademyLens",
+    "description": "Short name shown when space is limited."
+  },
+  "extDescription": {
+    "message": "Translate OpenAI Academy course pages with protected AI terminology. Unofficial, not affiliated with OpenAI.",
+    "description": "Chrome Web Store short description. Names the supported site descriptively and keeps the non-affiliation disclosure."
+  }
+}

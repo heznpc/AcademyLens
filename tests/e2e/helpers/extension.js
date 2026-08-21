@@ -10,7 +10,10 @@ function patchManifest(manifest) {
     contentScript.matches.push("http://localhost:*/*", "http://127.0.0.1:*/*");
   }
   manifest.host_permissions = manifest.host_permissions || [];
-  manifest.host_permissions.push("http://localhost:*/*", "http://127.0.0.1:*/*");
+  manifest.host_permissions.push("http://localhost:*/*", "http://127.0.0.1:*/*", "https://translate.googleapis.com/*");
+  manifest.optional_host_permissions = (manifest.optional_host_permissions || []).filter(
+    (origin) => origin !== "https://translate.googleapis.com/*"
+  );
   for (const resource of manifest.web_accessible_resources || []) {
     resource.matches.push("http://localhost:*/*", "http://127.0.0.1:*/*");
   }
@@ -65,7 +68,7 @@ function patchBrowserTranslatorStub(extensionPath, mode) {
 
 function makePatchedExtension() {
   const extensionPath = fs.mkdtempSync(path.join(os.tmpdir(), "academylens-e2e-ext-"));
-  for (const entry of ["manifest.json", "assets", "src", "README.md", "PRIVACY_POLICY.md", "LICENSE"]) {
+  for (const entry of ["manifest.json", "_locales", "assets", "src", "README.md", "PRIVACY_POLICY.md", "LICENSE"]) {
     fs.cpSync(path.join(ROOT, entry), path.join(extensionPath, entry), { recursive: true });
   }
 
@@ -102,6 +105,19 @@ async function launchExtension(options = {}) {
   let [serviceWorker] = context.serviceWorkers();
   if (!serviceWorker) {
     serviceWorker = await context.waitForEvent("serviceworker", { timeout: 5000 }).catch(() => null);
+  }
+  if (serviceWorker) {
+    await serviceWorker.evaluate(async (translationEngine) => {
+      await chrome.storage.local.set({
+        "academylens.settings": {
+          targetLanguage: "ko",
+          autoTranslate: false,
+          enableBrowserTranslatorDownloads: false,
+          translationEngine,
+          ollamaModel: "qwen3.5:4b"
+        }
+      });
+    }, options.translationEngine || "auto");
   }
 
   return {

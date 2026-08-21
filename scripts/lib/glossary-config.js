@@ -1,53 +1,137 @@
+// Review tiers, not shipping tiers. Every premium pack below ships in the
+// extension. `tier` only decides which locales must clear the pre-release review
+// gates (X translation cross-check, community review, native review) before a
+// public release, so a locale with no measured demand cannot block the release.
+//
+// `installShare` is the measured browser-language share of Chrome Web Store
+// installs for the adjacent, already-published sibling extension that serves the
+// same persona (non-English learners taking English-language AI vendor courses),
+// covering 2026-03-09 through 2026-07-28 across 1,789 installs. It is a demand
+// proxy from a different course site, not AcademyLens's own telemetry, and
+// AcademyLens ships no telemetry. Re-tier once AcademyLens has its own numbers.
+const LOCALE_REVIEW_TIERS = Object.freeze({ PRIORITY: "priority", SECONDARY: "secondary" });
+
 const PREMIUM_LOCALE_RECORDS = Object.freeze([
-  Object.freeze({ locale: "de", language: "German", name: "German OpenAI Academy glossary", status: "llm-audited" }),
-  Object.freeze({ locale: "es", language: "Spanish", name: "Spanish OpenAI Academy glossary", status: "llm-audited" }),
-  Object.freeze({ locale: "fr", language: "French", name: "French OpenAI Academy glossary", status: "llm-audited" }),
-  Object.freeze({ locale: "hi", language: "Hindi", name: "Hindi OpenAI Academy glossary", status: "llm-audited" }),
+  Object.freeze({
+    locale: "de",
+    language: "German",
+    name: "German OpenAI Academy glossary",
+    status: "llm-audited",
+    tier: LOCALE_REVIEW_TIERS.PRIORITY,
+    installShare: 3.8
+  }),
+  Object.freeze({
+    locale: "es",
+    language: "Spanish",
+    name: "Spanish OpenAI Academy glossary",
+    status: "llm-audited",
+    tier: LOCALE_REVIEW_TIERS.PRIORITY,
+    installShare: 11.2
+  }),
+  Object.freeze({
+    locale: "fr",
+    language: "French",
+    name: "French OpenAI Academy glossary",
+    status: "llm-audited",
+    tier: LOCALE_REVIEW_TIERS.PRIORITY,
+    installShare: 11.2
+  }),
+  Object.freeze({
+    locale: "hi",
+    language: "Hindi",
+    name: "Hindi OpenAI Academy glossary",
+    status: "llm-audited",
+    // Zero measured installs over the whole window. Ships, but must not gate a release.
+    tier: LOCALE_REVIEW_TIERS.SECONDARY,
+    installShare: 0
+  }),
   Object.freeze({
     locale: "id",
     language: "Indonesian",
     name: "Indonesian OpenAI Academy glossary",
-    status: "llm-audited"
+    status: "llm-audited",
+    tier: LOCALE_REVIEW_TIERS.SECONDARY,
+    installShare: 0.3
   }),
-  Object.freeze({ locale: "it", language: "Italian", name: "Italian OpenAI Academy glossary", status: "llm-audited" }),
+  Object.freeze({
+    locale: "it",
+    language: "Italian",
+    name: "Italian OpenAI Academy glossary",
+    status: "llm-audited",
+    // Highest measured non-English share, and the market where the sibling
+    // extension spread by word of mouth without any promotion.
+    tier: LOCALE_REVIEW_TIERS.PRIORITY,
+    installShare: 14.8
+  }),
   Object.freeze({
     locale: "ja",
     language: "Japanese",
     name: "Japanese OpenAI Academy glossary",
-    status: "llm-audited"
+    status: "llm-audited",
+    tier: LOCALE_REVIEW_TIERS.PRIORITY,
+    installShare: 5.2
   }),
   Object.freeze({
     locale: "ko",
     language: "Korean",
     name: "Korean OpenAI Academy glossary",
-    status: "community-reviewed"
+    status: "community-reviewed",
+    tier: LOCALE_REVIEW_TIERS.PRIORITY,
+    installShare: 4.3
   }),
   Object.freeze({
     locale: "pt-BR",
     language: "Portuguese Brazil",
     name: "Brazilian Portuguese OpenAI Academy glossary",
-    status: "llm-audited"
+    status: "llm-audited",
+    tier: LOCALE_REVIEW_TIERS.PRIORITY,
+    installShare: 9.1
   }),
-  Object.freeze({ locale: "ru", language: "Russian", name: "Russian OpenAI Academy glossary", status: "llm-audited" }),
+  Object.freeze({
+    locale: "ru",
+    language: "Russian",
+    name: "Russian OpenAI Academy glossary",
+    status: "llm-audited",
+    tier: LOCALE_REVIEW_TIERS.PRIORITY,
+    installShare: 6.9
+  }),
   Object.freeze({
     locale: "vi",
     language: "Vietnamese",
     name: "Vietnamese OpenAI Academy glossary",
-    status: "llm-audited"
+    status: "llm-audited",
+    tier: LOCALE_REVIEW_TIERS.SECONDARY,
+    installShare: 0.6
   }),
   Object.freeze({
     locale: "zh-CN",
     language: "Chinese Simplified",
     name: "Simplified Chinese OpenAI Academy glossary",
-    status: "llm-audited"
+    status: "llm-audited",
+    tier: LOCALE_REVIEW_TIERS.PRIORITY,
+    installShare: 2.3
   }),
   Object.freeze({
     locale: "zh-TW",
     language: "Chinese Traditional",
     name: "Traditional Chinese OpenAI Academy glossary",
-    status: "llm-audited"
+    status: "llm-audited",
+    tier: LOCALE_REVIEW_TIERS.PRIORITY,
+    installShare: 3.1
   })
 ]);
+
+// Locales that must clear pre-release review gates.
+const PRIORITY_REVIEW_LOCALES = Object.freeze(
+  PREMIUM_LOCALE_RECORDS.filter((record) => record.tier === LOCALE_REVIEW_TIERS.PRIORITY).map((record) => record.locale)
+);
+
+// Locales that ship as AI-audited beta and are explicitly not release blockers.
+const SECONDARY_REVIEW_LOCALES = Object.freeze(
+  PREMIUM_LOCALE_RECORDS.filter((record) => record.tier === LOCALE_REVIEW_TIERS.SECONDARY).map(
+    (record) => record.locale
+  )
+);
 
 const PROTECTED_TERMS = Object.freeze([
   "OpenAI",
@@ -232,7 +316,10 @@ const QUALITY_SMOKE_TERMS = Object.freeze({
 module.exports = Object.freeze({
   ALLOWED_GLOSSARY_STATUSES,
   DRAFT_NOTE,
+  LOCALE_REVIEW_TIERS,
   PREMIUM_LOCALE_RECORDS,
+  PRIORITY_REVIEW_LOCALES,
   PROTECTED_TERMS,
-  QUALITY_SMOKE_TERMS
+  QUALITY_SMOKE_TERMS,
+  SECONDARY_REVIEW_LOCALES
 });

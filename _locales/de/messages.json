@@ -1,0 +1,14 @@
+{
+  "extName": {
+    "message": "AcademyLens — KI-Kurs-Übersetzer (inoffiziell)",
+    "description": "Chrome Web Store extension name."
+  },
+  "extShortName": {
+    "message": "AcademyLens",
+    "description": "Short name shown when space is limited."
+  },
+  "extDescription": {
+    "message": "Übersetzt OpenAI Academy-Kursseiten und schützt dabei KI-Fachbegriffe. Inoffiziell, nicht mit OpenAI verbunden.",
+    "description": "Chrome Web Store short description."
+  }
+}

@@ -169,6 +169,29 @@ async function registerTranslateStub(context, options = {}) {
     });
   });
 
+  if (options.ollamaResponse) {
+    await context.route("http://localhost:11434/v1/chat/completions", async (route) => {
+      const body = route.request().postDataJSON();
+      const userMessage = body.messages.findLast((message) => message.role === "user");
+      const text = String(userMessage?.content || "")
+        .split("\n\n")
+        .slice(1)
+        .join("\n\n");
+      calls.push({
+        provider: "ollama",
+        model: body.model,
+        reasoningEffort: body.reasoning_effort,
+        text,
+        targetLanguage: "ko"
+      });
+      await route.fulfill({
+        status: 200,
+        contentType: "application/json",
+        body: JSON.stringify({ choices: [{ message: { role: "assistant", content: options.ollamaResponse } }] })
+      });
+    });
+  }
+
   return calls;
 }
 

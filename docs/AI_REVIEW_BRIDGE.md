@@ -2,6 +2,8 @@
 
 AcademyLens does not run AI-assisted terminology review in the current runtime. The repo includes a disabled local bridge skeleton at `src/lib/ai-review-bridge.js` so tests and file checks can enforce that this remains explicit.
 
+The selectable Ollama translation engine is separate from this review feature: it translates user-requested page text but does not generate or apply terminology review suggestions.
+
 ## Constraint
 
 Chrome Web Store policy can treat remote hosted JavaScript as a review risk. AcademyLens must not load `https://js.puter.com/*` or any other remote AI SDK script in the extension runtime.

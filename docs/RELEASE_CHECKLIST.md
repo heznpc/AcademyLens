@@ -31,15 +31,20 @@ AcademyLens is not ready for Chrome Web Store submission just because the build 
 - Run `npm run glossary:scoreboard` and commit `docs/GLOSSARY_STATUS.md` when glossary metadata changes.
 - Run `npm run check:glossary-status`.
 - Keep store wording at `community-reviewed`, `AI-audited beta`, or `AI-drafted beta` unless metadata evidence supports `reviewed`.
-- For each promoted language, close X translation cross-check, community review, and native review notes in glossary metadata.
+- Review gates apply to the **priority** locale tier only (`PRIORITY_REVIEW_LOCALES` in `scripts/lib/glossary-config.js`). For each promoted priority language, close X translation cross-check, community review, and native review notes in glossary metadata.
+- The **secondary** tier (`hi`, `id`, `vi`) ships as AI-audited beta and must never block a release. These locales have near-zero or zero measured demand; promoting them ahead of demand is what previously turned the review ladder into an unreachable release gate. Re-tier when AcademyLens has its own install data.
 - Run `npm run glossary:audit -- --locale=<locale>` before asking external reviewers.
 - Run `npm run check:glossary`, `npm run check:glossary-quality`, and `npm run check:glossary-overreach`.
 
 ## Privacy And Provider QA
 
-- Confirm whether the release still uses the Google Translate web endpoint.
-- Confirm privacy copy says extension-selected visible lesson text is sent to Google Translate fallback.
-- Confirm privacy copy says auto-translate can send newly rendered visible lesson text when enabled.
+- Confirm the default engine is `device` and that a fresh profile performs zero network translation requests before any permission grant.
+- Confirm `translate.googleapis.com` is in `optional_host_permissions` and absent from `host_permissions`.
+- Confirm `localhost:11434` is optional, declining its prompt reverts to `device`, and an Ollama failure does not send text to Google Translate.
+- Start Ollama with the documented extension origin and run `npm run test:ollama` across all six selectable models.
+- Confirm declining the permission prompt reverts the engine selection to `device`.
+- Confirm privacy copy names each engine and states exactly what leaves the device for each.
+- Confirm privacy copy says auto-translate can send newly rendered visible lesson text when enabled and a remote engine is selected.
 - Confirm privacy copy says original visible text, translated text, target language, and cache timestamps may be stored locally.
 - Do not describe the current Google Translate endpoint as the official Google Cloud Translation API.
 - Do not enable a cloud AI engine (Puter/GPT) for the tutor or terminology review without an explicit opt-in UX, updated privacy text, and Chrome Web Store policy review. The on-device engine (Chrome Gemini Nano) requires no account and sends no data; both engines stay off by default with a working no-tutor baseline (translation plus glossary term reference), so a device that can run neither still gets the full baseline.

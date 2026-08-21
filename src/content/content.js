@@ -14,7 +14,7 @@
   const Text = globalThis.AcademyLensTextUtils;
   const uiLocale = C && C.getUiLocale ? C.getUiLocale(navigator.language) : "en";
   const BACKGROUND_RESPONSE_TIMEOUT_MS = 12000;
-  const BACKGROUND_RESPONSE_MAX_TIMEOUT_MS = 90000;
+  const BACKGROUND_RESPONSE_MAX_TIMEOUT_MS = 300000;
   const BACKGROUND_TIMEOUT_CODE = "ACADEMYLENS_BACKGROUND_TIMEOUT";
   const CONTENT_FALLBACK_FETCH_TIMEOUT_MS = 8000;
   const CONTENT_FALLBACK_MAX_RETRIES = 2;
@@ -305,7 +305,8 @@
         nativeDownloading: "provider.nativeDownloading",
         fallback: "provider.fallback",
         background: "provider.background",
-        local: "provider.local"
+        local: "provider.local",
+        ollama: "provider.ollama"
       }[mode] || "provider.fallback"
     );
   }
@@ -344,6 +345,11 @@
   }
 
   async function refreshBrowserTranslatorStatus() {
+    if (C.engineUsesOllama(state.settings.translationEngine)) {
+      setBrowserTranslatorStatus("local");
+      setProviderMode("ollama", C.normalizeOllamaModel(state.settings.ollamaModel));
+      return;
+    }
     if (!isTopFrame || !BrowserTranslator || typeof BrowserTranslator.availability !== "function") {
       setBrowserTranslatorStatus("unsupported");
       setProviderMode("fallback");
@@ -864,7 +870,8 @@
 
   async function sendBackgroundTranslationBatch(payload, timeoutMs, signal) {
     throwIfAborted(signal);
-    setProviderMode("background");
+    const usesOllama = C.engineUsesOllama(payload.translationEngine);
+    setProviderMode(usesOllama ? "ollama" : "background", usesOllama ? payload.ollamaModel : "");
     const fallbackScope = {
       ...((payload && payload.cacheScope) || {}),
       provider: "google-translate"
@@ -878,7 +885,9 @@
       const response = await sendMessage(payload, backgroundTimeout, signal);
       if (response && response.ok) return response;
       if (response && response.translated && Object.keys(response.translated).length > 0) return response;
+      if (usesOllama) return response || emptyTranslationResponse(payload.texts || []);
     } catch (error) {
+      if (usesOllama) throw error;
       if (error && error.code === BACKGROUND_TIMEOUT_CODE) {
         throw error;
       }
@@ -895,9 +904,45 @@
     );
   }
 
+  function emptyTranslationResponse(requestedTexts) {
+    return {
+      ok: false,
+      translated: {},
+      errors: requestedTexts.reduce((errors, text) => {
+        errors[text] = "engine-disallowed";
+        return errors;
+      }, {}),
+      stats: { hits: 0, misses: 0, fallbackTexts: 0 }
+    };
+  }
+
   async function sendTranslationBatch(payload, timeoutMs, signal) {
     throwIfAborted(signal);
     const requestedTexts = payload.texts || [];
+    // The learner's engine choice decides whether the remote path may run at all.
+    // On the on-device engine no course text is allowed to leave the browser.
+    const engine = C.normalizeTranslationEngine(state.settings.translationEngine);
+    const allowRemote = C.engineAllowsRemote(engine);
+    const preferDevice = C.enginePrefersDevice(engine);
+
+    if (C.engineUsesOllama(engine)) {
+      return sendBackgroundTranslationBatch(
+        {
+          ...payload,
+          translationEngine: engine,
+          ollamaModel: C.normalizeOllamaModel(state.settings.ollamaModel)
+        },
+        Math.max(Number(timeoutMs) || 0, 240000),
+        signal
+      );
+    }
+
+    if (!preferDevice) {
+      return allowRemote
+        ? sendBackgroundTranslationBatch(payload, timeoutMs, signal)
+        : emptyTranslationResponse(requestedTexts);
+    }
+
     const nativeScope = {
       ...((payload && payload.cacheScope) || {}),
       provider:
@@ -912,7 +957,9 @@
     );
     if (browserResponse) {
       const missingTexts = untranslatedTexts(requestedTexts, browserResponse);
-      if (missingTexts.length === 0) return mergeTranslationResponses(browserResponse, null, requestedTexts);
+      if (missingTexts.length === 0 || !allowRemote) {
+        return mergeTranslationResponses(browserResponse, null, requestedTexts);
+      }
       throwIfAborted(signal);
       const fallbackResponse = await sendBackgroundTranslationBatch(
         {
@@ -924,7 +971,9 @@
       );
       return mergeTranslationResponses(browserResponse, fallbackResponse, requestedTexts);
     }
-    return sendBackgroundTranslationBatch(payload, timeoutMs, signal);
+    return allowRemote
+      ? sendBackgroundTranslationBatch(payload, timeoutMs, signal)
+      : emptyTranslationResponse(requestedTexts);
   }
 
   function message(key, params) {
@@ -1027,10 +1076,25 @@
 
   async function loadSettings() {
     const stored = await getLocal([C.STORAGE_KEYS.SETTINGS]);
+    const storedSettings = stored[C.STORAGE_KEYS.SETTINGS] || {};
     state.settings = {
       ...C.DEFAULT_SETTINGS,
-      ...(stored[C.STORAGE_KEYS.SETTINGS] || {})
+      ...storedSettings
     };
+    if (!state.settings.targetLanguage) {
+      state.settings.targetLanguage = C.resolveDefaultTargetLanguage(
+        Array.isArray(navigator.languages) && navigator.languages.length ? navigator.languages : [navigator.language]
+      );
+    }
+    state.settings.translationEngine = C.normalizeTranslationEngine(state.settings.translationEngine);
+    state.settings.ollamaModel = C.normalizeOllamaModel(state.settings.ollamaModel);
+    if (
+      state.settings.targetLanguage !== storedSettings.targetLanguage ||
+      state.settings.translationEngine !== storedSettings.translationEngine ||
+      state.settings.ollamaModel !== storedSettings.ollamaModel
+    ) {
+      await chrome.storage.local.set({ [C.STORAGE_KEYS.SETTINGS]: state.settings });
+    }
   }
 
   async function loadCacheEpoch() {
@@ -1720,11 +1784,17 @@
     const previousLanguage = state.settings.targetLanguage;
     const previousAutoTranslate = state.settings.autoTranslate;
     const previousNativeDownloads = state.settings.enableBrowserTranslatorDownloads;
+    const previousEngine = state.settings.translationEngine;
+    const previousOllamaModel = state.settings.ollamaModel;
     state.settings = {
       ...C.DEFAULT_SETTINGS,
       ...state.settings,
       ...(nextSettings || {})
     };
+    state.settings.translationEngine = C.normalizeTranslationEngine(state.settings.translationEngine);
+    state.settings.ollamaModel = C.normalizeOllamaModel(state.settings.ollamaModel);
+    const providerChanged =
+      previousEngine !== state.settings.translationEngine || previousOllamaModel !== state.settings.ollamaModel;
 
     if (state.shadow) {
       const language = state.shadow.querySelector("[data-language]");
@@ -1747,9 +1817,14 @@
         setStatus(error.message || message("status.failed"), "error");
         return;
       }
+    } else if (providerChanged) {
+      bumpGeneration();
+      restorePage({ bump: false, silent: true });
     }
 
-    if (previousNativeDownloads !== state.settings.enableBrowserTranslatorDownloads) {
+    if (C.engineUsesOllama(state.settings.translationEngine)) {
+      setProviderMode("ollama", state.settings.ollamaModel);
+    } else if (previousNativeDownloads !== state.settings.enableBrowserTranslatorDownloads || providerChanged) {
       refreshBrowserTranslatorStatus();
     }
 
@@ -1757,7 +1832,9 @@
       !options.skipAutoTranslate &&
       state.settings.autoTranslate &&
       state.settings.targetLanguage !== "en" &&
-      (previousLanguage !== state.settings.targetLanguage || previousAutoTranslate !== state.settings.autoTranslate)
+      (previousLanguage !== state.settings.targetLanguage ||
+        previousAutoTranslate !== state.settings.autoTranslate ||
+        providerChanged)
     ) {
       scheduleAutoTranslate(250);
     }

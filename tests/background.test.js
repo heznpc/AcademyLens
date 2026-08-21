@@ -16,6 +16,16 @@ function response(status, translated) {
   };
 }
 
+function ollamaResponse(status, translated) {
+  return {
+    ok: status >= 200 && status < 300,
+    status,
+    async json() {
+      return { choices: [{ message: { content: translated || "" } }] };
+    }
+  };
+}
+
 function loadBackground(fetchImpl, options = {}) {
   const listeners = [];
   const storage = {};
@@ -51,6 +61,17 @@ function loadBackground(fetchImpl, options = {}) {
           addListener(listener) {
             listeners.push(listener);
           }
+        }
+      },
+      permissions: {
+        // The remote Google Translate host is an optional permission. Tests grant it
+        // by default and can revoke it with options.remotePermissionGranted = false.
+        async contains(details) {
+          if (options.remotePermissionContainsThrows) throw new Error("permission check unavailable");
+          if (details.origins.includes("http://localhost:11434/*")) {
+            return options.ollamaPermissionGranted !== false;
+          }
+          return options.remotePermissionGranted !== false;
         }
       }
     }
@@ -319,4 +340,104 @@ test("background translation returns fetched translations when cache persistence
   assert.equal(result.ok, true);
   assert.equal(result.translated["Good text"], "Good text translated");
   assert.equal(result.stats.cachePersistFailed, true);
+});
+
+test("background translation refuses to fetch when the optional remote permission is not granted", async () => {
+  let fetchCalls = 0;
+  const { send } = loadBackground(
+    async () => {
+      fetchCalls += 1;
+      return response(200, "should not happen");
+    },
+    { remotePermissionGranted: false }
+  );
+  const result = await send({
+    type: "ACADEMYLENS_TRANSLATE_BATCH",
+    targetLanguage: "ko",
+    texts: ["Good text"]
+  });
+  assert.equal(result.ok, false);
+  assert.match(result.error, /permission not granted/i);
+  assert.equal(Object.keys(result.translated).length, 0);
+  assert.equal(fetchCalls, 0, "no course text may reach the network without the permission grant");
+});
+
+test("background translation fails closed when the permission check itself throws", async () => {
+  let fetchCalls = 0;
+  const { send } = loadBackground(
+    async () => {
+      fetchCalls += 1;
+      return response(200, "should not happen");
+    },
+    { remotePermissionContainsThrows: true }
+  );
+  const result = await send({
+    type: "ACADEMYLENS_TRANSLATE_BATCH",
+    targetLanguage: "ko",
+    texts: ["Good text"]
+  });
+  assert.equal(result.ok, false);
+  assert.equal(fetchCalls, 0, "an unreadable permission state must not allow a network call");
+});
+
+test("background translation rejects a batch with no target language instead of assuming one", async () => {
+  let fetchCalls = 0;
+  const { send } = loadBackground(async () => {
+    fetchCalls += 1;
+    return response(200, "should not happen");
+  });
+  const result = await send({
+    type: "ACADEMYLENS_TRANSLATE_BATCH",
+    texts: ["Good text"]
+  });
+  assert.equal(result.ok, false);
+  assert.match(result.error, /no target language/i);
+  assert.equal(fetchCalls, 0);
+});
+
+test("background routes the Ollama engine through the selected local model", async () => {
+  let request;
+  const { send, storage } = loadBackground(async (url, options) => {
+    request = { url, options };
+    return ollamaResponse(200, "신뢰할 수 있는 에이전트를 구축하세요.");
+  });
+
+  const result = await send({
+    type: "ACADEMYLENS_TRANSLATE_BATCH",
+    translationEngine: "ollama",
+    ollamaModel: "qwen3.5:9b",
+    targetLanguage: "ko",
+    texts: ["Build reliable agents."]
+  });
+
+  assert.equal(result.ok, true);
+  assert.equal(result.translated["Build reliable agents."], "신뢰할 수 있는 에이전트를 구축하세요.");
+  assert.equal(request.url, "http://localhost:11434/v1/chat/completions");
+  const body = JSON.parse(request.options.body);
+  assert.equal(body.model, "qwen3.5:9b");
+  assert.equal(body.reasoning_effort, "none");
+  const cacheEntry = Object.values(storage["academylens.translationCache.v1"])[0];
+  assert.equal(cacheEntry.provider, "ollama-qwen3.5_9b");
+});
+
+test("background refuses Ollama requests without localhost permission", async () => {
+  let fetchCalls = 0;
+  const { send } = loadBackground(
+    async () => {
+      fetchCalls += 1;
+      return ollamaResponse(200, "번역");
+    },
+    { ollamaPermissionGranted: false }
+  );
+
+  const result = await send({
+    type: "ACADEMYLENS_TRANSLATE_BATCH",
+    translationEngine: "ollama",
+    ollamaModel: "gemma3:4b",
+    targetLanguage: "ko",
+    texts: ["Course text"]
+  });
+  assert.equal(result.ok, false);
+  assert.match(result.error, /localhost permission not granted/i);
+  assert.equal(fetchCalls, 0);
 });

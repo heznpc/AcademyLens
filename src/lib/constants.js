@@ -9,8 +9,41 @@
   "use strict";
 
   const EXTENSION_NAME = "AcademyLens";
-  const PRODUCT_FULL_NAME = "AcademyLens for OpenAI Academy (Unofficial)";
+  const PRODUCT_FULL_NAME = "AcademyLens — AI Course Translator (Unofficial)";
   const DISCLAIMER = "Unofficial, not affiliated with OpenAI.";
+
+  // Translation engines the learner can pick between.
+  //   device — Chrome's built-in on-device Translator API only. Nothing leaves the device.
+  //   auto   — on-device first, remote Google Translate only when the device path cannot serve
+  //            the selected language pair. Requires the optional host permission.
+  //   remote — always remote Google Translate. For browsers or language pairs the
+  //            on-device translator does not support. Requires the optional host permission.
+  const TRANSLATION_ENGINES = Object.freeze({
+    DEVICE: "device",
+    AUTO: "auto",
+    REMOTE: "remote",
+    OLLAMA: "ollama"
+  });
+
+  const TRANSLATION_ENGINE_VALUES = Object.freeze([
+    TRANSLATION_ENGINES.DEVICE,
+    TRANSLATION_ENGINES.AUTO,
+    TRANSLATION_ENGINES.REMOTE,
+    TRANSLATION_ENGINES.OLLAMA
+  ]);
+
+  // Declared as an optional host permission so a default install never grants it.
+  const REMOTE_TRANSLATION_ORIGIN = "https://translate.googleapis.com/*";
+  const OLLAMA_ORIGIN = "http://localhost:11434/*";
+  const OLLAMA_MODELS = Object.freeze([
+    "gemma3:4b",
+    "qwen3.5:4b",
+    "qwen3.5:9b",
+    "aya-expanse:8b",
+    "qwen2.5-coder:7b",
+    "gemma4:12b"
+  ]);
+  const DEFAULT_OLLAMA_MODEL = "qwen3.5:4b";
 
   const MESSAGE_TYPES = Object.freeze({
     TRANSLATE_BATCH: "ACADEMYLENS_TRANSLATE_BATCH",
@@ -25,10 +58,16 @@
     CORRECTIONS: "academylens.localCorrections.v1"
   });
 
+  // targetLanguage intentionally starts empty. Measured install data shows the
+  // browser-language mix is led by English, Italian, and Spanish, so hardcoding a
+  // single default language is wrong for most installs. resolveDefaultTargetLanguage
+  // derives a first-run suggestion from the browser instead.
   const DEFAULT_SETTINGS = Object.freeze({
-    targetLanguage: "ko",
+    targetLanguage: "",
     autoTranslate: false,
-    enableBrowserTranslatorDownloads: false
+    enableBrowserTranslatorDownloads: false,
+    translationEngine: TRANSLATION_ENGINES.DEVICE,
+    ollamaModel: DEFAULT_OLLAMA_MODEL
   });
 
   const SUPPORTED_LANGUAGES = Object.freeze([
@@ -79,6 +118,21 @@
       "popup.description": "Translate OpenAI Academy course content in your language.",
       "popup.autoTranslate": "Auto-translate new course text",
       "popup.nativeDownloads": "Allow built-in translator downloads",
+      "field.translationEngine": "Translation engine",
+      "engine.device": "On-device only",
+      "engine.auto": "On-device, then Google Translate",
+      "engine.remote": "Google Translate",
+      "engine.ollama": "Local Ollama",
+      "engine.noteDevice": "Chrome translates on your device. No course text leaves your computer.",
+      "engine.noteAuto":
+        "Chrome translates on your device when it can. Otherwise the course text for that request is sent to Google Translate.",
+      "engine.noteRemote": "Course text is sent to Google Translate. Works on older Chrome and more language pairs.",
+      "engine.noteOllama": "Course text is sent only to Ollama on this computer.",
+      "engine.permissionNeeded": "Sending text to Google Translate needs your permission.",
+      "engine.permissionDenied": "Permission declined, so AcademyLens stayed on the on-device engine.",
+      "field.ollamaModel": "Ollama model",
+      "ollama.permissionNeeded": "Connecting to Ollama on localhost needs your permission.",
+      "ollama.permissionDenied": "Permission declined, so AcademyLens stayed on the on-device engine.",
       "popup.languageNoteGlossary": "Reviewed terminology corrections are enabled for this language.",
       "popup.languageNoteCommunity": "Community-reviewed terminology corrections are enabled for this language.",
       "popup.languageNoteAudited":
@@ -117,6 +171,7 @@
       "provider.fallback": "Fallback",
       "provider.background": "Background",
       "provider.local": "Local correction",
+      "provider.ollama": "Local Ollama",
       "status.ready": "Ready on OpenAI Academy.",
       "status.targetLanguage": "Target language: {language}",
       "status.glossaryLoading": "Glossary is still loading.",
@@ -146,6 +201,21 @@
       "popup.description": "OpenAI Academy 강의 내용을 원하는 언어로 번역합니다.",
       "popup.autoTranslate": "새 강의 텍스트 자동 번역",
       "popup.nativeDownloads": "내장 번역 다운로드 허용",
+      "field.translationEngine": "번역 엔진",
+      "engine.device": "기기 내 번역만",
+      "engine.auto": "기기 내 번역, 실패 시 Google 번역",
+      "engine.remote": "Google 번역",
+      "engine.ollama": "로컬 Ollama",
+      "engine.noteDevice": "Chrome이 기기 안에서 번역합니다. 강의 텍스트가 컴퓨터를 벗어나지 않습니다.",
+      "engine.noteAuto":
+        "가능하면 기기 안에서 번역하고, 불가능한 경우 해당 요청의 강의 텍스트를 Google 번역으로 보냅니다.",
+      "engine.noteRemote": "강의 텍스트를 Google 번역으로 보냅니다. 구형 Chrome과 더 많은 언어쌍에서 동작합니다.",
+      "engine.noteOllama": "강의 텍스트를 이 컴퓨터의 Ollama로만 보냅니다.",
+      "engine.permissionNeeded": "Google 번역으로 텍스트를 보내려면 권한이 필요합니다.",
+      "engine.permissionDenied": "권한이 거부되어 기기 내 번역 엔진을 유지했습니다.",
+      "field.ollamaModel": "Ollama 모델",
+      "ollama.permissionNeeded": "localhost의 Ollama에 연결하려면 권한이 필요합니다.",
+      "ollama.permissionDenied": "권한이 거부되어 기기 내 번역 엔진을 유지했습니다.",
       "popup.languageNoteGlossary": "이 언어에는 검토 완료된 용어 보정이 적용됩니다.",
       "popup.languageNoteCommunity": "이 언어에는 커뮤니티 검토를 거친 용어 보정이 적용됩니다.",
       "popup.languageNoteAudited":
@@ -183,6 +253,7 @@
       "provider.fallback": "대체 경로",
       "provider.background": "백그라운드",
       "provider.local": "로컬 보정",
+      "provider.ollama": "로컬 Ollama",
       "status.ready": "OpenAI Academy에서 사용할 준비가 됐습니다.",
       "status.targetLanguage": "번역 언어: {language}",
       "status.glossaryLoading": "용어 사전을 불러오는 중입니다.",
@@ -276,6 +347,79 @@
     return ACADEMY_URL_PATTERNS.some((pattern) => pattern.test(url));
   }
 
+  // Browser locale tags that do not match a supported code directly.
+  const LANGUAGE_TAG_ALIASES = Object.freeze({
+    he: "iw",
+    fil: "tl",
+    nb: "no",
+    nn: "no",
+    "zh-hant": "zh-TW",
+    "zh-hk": "zh-TW",
+    "zh-mo": "zh-TW",
+    "zh-hans": "zh-CN",
+    "zh-sg": "zh-CN",
+    "pt-pt": "pt"
+  });
+
+  const SUPPORTED_LANGUAGE_CODES = Object.freeze(SUPPORTED_LANGUAGES.map((item) => item.code));
+
+  function isSupportedLanguage(code) {
+    return SUPPORTED_LANGUAGE_CODES.includes(code);
+  }
+
+  function matchSupportedLanguage(tag) {
+    const normalized = String(tag || "").trim();
+    if (!normalized) return "";
+
+    const lower = normalized.toLowerCase();
+    if (LANGUAGE_TAG_ALIASES[lower]) return LANGUAGE_TAG_ALIASES[lower];
+
+    const exact = SUPPORTED_LANGUAGE_CODES.find((code) => code.toLowerCase() === lower);
+    if (exact) return exact;
+
+    const base = lower.split("-")[0];
+    if (LANGUAGE_TAG_ALIASES[base]) return LANGUAGE_TAG_ALIASES[base];
+
+    const baseMatch = SUPPORTED_LANGUAGE_CODES.find((code) => code.toLowerCase() === base);
+    return baseMatch || "";
+  }
+
+  // Picks a first-run target language from the browser's preferred locales.
+  // English is skipped because the course source text is already English, so an
+  // English browser gives no signal about the language the learner wants.
+  function resolveDefaultTargetLanguage(locales) {
+    const tags = (Array.isArray(locales) ? locales : [locales]).filter(Boolean);
+    for (const tag of tags) {
+      const match = matchSupportedLanguage(tag);
+      if (match && match !== "en") return match;
+    }
+    return "";
+  }
+
+  function normalizeTranslationEngine(value) {
+    return TRANSLATION_ENGINE_VALUES.includes(value) ? value : TRANSLATION_ENGINES.DEVICE;
+  }
+
+  // True when the engine is allowed to reach the remote Google Translate endpoint.
+  function engineAllowsRemote(value) {
+    const engine = normalizeTranslationEngine(value);
+    return engine === TRANSLATION_ENGINES.AUTO || engine === TRANSLATION_ENGINES.REMOTE;
+  }
+
+  // True when the engine should try Chrome's on-device translator first.
+  function enginePrefersDevice(value) {
+    const engine = normalizeTranslationEngine(value);
+    return engine === TRANSLATION_ENGINES.DEVICE || engine === TRANSLATION_ENGINES.AUTO;
+  }
+
+  function engineUsesOllama(value) {
+    return normalizeTranslationEngine(value) === TRANSLATION_ENGINES.OLLAMA;
+  }
+
+  function normalizeOllamaModel(value) {
+    return OLLAMA_MODELS.includes(value) ? value : DEFAULT_OLLAMA_MODEL;
+  }
+
   function getUiLocale(locale) {
     return String(locale || "")
       .toLowerCase()
@@ -335,14 +479,29 @@
     STORAGE_KEYS,
     DEFAULT_SETTINGS,
     SUPPORTED_LANGUAGES,
+    SUPPORTED_LANGUAGE_CODES,
+    TRANSLATION_ENGINES,
+    TRANSLATION_ENGINE_VALUES,
+    REMOTE_TRANSLATION_ORIGIN,
+    OLLAMA_ORIGIN,
+    OLLAMA_MODELS,
+    DEFAULT_OLLAMA_MODEL,
     EXCLUDED_SELECTOR,
     LIMITS,
+    engineAllowsRemote,
+    enginePrefersDevice,
+    engineUsesOllama,
     getLanguageLabel,
     getGlossaryRecord,
     getLanguageSupportMessage,
     getMessage,
     getUiLocale,
     isGlossaryBackedLanguage,
-    isAcademyUrl
+    isSupportedLanguage,
+    isAcademyUrl,
+    matchSupportedLanguage,
+    normalizeTranslationEngine,
+    normalizeOllamaModel,
+    resolveDefaultTargetLanguage
   });
 });

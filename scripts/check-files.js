@@ -10,6 +10,7 @@ const ROOT = join(__dirname, "..");
 const REQUIRED_PACKAGE_SCRIPTS = [
   "test",
   "test:e2e",
+  "test:ollama",
   "lint",
   "format",
   "format:check",
@@ -68,7 +69,12 @@ const REQUIRED_GITIGNORE_PATTERNS = [
 ];
 const REQUIRED_PREMIUM_LOCALES = PREMIUM_LOCALE_RECORDS.map((record) => record.locale);
 const REQUIRED_EXTENSION_PERMISSIONS = ["storage"];
-const REQUIRED_HOST_PERMISSIONS = ["https://academy.openai.com/*", "https://translate.googleapis.com/*"];
+// The remote Google Translate path is opt-in: it must never be granted at install time.
+const REQUIRED_HOST_PERMISSIONS = ["https://academy.openai.com/*"];
+const REQUIRED_OPTIONAL_HOST_PERMISSIONS = ["https://translate.googleapis.com/*", "http://localhost:11434/*"];
+// Store-listing locales are driven by measured install share, not by guesswork.
+const REQUIRED_UI_LOCALES = ["de", "en", "es", "fr", "it", "ja", "ko", "pt_BR", "ru", "zh_CN", "zh_TW"];
+const REQUIRED_LOCALE_MESSAGE_KEYS = ["extName", "extShortName", "extDescription"];
 const REQUIRED_CONTENT_SCRIPT_MATCHES = ["https://academy.openai.com/*"];
 const REQUIRED_WEB_ACCESSIBLE_RESOURCES = ["src/data/*.json", "assets/icons/*"];
 const REQUIRED_WEB_ACCESSIBLE_MATCHES = ["https://academy.openai.com/*"];
@@ -95,6 +101,9 @@ const REQUIRED_ZIP_ENTRIES = [
   "PRIVACY_POLICY.md",
   "README.md",
   "manifest.json",
+  "_locales/en/messages.json",
+  "_locales/it/messages.json",
+  "_locales/es/messages.json",
   "src/content/content.js",
   "src/background/background.js"
 ];
@@ -167,8 +176,50 @@ assert(!trackedIgnoredFiles, `Tracked files match .gitignore:\n${trackedIgnoredF
 
 const manifest = readJson("manifest.json");
 assert(manifest.manifest_version === 3, "Manifest must be MV3");
-assert(manifest.name.includes("Unofficial"), "Manifest name must keep unofficial notice");
-assert(/not affiliated with OpenAI/i.test(manifest.description), "Manifest description must disclose non-affiliation");
+
+// Name and description are localized through _locales, so the gates resolve the
+// default-locale messages instead of reading the raw __MSG_*__ placeholders.
+assert(manifest.default_locale === "en", "Manifest default_locale must be en");
+assert(manifest.name === "__MSG_extName__", "Manifest name must resolve through _locales");
+assert(manifest.short_name === "__MSG_extShortName__", "Manifest short_name must resolve through _locales");
+assert(manifest.description === "__MSG_extDescription__", "Manifest description must resolve through _locales");
+
+const localeMessages = new Map();
+for (const locale of REQUIRED_UI_LOCALES) {
+  const path = `_locales/${locale}/messages.json`;
+  assertFile(path);
+  const messages = readJson(path);
+  for (const key of REQUIRED_LOCALE_MESSAGE_KEYS) {
+    assert(
+      messages[key] && typeof messages[key].message === "string" && messages[key].message.trim(),
+      `${path} must define a non-empty "${key}" message`
+    );
+  }
+  assert(
+    !/OpenAI Academy/i.test(messages.extName.message),
+    `${path} extName must not put the OpenAI Academy trademark in the extension name`
+  );
+  assert(messages.extName.message.startsWith("AcademyLens"), `${path} extName must lead with the AcademyLens brand`);
+  assert(messages.extName.message.length <= 75, `${path} extName must fit the 75-character store limit`);
+  assert(
+    messages.extDescription.message.length <= 132,
+    `${path} extDescription must fit the 132-character store limit`
+  );
+  localeMessages.set(locale, messages);
+}
+
+const defaultMessages = localeMessages.get("en");
+assert(defaultMessages.extName.message.includes("Unofficial"), "Default-locale extName must keep unofficial notice");
+assert(
+  /not affiliated with OpenAI/i.test(defaultMessages.extDescription.message),
+  "Default-locale extDescription must disclose non-affiliation"
+);
+
+const presentLocales = readdirSync(join(ROOT, "_locales"), { withFileTypes: true })
+  .filter((entry) => entry.isDirectory())
+  .map((entry) => entry.name)
+  .sort();
+assertExactArray(presentLocales, [...REQUIRED_UI_LOCALES].sort(), "_locales directories");
 const blockedManifestUrls = collectStringValues(manifest).filter((value) =>
   isBlockedRemoteUrl(value, BLOCKED_REMOTE_RUNTIME_HOSTS)
 );
@@ -178,6 +229,15 @@ assert(
 );
 assertExactArray(manifest.permissions, REQUIRED_EXTENSION_PERMISSIONS, "Manifest permissions");
 assertExactArray(manifest.host_permissions, REQUIRED_HOST_PERMISSIONS, "Manifest host_permissions");
+assertExactArray(
+  manifest.optional_host_permissions,
+  REQUIRED_OPTIONAL_HOST_PERMISSIONS,
+  "Manifest optional_host_permissions"
+);
+assert(
+  !(manifest.host_permissions || []).some((pattern) => pattern.includes("translate.googleapis.com")),
+  "The remote Google Translate host must stay opt-in and must not be a required host permission"
+);
 assert(
   manifest.content_security_policy &&
     manifest.content_security_policy.extension_pages === "script-src 'self'; object-src 'self';",
@@ -232,6 +292,7 @@ assertFile("tests/fixtures/gradual-live-lesson-shell.html");
 assertFile("tests/fixtures/openai-academy-logged-in-courses.html");
 assertFile("src/lib/ai-review-bridge.js");
 assertFile("src/lib/browser-translator.js");
+assertFile("src/lib/ollama-translator.js");
 assertFile("docs/GLOSSARY_CONTRIBUTING.md");
 assertFile("docs/GLOSSARY_STATUS.md");
 assertFile("docs/LIVE_QA_MANIFEST.json");

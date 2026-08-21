@@ -1,14 +1,16 @@
 {
   "manifest_version": 3,
-  "name": "AcademyLens for OpenAI Academy (Unofficial)",
-  "short_name": "AcademyLens",
-  "description": "Translate OpenAI Academy course content in your language with protected AI terminology. Unofficial, not affiliated with OpenAI.",
+  "name": "__MSG_extName__",
+  "short_name": "__MSG_extShortName__",
+  "description": "__MSG_extDescription__",
+  "default_locale": "en",
   "version": "0.1.0",
   "minimum_chrome_version": "124",
   "author": "AcademyLens Contributors",
   "homepage_url": "https://github.com/heznpc/AcademyLens",
   "permissions": ["storage"],
-  "host_permissions": ["https://academy.openai.com/*", "https://translate.googleapis.com/*"],
+  "host_permissions": ["https://academy.openai.com/*"],
+  "optional_host_permissions": ["https://translate.googleapis.com/*", "http://localhost:11434/*"],
   "content_security_policy": {
     "extension_pages": "script-src 'self'; object-src 'self';"
   },

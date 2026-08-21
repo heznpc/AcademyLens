@@ -71,3 +71,50 @@ test("language support messages distinguish glossary-backed languages", () => {
   assert.match(Constants.getLanguageSupportMessage("ja", "ko-KR", glossaryIndex), /AI 2차 감사/);
   assert.match(Constants.getLanguageSupportMessage("ar", "ko-KR", glossaryIndex), /기계번역/);
 });
+
+test("translation engine helpers gate the remote path", () => {
+  assert.deepEqual(Constants.TRANSLATION_ENGINE_VALUES, ["device", "auto", "remote", "ollama"]);
+  assert.equal(Constants.DEFAULT_SETTINGS.translationEngine, "device");
+
+  // Unknown or missing values must fall back to the privacy-preserving engine.
+  assert.equal(Constants.normalizeTranslationEngine(undefined), "device");
+  assert.equal(Constants.normalizeTranslationEngine("hosted"), "device");
+  assert.equal(Constants.normalizeTranslationEngine("remote"), "remote");
+
+  assert.equal(Constants.engineAllowsRemote("device"), false);
+  assert.equal(Constants.engineAllowsRemote("auto"), true);
+  assert.equal(Constants.engineAllowsRemote("remote"), true);
+  assert.equal(Constants.engineAllowsRemote("nonsense"), false);
+
+  assert.equal(Constants.enginePrefersDevice("device"), true);
+  assert.equal(Constants.enginePrefersDevice("auto"), true);
+  assert.equal(Constants.enginePrefersDevice("remote"), false);
+  assert.equal(Constants.engineUsesOllama("ollama"), true);
+  assert.equal(Constants.engineUsesOllama("remote"), false);
+  assert.equal(Constants.DEFAULT_SETTINGS.ollamaModel, "qwen3.5:4b");
+  assert.equal(Constants.normalizeOllamaModel("gemma4:12b"), "gemma4:12b");
+  assert.equal(Constants.normalizeOllamaModel("unknown:latest"), "qwen3.5:4b");
+});
+
+test("default target language comes from the browser rather than a hardcoded locale", () => {
+  assert.equal(Constants.DEFAULT_SETTINGS.targetLanguage, "", "no single language may be assumed for every install");
+
+  assert.equal(Constants.resolveDefaultTargetLanguage(["it-IT", "en-US"]), "it");
+  assert.equal(Constants.resolveDefaultTargetLanguage(["es-419"]), "es");
+  assert.equal(Constants.resolveDefaultTargetLanguage(["pt-BR"]), "pt-BR");
+  assert.equal(Constants.resolveDefaultTargetLanguage(["pt-PT"]), "pt");
+  assert.equal(Constants.resolveDefaultTargetLanguage(["zh-Hant"]), "zh-TW");
+  assert.equal(Constants.resolveDefaultTargetLanguage(["zh-CN"]), "zh-CN");
+  assert.equal(Constants.resolveDefaultTargetLanguage(["he-IL"]), "iw");
+  assert.equal(Constants.resolveDefaultTargetLanguage(["nb-NO"]), "no");
+  assert.equal(Constants.resolveDefaultTargetLanguage("ko-KR"), "ko");
+
+  // English browsers give no signal about the desired target language.
+  assert.equal(Constants.resolveDefaultTargetLanguage(["en-US", "en"]), "");
+  assert.equal(Constants.resolveDefaultTargetLanguage(["en-GB"]), "");
+  // An English-first browser should still honour a secondary preference.
+  assert.equal(Constants.resolveDefaultTargetLanguage(["en-US", "fr-FR"]), "fr");
+
+  assert.equal(Constants.resolveDefaultTargetLanguage([]), "");
+  assert.equal(Constants.resolveDefaultTargetLanguage(["zz-ZZ"]), "");
+});

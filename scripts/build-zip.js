@@ -5,7 +5,7 @@ const { basename, dirname, join } = require("node:path");
 const ROOT = join(__dirname, "..");
 const OUT = join(ROOT, "dist", "academy-lens.zip");
 const CHECKSUM_OUT = `${OUT}.sha256`;
-const INPUTS = ["manifest.json", "assets", "src", "README.md", "PRIVACY_POLICY.md", "LICENSE"];
+const INPUTS = ["manifest.json", "_locales", "assets", "src", "README.md", "PRIVACY_POLICY.md", "LICENSE"];
 const DEFAULT_ZIP_TIMESTAMP = new Date(Date.UTC(2026, 0, 1, 0, 0, 0));
 
 function crc32(buffer) {

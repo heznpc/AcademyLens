@@ -10,9 +10,11 @@
 [![GitHub contributors](https://img.shields.io/github/contributors/heznpc/AcademyLens)](https://github.com/heznpc/AcademyLens/graphs/contributors)
 [![PRs welcome](https://img.shields.io/badge/PRs-welcome-brightgreen.svg)](CONTRIBUTING.md)
 
-**Translate OpenAI Academy course content in your language.**
+**Read English AI courses in your language without wrecking the technical terms.**
 
 AcademyLens is an unofficial Chrome extension for learners using OpenAI Academy. It focuses on course text translation and multilingual OpenAI/AI terminology glossaries.
+
+Store name: **AcademyLens — AI Course Translator (Unofficial)**. The name deliberately carries no third-party trademark; the supported site is named in the description instead.
 
 **Unofficial, not affiliated with OpenAI.**
 
@@ -22,7 +24,19 @@ AcademyLens is an unofficial Chrome extension for learners using OpenAI Academy.
 
 ---
 
-> **Beta status:** local install only, unofficial, uses browser-native translation when available with Google Translate fallback, and not Chrome Web Store-ready until live logged-in Academy QA, glossary review evidence, provider/privacy review, and release assets are closed.
+> **Beta status:** local install only, unofficial, on-device translation by default with an opt-in Google Translate engine, and not Chrome Web Store-ready until live logged-in Academy QA, glossary review evidence, provider/privacy review, and release assets are closed.
+
+## Translation Engines
+
+You pick the engine. The default sends nothing off your device.
+
+| Engine                           | Course text                                                            | Needs permission |
+| -------------------------------- | ---------------------------------------------------------------------- | ---------------- |
+| On-device only (default)         | Translated by Chrome on your device. Never leaves your computer.       | No               |
+| On-device, then Google Translate | On-device first; only untranslatable text goes to Google Translate.    | Yes              |
+| Google Translate                 | Sent to Google Translate. Covers older Chrome and more language pairs. | Yes              |
+
+`translate.googleapis.com` is an **optional** host permission, so a fresh install cannot reach it. AcademyLens requests it only when you select an engine that needs it, and the service worker re-checks the grant before every remote request. Declining reverts you to the on-device engine.
 
 ## Table of Contents
 
@@ -87,11 +101,11 @@ AcademyLens is a separate project because OpenAI Academy has a different product
 - Chrome Manifest V3
 - Frontend-only extension
 - No API key
-- No server
+- No AcademyLens server; optional local Ollama integration
 - Content script for OpenAI Academy DOM translation
 - Background service worker for translation requests and cache
 
-The current build uses browser-native Translator when the browser reports it as available, or when the user explicitly allows browser-managed translator downloads. Google Translate remains the fallback runtime. Chrome Web Store submission is blocked until the final provider/privacy posture is reviewed. Browser-native Translator APIs are not treated as a universal default because support depends on browser, version, language availability, and page context. See [docs/TECH_STACK_REVIEW.md](docs/TECH_STACK_REVIEW.md).
+The current build lets the learner choose browser-native Translator, browser-native with an opt-in Google Translate fallback, Google Translate, or a local Ollama model. Ollama uses `http://localhost:11434/v1/chat/completions`, requires an explicit localhost permission, and never falls through to Google Translate. Chrome Web Store submission is blocked until the final provider/privacy posture is reviewed. Browser-native Translator APIs are not treated as universally available because support depends on browser, version, language availability, and page context. See [docs/TECH_STACK_REVIEW.md](docs/TECH_STACK_REVIEW.md).
 
 OpenAI Academy is hosted through Gradual for course enrollment, progress tracking, and course-completion certificates. AcademyLens intentionally stays outside those flows and works only with visible page text.
 
@@ -113,6 +127,22 @@ An optional AI tutor, **off by default**, with two interchangeable engines and n
 The tutor is additive. Translation, protected AI terminology, local corrections, and glossary term reference keep working with no account and no AI engine, so learners who can run neither engine still get the full baseline. Tutor answers are grounded in the curated glossary and the current lesson, and never surface quiz answers.
 
 ## Development
+
+### Local Ollama translation
+
+AcademyLens exposes these locally installed models in the engine picker: `gemma3:4b`, `qwen3.5:4b`, `qwen3.5:9b`, `aya-expanse:8b`, `qwen2.5-coder:7b`, and `gemma4:12b`. Start the server with the external model store and extension origin enabled:
+
+```bash
+OLLAMA_MODELS=/path/to/ollama/models OLLAMA_ORIGINS='chrome-extension://*' OLLAMA_CONTEXT_LENGTH=4096 OLLAMA_MAX_LOADED_MODELS=1 OLLAMA_NUM_PARALLEL=1 OLLAMA_KEEP_ALIVE=0 ollama serve
+```
+
+Then run the real OpenAI-compatible API smoke test for all selectable models:
+
+```bash
+npm run test:ollama
+```
+
+The `qwen3.5` requests set `reasoning_effort: "none"` because page-translation turns request short, deterministic output.
 
 Install dependencies once:
 

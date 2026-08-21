@@ -3,13 +3,22 @@ try {
     "../lib/constants.js",
     "../lib/cache.js",
     "../lib/google-translate.js",
-    "../lib/remote-google-translator.js"
+    "../lib/remote-google-translator.js",
+    "../lib/ollama-translator.js"
   );
 } catch (error) {
   console.warn("[AcademyLens] library fallback", error);
 }
 
-const { MESSAGE_TYPES, STORAGE_KEYS, DEFAULT_SETTINGS, LIMITS } = self.AcademyLensConstants || {
+const {
+  MESSAGE_TYPES,
+  STORAGE_KEYS,
+  LIMITS,
+  REMOTE_TRANSLATION_ORIGIN,
+  OLLAMA_ORIGIN,
+  TRANSLATION_ENGINES,
+  normalizeOllamaModel
+} = self.AcademyLensConstants || {
   MESSAGE_TYPES: {
     TRANSLATE_BATCH: "ACADEMYLENS_TRANSLATE_BATCH",
     PERSIST_CACHE_UPDATES: "ACADEMYLENS_PERSIST_CACHE_UPDATES",
@@ -19,13 +28,17 @@ const { MESSAGE_TYPES, STORAGE_KEYS, DEFAULT_SETTINGS, LIMITS } = self.AcademyLe
     CACHE: "academylens.translationCache.v1",
     CACHE_EPOCH: "academylens.translationCacheEpoch.v1"
   },
-  DEFAULT_SETTINGS: { targetLanguage: "ko" },
-  LIMITS: { cacheEntries: 600 }
+  LIMITS: { cacheEntries: 600 },
+  REMOTE_TRANSLATION_ORIGIN: "https://translate.googleapis.com/*",
+  OLLAMA_ORIGIN: "http://localhost:11434/*",
+  TRANSLATION_ENGINES: { OLLAMA: "ollama" },
+  normalizeOllamaModel: (value) => value || "qwen3.5:4b"
 };
 
 const Cache = self.AcademyLensCache;
 const GoogleTranslate = self.AcademyLensGoogleTranslate;
 const RemoteGoogleTranslator = self.AcademyLensRemoteGoogleTranslator;
+const OllamaTranslator = self.AcademyLensOllamaTranslator;
 
 const RETRYABLE_STATUS = new Set([408, 425, 429, 500, 502, 503, 504]);
 const FETCH_TIMEOUT_MS = 8000;
@@ -49,6 +62,15 @@ const remoteTranslator =
         maxConcurrent: MAX_CONCURRENT_REMOTE_FETCHES
       })
     : null;
+const ollamaTranslator =
+  OllamaTranslator && OllamaTranslator.create
+    ? OllamaTranslator.create({
+        fetchImpl: (url, options) => fetch(url, options),
+        setTimeoutImpl: setTimeout,
+        clearTimeoutImpl: clearTimeout,
+        timeoutMs: 240000
+      })
+    : null;
 
 function getLocal(keys) {
   return chrome.storage.local.get(keys);
@@ -70,9 +92,33 @@ function googleCacheScope(message) {
   };
 }
 
+function ollamaCacheScope(message, model) {
+  return {
+    ...((message && message.cacheScope) || {}),
+    provider: `ollama-${model}`
+  };
+}
+
+// The remote Google Translate host is an optional permission, so the service
+// worker verifies the grant itself rather than trusting the calling frame.
+async function hasOriginPermission(origin) {
+  if (!chrome.permissions || typeof chrome.permissions.contains !== "function") return false;
+  try {
+    return await chrome.permissions.contains({ origins: [origin] });
+  } catch (error) {
+    console.warn("[AcademyLens] remote permission check failed", error);
+    return false;
+  }
+}
+
 function remoteTranslate(text, targetLanguage, scope) {
   if (!remoteTranslator) throw new Error("Remote translator unavailable");
   return remoteTranslator.translateText(text, targetLanguage, scope);
+}
+
+function ollamaTranslate(text, targetLanguage, model) {
+  if (!ollamaTranslator) throw new Error("Ollama translator unavailable");
+  return ollamaTranslator.translateText(text, targetLanguage, model);
 }
 
 function withCacheWriteLock(task) {
@@ -120,8 +166,22 @@ async function mergeCacheUpdates(cacheUpdates, expectedEpoch) {
 }
 
 async function translateBatch(message) {
-  const targetLanguage = message.targetLanguage || DEFAULT_SETTINGS.targetLanguage;
-  const cacheScope = googleCacheScope(message);
+  const targetLanguage = message.targetLanguage;
+  if (!targetLanguage) {
+    return { ok: false, translated: {}, errors: {}, error: "No target language selected" };
+  }
+  const usesOllama = message.translationEngine === TRANSLATION_ENGINES.OLLAMA;
+  const permissionOrigin = usesOllama ? OLLAMA_ORIGIN : REMOTE_TRANSLATION_ORIGIN;
+  if (!(await hasOriginPermission(permissionOrigin))) {
+    return {
+      ok: false,
+      translated: {},
+      errors: {},
+      error: usesOllama ? "Ollama localhost permission not granted" : "Remote translation permission not granted"
+    };
+  }
+  const ollamaModel = normalizeOllamaModel(message.ollamaModel);
+  const cacheScope = usesOllama ? ollamaCacheScope(message, ollamaModel) : googleCacheScope(message);
   const allTexts = Array.isArray(message.texts)
     ? [...new Set(message.texts.map((text) => String(text)).filter(Boolean))]
     : [];
@@ -159,7 +219,9 @@ async function translateBatch(message) {
 
       stats.cacheMisses += 1;
       try {
-        const result = await remoteTranslate(text, targetLanguage, cacheScope);
+        const result = usesOllama
+          ? await ollamaTranslate(text, targetLanguage, ollamaModel)
+          : await remoteTranslate(text, targetLanguage, cacheScope);
         translated[text] = result;
         cacheUpdates[key] = {
           original: text,
