@@ -13,7 +13,9 @@
     const view = options.window || (doc && doc.defaultView) || globalThis;
     const MutationObserverRef = options.MutationObserver || view.MutationObserver;
     const mutationElement =
-      typeof options.mutationElement === "function" ? options.mutationElement : (node) => node?.parentElement || node;
+      typeof options.mutationElement === "function"
+        ? options.mutationElement
+        : (node) => (node?.nodeType === 1 ? node : node?.parentElement || null);
     const shouldIgnore = typeof options.shouldIgnore === "function" ? options.shouldIgnore : () => false;
     const inspectNode = typeof options.inspectNode === "function" ? options.inspectNode : () => ({});
     const reconcileMutations =
@@ -22,6 +24,10 @@
     const dispatchPendingFrameCommand =
       typeof options.dispatchPendingFrameCommand === "function" ? options.dispatchPendingFrameCommand : () => {};
     const onSignals = typeof options.onSignals === "function" ? options.onSignals : () => {};
+    const getOverflowScanNodes =
+      typeof options.getOverflowScanNodes === "function"
+        ? options.getOverflowScanNodes
+        : () => (doc.body ? [doc.body] : []);
     const now = typeof options.now === "function" ? options.now : Date.now;
     const scanDelay = Number.isFinite(options.scanDelay) ? options.scanDelay : 140;
     const frameDispatchDelay = Number.isFinite(options.frameDispatchDelay) ? options.frameDispatchDelay : 80;
@@ -34,6 +40,7 @@
     let observer = null;
     let mutationScanTimer = 0;
     let suppressMutationUntil = 0;
+    let overflowed = false;
     const pendingMutationScanNodes = new Set();
 
     function suppress(durationMs = 250) {
@@ -43,7 +50,15 @@
     function queueScan(node) {
       const element = mutationElement(node);
       if (!element || shouldIgnore(element)) return;
-      if (pendingMutationScanNodes.size < maxPendingNodes) pendingMutationScanNodes.add(element);
+      if (pendingMutationScanNodes.size >= maxPendingNodes && !pendingMutationScanNodes.has(element)) {
+        // The queued nodes no longer describe the whole render. Keep the
+        // existing drain deadline and replace the incomplete list with one
+        // bounded root scan when it fires.
+        overflowed = true;
+        if (!mutationScanTimer) mutationScanTimer = view.setTimeout(runScan, Math.max(0, scanDelay));
+        return;
+      }
+      pendingMutationScanNodes.add(element);
       view.clearTimeout(mutationScanTimer);
       mutationScanTimer = view.setTimeout(runScan, Math.max(0, scanDelay));
     }
@@ -60,8 +75,15 @@
         return;
       }
 
-      const nodes = Array.from(pendingMutationScanNodes);
+      const queuedNodes = Array.from(pendingMutationScanNodes);
       pendingMutationScanNodes.clear();
+      const didOverflow = overflowed;
+      overflowed = false;
+      // document.body is the default overflow root. The injected inspector
+      // only reports whether relevant text or frames exist; the established
+      // translation runtime remains responsible for its own bounded scan.
+      const overflowScanNodes = didOverflow ? Array.from(getOverflowScanNodes() || []) : [];
+      const nodes = overflowScanNodes.length > 0 ? overflowScanNodes : queuedNodes;
       let sawFrameMutation = false;
       let sawTranslatableMutation = false;
       for (const node of nodes) {
@@ -74,7 +96,10 @@
 
       if (sawFrameMutation) dispatchFramesSoon();
       if (sawFrameMutation || sawTranslatableMutation) {
-        onSignals({ sawFrameMutation, sawTranslatableMutation, needsDeferredScan: false }, false);
+        onSignals(
+          { sawFrameMutation, sawTranslatableMutation, needsDeferredScan: false, overflowed: didOverflow },
+          false
+        );
       }
     }
 
@@ -103,6 +128,7 @@
       view.clearTimeout(mutationScanTimer);
       mutationScanTimer = 0;
       pendingMutationScanNodes.clear();
+      overflowed = false;
     }
 
     return {

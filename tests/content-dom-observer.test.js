@@ -89,3 +89,43 @@ test("DOM observer defers scans while translation writes are suppressed and clea
   assert.equal(controller.pendingCount, 0);
   dom.window.close();
 });
+
+test("DOM observer rescans the document when a mutation burst exceeds the pending-node cap", async () => {
+  const dom = new JSDOM("<!doctype html><body><main id='surface'></main></body>", {
+    url: "https://academy.openai.com/pages/courses"
+  });
+  const inspected = [];
+  const signals = [];
+  const controller = ContentDomObserver.create({
+    document: dom.window.document,
+    window: dom.window,
+    MutationObserver: dom.window.MutationObserver,
+    scanDelay: 0,
+    maxPendingNodes: 2,
+    inspectNode: (node) => {
+      inspected.push(node.tagName);
+      return { sawTranslatableMutation: /Overflow lesson/.test(node.textContent) };
+    },
+    onSignals: (signal) => signals.push(signal)
+  });
+  const surface = dom.window.document.querySelector("#surface");
+  for (let index = 0; index < 3; index += 1) {
+    const control = dom.window.document.createElement("button");
+    control.textContent = `Control ${index}`;
+    surface.append(control);
+    controller.queueScan(control);
+  }
+  const lesson = dom.window.document.createElement("p");
+  lesson.textContent = "Overflow lesson";
+  surface.append(lesson);
+  controller.queueScan(lesson);
+
+  await wait(15);
+
+  assert.deepEqual(inspected, ["BODY"]);
+  assert.equal(signals.length, 1);
+  assert.equal(signals[0].overflowed, true);
+  assert.equal(signals[0].sawTranslatableMutation, true);
+  controller.stop();
+  dom.window.close();
+});

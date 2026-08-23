@@ -538,6 +538,38 @@ test.describe("AcademyLens extension E2E", () => {
     }
   });
 
+  test("auto-translate rescans a mutation burst beyond the pending-node cap", async () => {
+    const harness = await startHarness();
+    try {
+      await expandPanel(harness.page);
+      await setAutoTranslate(harness.page, true);
+      await expect(harness.page.locator("#title")).toHaveText("업무를 위한 실용 AI 기술 구축");
+      await harness.page.waitForTimeout(350);
+      harness.calls.length = 0;
+
+      await harness.page.evaluate(() => {
+        const fragment = document.createDocumentFragment();
+        for (let index = 0; index < 85; index += 1) {
+          const control = document.createElement("button");
+          control.textContent = `Burst control ${index}`;
+          fragment.append(control);
+        }
+        const lesson = document.createElement("section");
+        lesson.innerHTML = '<p id="overflow-copy">Translation that appears after a large interface render.</p>';
+        fragment.append(lesson);
+        document.querySelector("#lesson-main").append(fragment);
+      });
+
+      await expect(harness.page.locator("#overflow-copy")).toHaveText(
+        "[ko] Translation that appears after a large interface render."
+      );
+      expect(harness.calls.some((call) => call.text.includes("large interface render"))).toBe(true);
+      expect(harness.calls.some((call) => /Burst control/.test(call.text))).toBe(false);
+    } finally {
+      await stopHarness(harness);
+    }
+  });
+
   test("translates study-room lesson text without touching Gradual progress, certificate, quiz, or account UI", async () => {
     const harness = await startHarness({ path: "/study-room" });
     try {

@@ -235,6 +235,8 @@ test("content mutation and placement work is throttled before expensive page sca
   assert.match(domObserver, /function queueScan/);
   assert.match(domObserver, /function runScan/);
   assert.match(domObserver, /pendingMutationScanNodes/);
+  assert.match(domObserver, /overflowed/);
+  assert.match(domObserver, /getOverflowScanNodes/);
   assert.match(source, /elementMayContainTranslatableText/);
   assert.match(source, /collectPanelOverlayCandidates/);
   assert.doesNotMatch(updatePanelPlacement, /querySelectorAll\("\*"\)/);
