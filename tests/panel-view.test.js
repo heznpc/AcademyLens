@@ -59,4 +59,7 @@ test("panel view exposes the progress, correction, diagnostics, and cache hooks"
   ]) {
     assert.ok(panel.querySelector(`[${hook}]`), `panel markup is missing a queryable [${hook}]`);
   }
+
+  assert.match(html, /\.manager\s*{\s*display: block;/);
+  assert.match(html, /\.manager-body\s*{[^}]*margin-top: 8px;/s);
 });

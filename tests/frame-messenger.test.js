@@ -216,6 +216,9 @@ test("frame aggregate diagnostics ignore duplicate results from the same source"
 
   messenger.startAggregate({ messageId: "m-1" }, 1, "translate");
   messenger.updateAggregatePage("m-1", { applied: 1, failed: 0 });
+  assert.equal(messenger.setAggregateStatus("m-1"), true);
+  assert.equal(messenger.setAggregateStatus("missing"), false);
+  statusEvents.length = 0;
 
   const event = {
     origin: ORIGIN,

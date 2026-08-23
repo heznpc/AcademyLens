@@ -10,6 +10,8 @@
 
   const DEFAULT_ENDPOINT = "http://localhost:11434/v1/chat/completions";
   const DEFAULT_TIMEOUT_MS = 120000;
+  const MAX_BATCH_ITEMS = 24;
+  const MAX_BATCH_CHARACTERS = 6000;
   const NO_REASONING_PATTERN = /^(?:qwen3\.5|gemma4)(?::|$)/i;
 
   function positiveNumber(value, fallback) {
@@ -37,6 +39,18 @@
   function responseTokenLimit(text) {
     const length = String(text || "").length;
     return Math.max(96, Math.min(1024, Math.ceil(length * 1.5)));
+  }
+
+  function batchResponseTokenLimit(texts) {
+    const length = texts.reduce((total, text) => total + String(text || "").length, 0);
+    return Math.max(192, Math.min(2048, Math.ceil(length * 1.75)));
+  }
+
+  function addReasoningControl(body, model) {
+    if (NO_REASONING_PATTERN.test(model)) {
+      body.reasoning_effort = "none";
+    }
+    return body;
   }
 
   function buildRequestBody(options = {}) {
@@ -68,11 +82,80 @@
     // AcademyLens translation turns are deliberately short. qwen3.5 must use
     // reasoning_effort=none for this path; gemma4 also needs it so its internal
     // reasoning does not consume the short response budget before final output.
-    if (NO_REASONING_PATTERN.test(model)) {
-      body.reasoning_effort = "none";
-    }
+    return addReasoningControl(body, model);
+  }
 
-    return body;
+  function buildBatchRequestBody(options = {}) {
+    const model = String(options.model || "").trim();
+    const targetLanguage = String(options.targetLanguage || "").trim();
+    const texts = Array.isArray(options.texts) ? options.texts.map((text) => String(text).trim()) : [];
+    if (!model) throw new Error("Ollama model is required");
+    if (!targetLanguage) throw new Error("Target language is required");
+    if (!texts.length || texts.some((text) => !text)) throw new Error("Translation texts are required");
+
+    return addReasoningControl(
+      {
+        model,
+        messages: [
+          {
+            role: "system",
+            content:
+              "You translate English course text. Return only one strict JSON array of translated strings in the same order and with exactly the same item count as the input array. Do not add explanation, labels, or markdown fences. Preserve every __AL_*__ placeholder exactly. Preserve code, URLs, product names, and API identifiers unless the target language convention requires otherwise."
+          },
+          {
+            role: "user",
+            content: `Target language: ${targetLanguage}\nInput JSON:\n${JSON.stringify(texts)}`
+          }
+        ],
+        temperature: 0,
+        stream: false,
+        max_tokens: batchResponseTokenLimit(texts)
+      },
+      model
+    );
+  }
+
+  function normalizeBatchContent(value, expectedCount) {
+    const text = String(value || "")
+      .replace(/<think>[\s\S]*?<\/think>/gi, "")
+      .trim();
+    const fenced = text.match(/^```(?:json)?\s*([\s\S]*?)\s*```$/i);
+    const unwrapped = fenced ? fenced[1].trim() : text;
+    let parsed;
+    try {
+      parsed = JSON.parse(unwrapped);
+    } catch {
+      throw new Error("Ollama returned an invalid translation batch");
+    }
+    const translations = Array.isArray(parsed)
+      ? parsed
+      : parsed && Array.isArray(parsed.translations)
+        ? parsed.translations
+        : null;
+    if (!translations || translations.length !== expectedCount) {
+      throw new Error("Ollama returned a mismatched translation batch");
+    }
+    const normalized = translations.map((item) => normalizeContent(item));
+    if (normalized.some((item) => !item)) throw new Error("Ollama returned an empty batch translation");
+    return normalized;
+  }
+
+  function chunkTexts(texts) {
+    const chunks = [];
+    let current = [];
+    let currentLength = 0;
+    for (const text of texts) {
+      const length = String(text).length;
+      if (current.length && (current.length >= MAX_BATCH_ITEMS || currentLength + length > MAX_BATCH_CHARACTERS)) {
+        chunks.push(current);
+        current = [];
+        currentLength = 0;
+      }
+      current.push(text);
+      currentLength += length;
+    }
+    if (current.length) chunks.push(current);
+    return chunks;
   }
 
   function create(options = {}) {
@@ -94,7 +177,7 @@
       return next;
     }
 
-    async function translateNow(text, targetLanguage, model, signal) {
+    async function requestNow(body, signal) {
       if (signal && signal.aborted) {
         const aborted = new Error("Ollama request aborted");
         aborted.name = "AbortError";
@@ -109,7 +192,7 @@
         const response = await fetchImpl(endpoint, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify(buildRequestBody({ model, targetLanguage, text })),
+          body: JSON.stringify(body),
           signal: controller.signal
         });
         if (!response.ok) {
@@ -124,9 +207,7 @@
         }
 
         const payload = await response.json();
-        const translated = normalizeContent(payload?.choices?.[0]?.message?.content);
-        if (!translated) throw new Error("Ollama returned an empty translation");
-        return translated;
+        return payload?.choices?.[0]?.message?.content;
       } catch (error) {
         if (controller.signal.aborted) {
           const aborted = new Error(signal && signal.aborted ? "Ollama request aborted" : "Ollama request timed out");
@@ -140,6 +221,18 @@
       }
     }
 
+    async function translateNow(text, targetLanguage, model, signal) {
+      const content = await requestNow(buildRequestBody({ model, targetLanguage, text }), signal);
+      const translated = normalizeContent(content);
+      if (!translated) throw new Error("Ollama returned an empty translation");
+      return translated;
+    }
+
+    async function translateBatchNow(texts, targetLanguage, model, signal) {
+      const content = await requestNow(buildBatchRequestBody({ model, targetLanguage, texts }), signal);
+      return normalizeBatchContent(content, texts.length);
+    }
+
     function translateText(text, targetLanguage, model, signal) {
       assertReady();
       // The recommended Ollama server uses OLLAMA_NUM_PARALLEL=1 and
@@ -147,13 +240,32 @@
       return enqueue(() => translateNow(text, targetLanguage, model, signal));
     }
 
-    return Object.freeze({ translateText });
+    function translateTexts(texts, targetLanguage, model, signal) {
+      assertReady();
+      const normalized = Array.isArray(texts) ? texts.map((text) => String(text).trim()).filter(Boolean) : [];
+      if (!normalized.length) return Promise.resolve([]);
+      return enqueue(async () => {
+        if (normalized.length === 1) {
+          return [await translateNow(normalized[0], targetLanguage, model, signal)];
+        }
+        const translated = [];
+        for (const chunk of chunkTexts(normalized)) {
+          translated.push(...(await translateBatchNow(chunk, targetLanguage, model, signal)));
+        }
+        return translated;
+      });
+    }
+
+    return Object.freeze({ translateText, translateTexts });
   }
 
   return Object.freeze({
     DEFAULT_ENDPOINT,
+    buildBatchRequestBody,
     buildRequestBody,
+    chunkTexts,
     create,
+    normalizeBatchContent,
     normalizeContent,
     responseTokenLimit
   });

@@ -9,6 +9,7 @@
   "use strict";
 
   const FRAME_MESSAGE_SOURCE = "AcademyLens";
+  const FRAME_AGGREGATE_TTL_MS = 300000;
 
   function defaultMessageId() {
     return `${Date.now().toString(36)}-${Math.random().toString(36).slice(2)}`;
@@ -148,7 +149,7 @@
         frameApplied: 0,
         frameFailed: 0,
         resultSources: new WeakSet(),
-        cleanupTimer: view.setTimeout(() => frameAggregates.delete(payload.messageId), 5000)
+        cleanupTimer: view.setTimeout(() => frameAggregates.delete(payload.messageId), FRAME_AGGREGATE_TTL_MS)
       });
     }
 
@@ -162,17 +163,19 @@
     function setAggregateStatus(messageIdOrAggregate) {
       const aggregate =
         typeof messageIdOrAggregate === "string" ? frameAggregates.get(messageIdOrAggregate) : messageIdOrAggregate;
-      if (!aggregate || aggregate.kind !== "translate") return;
+      if (!aggregate || aggregate.kind !== "translate") return false;
       const applied = aggregate.pageApplied || 0;
       const frameCount = aggregate.frameApplied || 0;
       const failed = (aggregate.pageFailed || 0) + (aggregate.frameFailed || 0);
       if (failed > 0 && applied === 0 && frameCount === 0) {
         setStatusMessage("status.frameFailed", { failed }, "error");
-        return;
+        return true;
       }
       if (applied > 0 || frameCount > 0) {
         setStatusMessage("status.translatedWithFrames", { count: applied, frameCount }, failed > 0 ? "error" : "ok");
+        return true;
       }
+      return false;
     }
 
     function markAggregateSource(aggregate, source) {

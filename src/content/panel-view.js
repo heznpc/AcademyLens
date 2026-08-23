@@ -257,8 +257,7 @@
           gap: 8px;
         }
         .manager {
-          display: grid;
-          gap: 8px;
+          display: block;
           border-top: 1px solid rgba(15, 23, 42, 0.08);
           padding-top: 10px;
         }
@@ -271,7 +270,7 @@
         .manager-body {
           display: grid;
           gap: 8px;
-          padding-top: 8px;
+          margin-top: 8px;
         }
         .manager-preview,
         .diagnostics-output {

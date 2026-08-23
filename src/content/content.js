@@ -1173,8 +1173,14 @@
       refreshBrowserTranslatorStatus();
     });
 
-    shadow.querySelector("[data-translate]").addEventListener("click", () => translatePage({ reason: "manual" }));
-    shadow.querySelector("[data-restore]").addEventListener("click", restorePage);
+    shadow.querySelector("[data-translate]").addEventListener("click", () => {
+      resetDangerConfirmation();
+      translatePage({ reason: "manual" });
+    });
+    shadow.querySelector("[data-restore]").addEventListener("click", () => {
+      resetDangerConfirmation();
+      restorePage();
+    });
     shadow.querySelector("[data-save-correction]").addEventListener("click", saveSelectedCorrection);
     shadow.querySelector("[data-cancel-correction]").addEventListener("click", clearSelectedCorrection);
     shadow.querySelector("[data-correction-list]").addEventListener("change", updateCorrectionPreview);
@@ -1522,8 +1528,13 @@
     if (capped) {
       setStatus(message("status.translatedCapped", { count: applied }), "ok");
     } else if (childFrameCount > 0) {
-      frameMessenger.setAggregateStatus(frameDispatch.payload.messageId);
-      if (applied === 0) setStatus(message("status.frameDispatch"), "ok");
+      const aggregateStatusSet = frameMessenger.setAggregateStatus(frameDispatch.payload.messageId);
+      if (!aggregateStatusSet) {
+        setStatus(
+          applied > 0 ? message("status.translated", { count: applied }) : message("status.frameDispatch"),
+          "ok"
+        );
+      }
     } else if (applied > 0) {
       setStatus(message("status.translated", { count: applied }), "ok");
     } else {

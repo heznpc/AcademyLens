@@ -223,6 +223,17 @@ test("panel status is exposed as an accessible live region", () => {
   assert.match(source, /data-status role="status" aria-live="polite" aria-atomic="true"/);
 });
 
+test("manual translation and restore cancel pending destructive confirmations", () => {
+  const source = read("src/content/content.js");
+  const listeners = source.slice(
+    source.indexOf('shadow.querySelector("[data-translate]")'),
+    source.indexOf("document.documentElement.append(host)")
+  );
+
+  assert.match(listeners, /data-translate[\s\S]*resetDangerConfirmation\(\)[\s\S]*translatePage/);
+  assert.match(listeners, /data-restore[\s\S]*resetDangerConfirmation\(\)[\s\S]*restorePage/);
+});
+
 test("content mutation and placement work is throttled before expensive page scans", () => {
   const source = read("src/content/content.js");
   const domObserver = read("src/content/content-dom-observer.js");

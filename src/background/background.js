@@ -121,6 +121,14 @@ function ollamaTranslate(text, targetLanguage, model) {
   return ollamaTranslator.translateText(text, targetLanguage, model);
 }
 
+function ollamaTranslateBatch(texts, targetLanguage, model) {
+  if (!ollamaTranslator) throw new Error("Ollama translator unavailable");
+  if (typeof ollamaTranslator.translateTexts !== "function") {
+    return Promise.all(texts.map((text) => ollamaTranslate(text, targetLanguage, model)));
+  }
+  return ollamaTranslator.translateTexts(texts, targetLanguage, model);
+}
+
 function withCacheWriteLock(task) {
   const nextWrite = cacheWriteChain.then(task, task);
   cacheWriteChain = nextWrite.catch(() => {});
@@ -202,41 +210,61 @@ async function translateBatch(message) {
     cachePersistFailed: false
   };
 
-  await Promise.all(
-    texts.map(async (text) => {
-      const key = Cache.cacheKey(targetLanguage, text, cacheScope);
-      if (Cache.entryMatches(cache[key], text, targetLanguage, cacheScope)) {
-        translated[text] = cache[key].translated;
-        cacheUpdates[key] = {
-          original: text,
-          targetLanguage,
-          ...Cache.normalizeScope(cacheScope),
-          accessedAt: Date.now()
-        };
-        stats.cacheHits += 1;
-        return;
-      }
+  const cacheMisses = [];
+  function recordTranslation(text, result) {
+    const key = Cache.cacheKey(targetLanguage, text, cacheScope);
+    translated[text] = result;
+    cacheUpdates[key] = {
+      original: text,
+      translated: result,
+      targetLanguage,
+      ...Cache.normalizeScope(cacheScope),
+      createdAt: Date.now(),
+      accessedAt: Date.now()
+    };
+  }
 
-      stats.cacheMisses += 1;
-      try {
-        const result = usesOllama
-          ? await ollamaTranslate(text, targetLanguage, ollamaModel)
-          : await remoteTranslate(text, targetLanguage, cacheScope);
-        translated[text] = result;
-        cacheUpdates[key] = {
-          original: text,
-          translated: result,
-          targetLanguage,
-          ...Cache.normalizeScope(cacheScope),
-          createdAt: Date.now(),
-          accessedAt: Date.now()
-        };
-      } catch (error) {
+  for (const text of texts) {
+    const key = Cache.cacheKey(targetLanguage, text, cacheScope);
+    if (Cache.entryMatches(cache[key], text, targetLanguage, cacheScope)) {
+      translated[text] = cache[key].translated;
+      cacheUpdates[key] = {
+        original: text,
+        targetLanguage,
+        ...Cache.normalizeScope(cacheScope),
+        accessedAt: Date.now()
+      };
+      stats.cacheHits += 1;
+      continue;
+    }
+    stats.cacheMisses += 1;
+    cacheMisses.push(text);
+  }
+
+  if (usesOllama && cacheMisses.length) {
+    try {
+      const results = await ollamaTranslateBatch(cacheMisses, targetLanguage, ollamaModel);
+      if (results.length !== cacheMisses.length) throw new Error("Ollama returned a mismatched translation batch");
+      cacheMisses.forEach((text, index) => recordTranslation(text, results[index]));
+    } catch (error) {
+      for (const text of cacheMisses) {
         stats.failed += 1;
         errors[text] = error.message || String(error);
       }
-    })
-  );
+    }
+  } else if (cacheMisses.length) {
+    await Promise.all(
+      cacheMisses.map(async (text) => {
+        try {
+          const result = await remoteTranslate(text, targetLanguage, cacheScope);
+          recordTranslation(text, result);
+        } catch (error) {
+          stats.failed += 1;
+          errors[text] = error.message || String(error);
+        }
+      })
+    );
+  }
 
   const cacheResult = await mergeCacheUpdates(cacheUpdates, expectedCacheEpoch);
   if (!cacheResult.persisted) {

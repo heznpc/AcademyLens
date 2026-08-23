@@ -420,6 +420,29 @@ test("background routes the Ollama engine through the selected local model", asy
   assert.equal(cacheEntry.provider, "ollama-qwen3.5_9b");
 });
 
+test("background batches Ollama cache misses into one model request", async () => {
+  const requests = [];
+  const { send } = loadBackground(async (url, options) => {
+    requests.push({ url, body: JSON.parse(options.body) });
+    return ollamaResponse(200, '["첫 번째", "두 번째", "세 번째"]');
+  });
+
+  const result = await send({
+    type: "ACADEMYLENS_TRANSLATE_BATCH",
+    translationEngine: "ollama",
+    ollamaModel: "qwen3.5:4b",
+    targetLanguage: "ko",
+    texts: ["First", "Second", "Third"]
+  });
+
+  assert.equal(result.ok, true);
+  assert.equal(result.translated.First, "첫 번째");
+  assert.equal(result.translated.Second, "두 번째");
+  assert.equal(result.translated.Third, "세 번째");
+  assert.equal(requests.length, 1);
+  assert.equal(requests[0].body.reasoning_effort, "none");
+});
+
 test("background refuses Ollama requests without localhost permission", async () => {
   let fetchCalls = 0;
   const { send } = loadBackground(
