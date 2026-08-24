@@ -4,7 +4,7 @@
     return;
   }
 
-  root.AcademyLensContentLifecycle = factory();
+  /** @type {any} */ (root).AcademyLensContentLifecycle = factory();
 })(typeof globalThis !== "undefined" ? globalThis : this, function contentLifecycleFactory() {
   "use strict";
 

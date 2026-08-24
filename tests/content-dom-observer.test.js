@@ -8,6 +8,11 @@ function wait(ms = 0) {
   return new Promise((resolve) => setTimeout(resolve, ms));
 }
 
+async function waitFor(predicate, timeoutMs = 250) {
+  const deadline = Date.now() + timeoutMs;
+  while (!predicate() && Date.now() < deadline) await wait(5);
+}
+
 test("DOM observer owns mutation batching and reports deferred translation signals", async () => {
   const dom = new JSDOM("<!doctype html><body></body>", {
     url: "https://academy.openai.com/pages/courses"
@@ -42,7 +47,9 @@ test("DOM observer owns mutation batching and reports deferred translation signa
   const lesson = dom.window.document.createElement("p");
   lesson.textContent = "Lesson content";
   dom.window.document.body.append(lesson);
-  await wait(15);
+  await waitFor(
+    () => signals.some((signal) => signal.needsDeferredScan) && signals.some((signal) => signal.sawTranslatableMutation)
+  );
 
   assert.equal(
     signals.some((signal) => signal.needsDeferredScan),

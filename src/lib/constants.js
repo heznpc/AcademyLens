@@ -47,6 +47,8 @@
 
   const MESSAGE_TYPES = Object.freeze({
     TRANSLATE_BATCH: "ACADEMYLENS_TRANSLATE_BATCH",
+    CANCEL_TRANSLATION: "ACADEMYLENS_CANCEL_TRANSLATION",
+    CHECK_OLLAMA: "ACADEMYLENS_CHECK_OLLAMA",
     PERSIST_CACHE_UPDATES: "ACADEMYLENS_PERSIST_CACHE_UPDATES",
     CLEAR_CACHE: "ACADEMYLENS_CLEAR_CACHE"
   });
@@ -133,6 +135,11 @@
       "field.ollamaModel": "Ollama model",
       "ollama.permissionNeeded": "Connecting to Ollama on localhost needs your permission.",
       "ollama.permissionDenied": "Permission declined, so AcademyLens stayed on the on-device engine.",
+      "ollama.checking": "Checking Ollama...",
+      "ollama.ready": "Ollama is ready. {model} is installed.",
+      "ollama.offline": "Ollama is not responding. Start the local server and check again.",
+      "ollama.modelMissing": "Ollama is running, but {model} is not installed.",
+      "ollama.checkAgain": "Check again",
       "popup.languageNoteGlossary": "Reviewed terminology corrections are enabled for this language.",
       "popup.languageNoteCommunity": "Community-reviewed terminology corrections are enabled for this language.",
       "popup.languageNoteAudited":
@@ -216,6 +223,11 @@
       "field.ollamaModel": "Ollama 모델",
       "ollama.permissionNeeded": "localhost의 Ollama에 연결하려면 권한이 필요합니다.",
       "ollama.permissionDenied": "권한이 거부되어 기기 내 번역 엔진을 유지했습니다.",
+      "ollama.checking": "Ollama 연결을 확인하는 중입니다...",
+      "ollama.ready": "Ollama가 준비됐습니다. {model} 모델이 설치되어 있습니다.",
+      "ollama.offline": "Ollama가 응답하지 않습니다. 로컬 서버를 실행한 뒤 다시 확인하세요.",
+      "ollama.modelMissing": "Ollama는 실행 중이지만 {model} 모델이 설치되어 있지 않습니다.",
+      "ollama.checkAgain": "다시 확인",
       "popup.languageNoteGlossary": "이 언어에는 검토 완료된 용어 보정이 적용됩니다.",
       "popup.languageNoteCommunity": "이 언어에는 커뮤니티 검토를 거친 용어 보정이 적용됩니다.",
       "popup.languageNoteAudited":

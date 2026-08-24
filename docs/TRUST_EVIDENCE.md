@@ -22,7 +22,7 @@ This page collects release evidence that should stay easy to inspect before any 
 - Browser-managed translator downloads remain disabled unless the user explicitly enables them.
 - Google Translate through `translate.googleapis.com` is the fallback when browser-native translation is unavailable or misses text.
 - Local Ollama is an independently selected engine, requires an optional localhost permission, and does not fall through to Google Translate.
-- The six selectable Ollama models are exercised through the real OpenAI-compatible endpoint with `npm run test:ollama` when preparing a local-provider build.
+- The six selectable Ollama models are exercised against a protected-placeholder and terminology evaluation corpus through the real OpenAI-compatible endpoint with `npm run test:ollama` when preparing a local-provider build.
 - Translation cache entries are scoped by provider, glossary state, and local correction state.
 - Local corrections and diagnostics stay in Chrome extension storage.
 - Diagnostics show counts and provider path, not original or translated lesson text.

@@ -136,13 +136,13 @@ AcademyLens exposes these locally installed models in the engine picker: `gemma3
 OLLAMA_MODELS=/path/to/ollama/models OLLAMA_ORIGINS='chrome-extension://*' OLLAMA_CONTEXT_LENGTH=4096 OLLAMA_MAX_LOADED_MODELS=1 OLLAMA_NUM_PARALLEL=1 OLLAMA_KEEP_ALIVE=0 ollama serve
 ```
 
-Then run the real OpenAI-compatible API smoke test for all selectable models:
+The popup checks whether Ollama is reachable and whether the selected model is installed. Run the real OpenAI-compatible evaluation corpus for all selectable models before a local-provider release:
 
 ```bash
 npm run test:ollama
 ```
 
-The `qwen3.5` requests set `reasoning_effort: "none"` because page-translation turns request short, deterministic output.
+Add `-- --out=/tmp/academylens-ollama-results.json` to retain the per-case quality, protected-placeholder, terminology, and latency report. The `qwen3.5` requests set `reasoning_effort: "none"` because page-translation turns request short, deterministic output. Runtime batches recover structurally malformed output by splitting only the affected batch, retry a quality-failed item once, and propagate restore/language-switch cancellation to the active local request.
 
 Install dependencies once:
 

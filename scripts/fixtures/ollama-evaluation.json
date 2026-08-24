@@ -1,0 +1,22 @@
+[
+  {
+    "source": "Build reliable AI agents with clear instructions and human oversight.",
+    "keywords": [["에이전트"], ["지침", "명확"], ["사람", "인간"]]
+  },
+  {
+    "source": "Use __AL_OPENAI_0__ to create a practical learning plan.",
+    "keywords": [["__AL_OPENAI_0__"], ["학습"], ["계획"]]
+  },
+  {
+    "source": "Prompt engineering improves the quality of model responses.",
+    "keywords": [["프롬프트"], ["모델"], ["응답"]]
+  },
+  {
+    "source": "Review the output before sharing sensitive information.",
+    "keywords": [["검토", "확인"], ["민감"], ["정보"]]
+  },
+  {
+    "source": "The course includes hands-on exercises and a final assessment.",
+    "keywords": [["강의", "과정"], ["실습", "연습"], ["평가"]]
+  }
+]

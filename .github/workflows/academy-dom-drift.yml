@@ -1,0 +1,64 @@
+name: Academy DOM drift
+
+on:
+  schedule:
+    - cron: "17 */6 * * *"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  issues: write
+
+jobs:
+  public-surface:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with:
+          persist-credentials: false
+
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7
+        with:
+          node-version: 22
+          cache: npm
+
+      - run: npm ci
+      - run: npx playwright install --with-deps chromium
+
+      - name: Check public Academy DOM contract
+        id: drift
+        continue-on-error: true
+        run: npm run check:academy-dom -- --out test-results/academy-dom-drift.json
+
+      - name: Upload drift report
+        if: always()
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
+        with:
+          name: academy-dom-drift-${{ github.run_id }}
+          path: test-results/academy-dom-drift.json
+          if-no-files-found: ignore
+          retention-days: 14
+
+      - name: Open or update drift issue
+        if: steps.drift.outcome == 'failure'
+        uses: actions/github-script@ed597411d8f924073f98dfc5c65a23a2325f34cd # v8
+        with:
+          script: |
+            const title = "Academy public DOM contract drift detected";
+            const marker = "<!-- academylens-dom-drift -->";
+            const body = `${marker}\nThe scheduled public-surface check failed. Inspect the workflow artifact before changing selectors.\n\nRun: ${context.serverUrl}/${context.repo.owner}/${context.repo.repo}/actions/runs/${context.runId}`;
+            const { data: issues } = await github.rest.issues.listForRepo({
+              ...context.repo,
+              state: "open",
+              per_page: 100
+            });
+            const existing = issues.find((issue) => issue.title === title);
+            if (existing) {
+              await github.rest.issues.createComment({ ...context.repo, issue_number: existing.number, body });
+            } else {
+              await github.rest.issues.create({ ...context.repo, title, body });
+            }
+
+      - name: Fail after preserving evidence
+        if: steps.drift.outcome == 'failure'
+        run: exit 1

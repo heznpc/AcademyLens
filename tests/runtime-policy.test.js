@@ -23,23 +23,24 @@ function listRuntimeFiles(dir) {
 
 test("content translation fallback does not race background translation by default", () => {
   const source = read("src/content/content.js");
-  const sendBackgroundTranslationBatch = source.slice(
-    source.indexOf("async function sendBackgroundTranslationBatch"),
-    source.indexOf(
+  const providerSource = read("src/content/translation-provider.js");
+  const sendBackgroundTranslationBatch = providerSource.slice(
+    providerSource.indexOf("async function sendBackgroundTranslationBatch"),
+    providerSource.indexOf(
       "async function sendTranslationBatch",
-      source.indexOf("async function sendBackgroundTranslationBatch")
+      providerSource.indexOf("async function sendBackgroundTranslationBatch")
     )
   );
-  const sendTranslationBatch = source.slice(
-    source.indexOf("async function sendTranslationBatch"),
-    source.indexOf("function message", source.indexOf("async function sendTranslationBatch"))
+  const sendTranslationBatch = providerSource.slice(
+    providerSource.indexOf("async function sendTranslationBatch"),
+    providerSource.indexOf("return Object.freeze", providerSource.indexOf("async function sendTranslationBatch"))
   );
 
   assert(!source.includes("BACKGROUND_FALLBACK_DELAY_MS"));
   assert(!sendBackgroundTranslationBatch.includes("Promise.race"));
-  assert.match(sendBackgroundTranslationBatch, /await sendMessage/);
-  assert.match(sendBackgroundTranslationBatch, /BACKGROUND_RESPONSE_MAX_TIMEOUT_MS/);
-  assert.match(sendBackgroundTranslationBatch, /BACKGROUND_TIMEOUT_CODE/);
+  assert.match(sendBackgroundTranslationBatch, /await backgroundClient\.send/);
+  assert.match(sendBackgroundTranslationBatch, /maxResponseTimeoutMs/);
+  assert.match(sendBackgroundTranslationBatch, /backgroundClient\.timeoutCode/);
   assert.match(sendBackgroundTranslationBatch, /throw error/);
   assert.match(sendBackgroundTranslationBatch, /translateBatchInContent/);
   assert.match(sendTranslationBatch, /translateBatchWithBrowserTranslator/);
@@ -70,15 +71,15 @@ test("content translation fallback has retry, timeout, dedupe, and concurrency c
 });
 
 test("browser translator provider only runs when already available", () => {
-  const source = read("src/content/content.js");
+  const source = read("src/content/translation-provider.js");
   const provider = source.slice(
     source.indexOf("async function translateBatchWithBrowserTranslator"),
     source.indexOf("async function sendBackgroundTranslationBatch")
   );
 
-  assert.match(provider, /const canUseBrowserTranslator/);
-  assert.match(provider, /!canUseBrowserTranslator/);
-  assert.match(provider, /allowDownload: Boolean\(state\.settings\.enableBrowserTranslatorDownloads\)/);
+  assert.match(provider, /const canUse/);
+  assert.match(provider, /!canUse/);
+  assert.match(provider, /allowDownload: Boolean\(settings\.enableBrowserTranslatorDownloads\)/);
   assert.match(provider, /translationLooksSuspicious/);
   assert.match(provider, /cacheHasTranslation/);
   assert.match(provider, /persistContentCache/);
@@ -87,16 +88,17 @@ test("browser translator provider only runs when already available", () => {
 
 test("browser translator downloads require explicit user opt-in", () => {
   const source = read("src/content/content.js");
-  const provider = source.slice(
-    source.indexOf("async function translateBatchWithBrowserTranslator"),
-    source.indexOf("async function sendBackgroundTranslationBatch")
+  const providerSource = read("src/content/translation-provider.js");
+  const provider = providerSource.slice(
+    providerSource.indexOf("async function translateBatchWithBrowserTranslator"),
+    providerSource.indexOf("async function sendBackgroundTranslationBatch")
   );
   const constants = read("src/lib/constants.js");
 
   assert.match(constants, /enableBrowserTranslatorDownloads: false/);
-  assert.match(provider, /state\.settings\.enableBrowserTranslatorDownloads/);
+  assert.match(provider, /settings\.enableBrowserTranslatorDownloads/);
   assert.match(provider, /support\.status === "downloadable"/);
-  assert.match(provider, /allowDownload: Boolean\(state\.settings\.enableBrowserTranslatorDownloads\)/);
+  assert.match(provider, /allowDownload: Boolean\(settings\.enableBrowserTranslatorDownloads\)/);
   assert.match(source, /data-native-download/);
   assert.match(source, /data-provider-chip/);
 });
@@ -161,6 +163,7 @@ test("content supports local corrections, frame aggregation, viewport priority, 
 
 test("content cache scope tracks provider and glossary while cache clears invalidate stale writes", () => {
   const source = read("src/content/content.js");
+  const provider = read("src/content/translation-provider.js");
   const helpers = read("src/content/content-helpers.js");
   const constants = read("src/lib/constants.js");
   const cache = read("src/lib/cache.js");
@@ -176,7 +179,7 @@ test("content cache scope tracks provider and glossary while cache clears invali
   assert.match(helpers, /function cacheEpochValue/);
   assert.match(source, /state\.cacheEpoch/);
   assert.match(source, /cacheEpoch: state\.cacheEpoch/);
-  assert.match(source, /provider: "google-translate"/);
+  assert.match(provider, /provider: "google-translate"/);
   assert.match(source, /type: C\.MESSAGE_TYPES\.PERSIST_CACHE_UPDATES/);
   assert.match(source, /type: C\.MESSAGE_TYPES\.CLEAR_CACHE/);
   assert.match(background, /function googleCacheScope/);
@@ -188,11 +191,11 @@ test("content cache scope tracks provider and glossary while cache clears invali
 });
 
 test("content fallback only retries texts missed by browser-native translation", () => {
-  const source = read("src/content/content.js");
+  const source = read("src/content/translation-provider.js");
   const helpers = read("src/content/content-helpers.js");
   const sendTranslationBatch = source.slice(
     source.indexOf("async function sendTranslationBatch"),
-    source.indexOf("function message", source.indexOf("async function sendTranslationBatch"))
+    source.indexOf("return Object.freeze", source.indexOf("async function sendTranslationBatch"))
   );
 
   assert.match(helpers, /function untranslatedTexts/);
@@ -266,8 +269,9 @@ test("CI separates validation, unit, build, and browser failure diagnostics", ()
   assert.match(ci, /npm test/);
   assert.match(ci, /npm run build:zip && npm run check:files/);
   assert.match(ci, /npm run test:e2e/);
-  assert.match(ci, /if: failure\(\)[\s\S]*actions\/upload-artifact@v7/);
-  assert.match(ci, /actions\/checkout@v7[\s\S]*persist-credentials:\s*false/);
+  assert.match(ci, /if: failure\(\)[\s\S]*actions\/upload-artifact@[0-9a-f]{40}/);
+  assert.match(ci, /actions\/checkout@[0-9a-f]{40}[\s\S]*persist-credentials:\s*false/);
+  assert.doesNotMatch(ci, /uses:\s*[^\s]+@v\d+/);
   assert.match(playwrightConfig, /timeout:\s*90_000/);
   assert.match(playwrightConfig, /timeout:\s*20_000/);
   assert.match(playwrightConfig, /trace: "retain-on-failure"/);
@@ -282,10 +286,11 @@ test("GitHub security workflow runs CodeQL with least privilege", () => {
   assert.match(codeql, /push:[\s\S]*branches: \[main\]/);
   assert.match(codeql, /security-events:\s*write/);
   assert.match(codeql, /contents:\s*read/);
-  assert.match(codeql, /actions\/checkout@v7[\s\S]*persist-credentials:\s*false/);
-  assert.match(codeql, /github\/codeql-action\/init@v4/);
+  assert.match(codeql, /actions\/checkout@[0-9a-f]{40}[\s\S]*persist-credentials:\s*false/);
+  assert.match(codeql, /github\/codeql-action\/init@[0-9a-f]{40}/);
   assert.match(codeql, /languages:\s*javascript-typescript/);
-  assert.match(codeql, /github\/codeql-action\/analyze@v4/);
+  assert.match(codeql, /github\/codeql-action\/analyze@[0-9a-f]{40}/);
+  assert.doesNotMatch(codeql, /uses:\s*[^\s]+@v\d+/);
   assert.doesNotMatch(codeql, /pull_request_target\s*:/);
 });
 

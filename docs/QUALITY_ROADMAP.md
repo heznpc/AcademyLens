@@ -1,30 +1,32 @@
 # Quality Roadmap
 
-Last reviewed: 2026-07-01 KST
+Last reviewed: 2026-08-24 KST
 
 AcademyLens is usable as an open-source beta, but it should not be treated as Chrome Web Store-ready until the checks below are closed.
 
 ## Current Readiness
 
-| Area                  | Status          | Quality bar before store submission                                                                                                                                           |
-| --------------------- | --------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Runtime translation   | Good beta       | Keep `npm run check:full` green, avoid duplicate provider calls, and add fixtures when Academy markup changes.                                                                |
-| Logged-in Academy DOM | Better beta     | Keep public course, logged-in courses, study room, live lesson shell, delayed SCORM, and in-frame lesson navigation covered; add sanitized real captures when markup changes. |
-| Glossary quality      | AI-audited beta | Keep `npm run check:glossary-quality` green; promote packs only after documented community/native review and closed QA signals.                                               |
-| Privacy/store copy    | Improved draft  | Re-check against actual runtime network behavior before submission.                                                                                                           |
-| UX polish             | Beta            | Keep panel compact, status-rich, keyboard accessible, and non-official in tone.                                                                                               |
-| AI review             | Disabled        | Do not enable until there is a Chrome Web Store-compliant, explicit opt-in bridge.                                                                                            |
+| Area                  | Status          | Quality bar before store submission                                                                                                 |
+| --------------------- | --------------- | ----------------------------------------------------------------------------------------------------------------------------------- |
+| Runtime translation   | Good beta       | Keep `npm run check:full` green; local Ollama uses abort propagation, per-item quality checks, and structural batch recovery.       |
+| Logged-in Academy DOM | Better beta     | Scheduled public DOM drift checks complement sanitized logged-in fixtures; recapture private surfaces manually when markup changes. |
+| Glossary quality      | AI-audited beta | Keep `npm run check:glossary-quality` green; promote packs only after documented community/native review and closed QA signals.     |
+| Privacy/store copy    | Improved draft  | Re-check against actual runtime network behavior before submission.                                                                 |
+| UX polish             | Beta            | Keep panel compact, status-rich, keyboard accessible, and non-official in tone.                                                     |
+| AI review             | Disabled        | Do not enable until there is a Chrome Web Store-compliant, explicit opt-in bridge.                                                  |
 
 ## Implementation Priorities
 
-1. Expand sanitized DOM fixtures for logged-in pages.
+1. Maintain sanitized DOM fixtures and the public DOM contract.
    - Keep fixtures small and scrubbed.
    - Include Gradual chrome, progress, quiz, certificate, account, cookie/toast, and SCORM surfaces.
    - Add assertions that those surfaces are not translated.
+   - Investigate scheduled `Academy DOM drift` failures from their retained JSON artifact before changing selectors.
 
 2. Raise glossary confidence language by language.
    - Use `npm run glossary:status` to pick review targets.
    - Use `npm run glossary:audit -- --locale=<locale>` before asking for review.
+   - Use `npm run glossary:review-packets` for a complete reviewer handoff and keep `check:glossary-review-readiness` green.
    - Keep `llm-audited` packs behind `npm run check:glossary-quality`.
    - Promote `llm-audited` only after the review evidence is represented in the glossary metadata.
 

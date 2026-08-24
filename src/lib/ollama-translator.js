@@ -4,7 +4,7 @@
     return;
   }
 
-  root.AcademyLensOllamaTranslator = factory();
+  /** @type {any} */ (root).AcademyLensOllamaTranslator = factory();
 })(typeof globalThis !== "undefined" ? globalThis : this, function ollamaTranslatorFactory() {
   "use strict";
 
@@ -233,6 +233,26 @@
       return normalizeBatchContent(content, texts.length);
     }
 
+    async function translateBatchWithRecovery(texts, targetLanguage, model, signal) {
+      if (texts.length === 1) {
+        return [await translateNow(texts[0], targetLanguage, model, signal)];
+      }
+      try {
+        return await translateBatchNow(texts, targetLanguage, model, signal);
+      } catch (error) {
+        if (error && error.name === "AbortError") throw error;
+        if (
+          !/invalid translation batch|mismatched translation batch|empty batch translation/i.test(error.message || "")
+        ) {
+          throw error;
+        }
+        const midpoint = Math.ceil(texts.length / 2);
+        const left = await translateBatchWithRecovery(texts.slice(0, midpoint), targetLanguage, model, signal);
+        const right = await translateBatchWithRecovery(texts.slice(midpoint), targetLanguage, model, signal);
+        return [...left, ...right];
+      }
+    }
+
     function translateText(text, targetLanguage, model, signal) {
       assertReady();
       // The recommended Ollama server uses OLLAMA_NUM_PARALLEL=1 and
@@ -250,7 +270,7 @@
         }
         const translated = [];
         for (const chunk of chunkTexts(normalized)) {
-          translated.push(...(await translateBatchNow(chunk, targetLanguage, model, signal)));
+          translated.push(...(await translateBatchWithRecovery(chunk, targetLanguage, model, signal)));
         }
         return translated;
       });

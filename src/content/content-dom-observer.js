@@ -4,7 +4,7 @@
     return;
   }
 
-  root.AcademyLensContentDomObserver = factory();
+  /** @type {any} */ (root).AcademyLensContentDomObserver = factory();
 })(typeof globalThis !== "undefined" ? globalThis : this, function contentDomObserverFactory() {
   "use strict";
 

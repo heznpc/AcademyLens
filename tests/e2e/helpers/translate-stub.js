@@ -170,7 +170,9 @@ async function registerTranslateStub(context, options = {}) {
   });
 
   if (options.ollamaResponse) {
+    let ollamaCallCount = 0;
     await context.route("http://localhost:11434/v1/chat/completions", async (route) => {
+      ollamaCallCount += 1;
       const body = route.request().postDataJSON();
       const userMessage = body.messages.findLast((message) => message.role === "user");
       const text = String(userMessage?.content || "")
@@ -184,6 +186,17 @@ async function registerTranslateStub(context, options = {}) {
         text,
         targetLanguage: "ko"
       });
+      if (options.ollamaDelayMs) {
+        await new Promise((resolve) => setTimeout(resolve, options.ollamaDelayMs));
+      }
+      if (ollamaCallCount <= Number(options.ollamaFailuresBeforeSuccess || 0)) {
+        await route.fulfill({
+          status: 503,
+          contentType: "application/json",
+          body: JSON.stringify({ error: { message: "Ollama temporarily unavailable" } })
+        });
+        return;
+      }
       await route.fulfill({
         status: 200,
         contentType: "application/json",

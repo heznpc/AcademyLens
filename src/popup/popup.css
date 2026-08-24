@@ -87,6 +87,32 @@ select:focus {
   outline-offset: 1px;
 }
 
+.ollama-health {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 8px;
+  margin-top: -6px;
+}
+
+.ollama-health[hidden] {
+  display: none;
+}
+
+.ollama-health .hint {
+  margin: 0;
+}
+
+.ollama-health button {
+  min-height: 28px;
+  border: 1px solid rgba(24, 182, 167, 0.32);
+  border-radius: 6px;
+  background: #ffffff;
+  color: #334155;
+  font: inherit;
+  cursor: pointer;
+}
+
 .toggle {
   grid-template-columns: 18px 1fr;
   align-items: center;

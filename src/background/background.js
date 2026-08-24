@@ -2,6 +2,7 @@ try {
   importScripts(
     "../lib/constants.js",
     "../lib/cache.js",
+    "../lib/translation-quality.js",
     "../lib/google-translate.js",
     "../lib/remote-google-translator.js",
     "../lib/ollama-translator.js"
@@ -21,6 +22,8 @@ const {
 } = self.AcademyLensConstants || {
   MESSAGE_TYPES: {
     TRANSLATE_BATCH: "ACADEMYLENS_TRANSLATE_BATCH",
+    CANCEL_TRANSLATION: "ACADEMYLENS_CANCEL_TRANSLATION",
+    CHECK_OLLAMA: "ACADEMYLENS_CHECK_OLLAMA",
     PERSIST_CACHE_UPDATES: "ACADEMYLENS_PERSIST_CACHE_UPDATES",
     CLEAR_CACHE: "ACADEMYLENS_CLEAR_CACHE"
   },
@@ -36,6 +39,7 @@ const {
 };
 
 const Cache = self.AcademyLensCache;
+const TranslationQuality = self.AcademyLensTranslationQuality;
 const GoogleTranslate = self.AcademyLensGoogleTranslate;
 const RemoteGoogleTranslator = self.AcademyLensRemoteGoogleTranslator;
 const OllamaTranslator = self.AcademyLensOllamaTranslator;
@@ -47,6 +51,7 @@ const BASE_BACKOFF_MS = 350;
 const MAX_CONCURRENT_REMOTE_FETCHES = 5;
 
 let cacheWriteChain = Promise.resolve();
+const activeOperations = new Map();
 const remoteTranslator =
   RemoteGoogleTranslator && RemoteGoogleTranslator.create
     ? RemoteGoogleTranslator.create({
@@ -111,22 +116,22 @@ async function hasOriginPermission(origin) {
   }
 }
 
-function remoteTranslate(text, targetLanguage, scope) {
+function remoteTranslate(text, targetLanguage, scope, signal) {
   if (!remoteTranslator) throw new Error("Remote translator unavailable");
-  return remoteTranslator.translateText(text, targetLanguage, scope);
+  return remoteTranslator.translateText(text, targetLanguage, scope, signal);
 }
 
-function ollamaTranslate(text, targetLanguage, model) {
+function ollamaTranslate(text, targetLanguage, model, signal) {
   if (!ollamaTranslator) throw new Error("Ollama translator unavailable");
-  return ollamaTranslator.translateText(text, targetLanguage, model);
+  return ollamaTranslator.translateText(text, targetLanguage, model, signal);
 }
 
-function ollamaTranslateBatch(texts, targetLanguage, model) {
+function ollamaTranslateBatch(texts, targetLanguage, model, signal) {
   if (!ollamaTranslator) throw new Error("Ollama translator unavailable");
   if (typeof ollamaTranslator.translateTexts !== "function") {
-    return Promise.all(texts.map((text) => ollamaTranslate(text, targetLanguage, model)));
+    return Promise.all(texts.map((text) => ollamaTranslate(text, targetLanguage, model, signal)));
   }
-  return ollamaTranslator.translateTexts(texts, targetLanguage, model);
+  return ollamaTranslator.translateTexts(texts, targetLanguage, model, signal);
 }
 
 function withCacheWriteLock(task) {
@@ -173,7 +178,7 @@ async function mergeCacheUpdates(cacheUpdates, expectedEpoch) {
   }
 }
 
-async function translateBatch(message) {
+async function translateBatch(message, signal) {
   const targetLanguage = message.targetLanguage;
   if (!targetLanguage) {
     return { ok: false, translated: {}, errors: {}, error: "No target language selected" };
@@ -243,9 +248,28 @@ async function translateBatch(message) {
 
   if (usesOllama && cacheMisses.length) {
     try {
-      const results = await ollamaTranslateBatch(cacheMisses, targetLanguage, ollamaModel);
+      const results = await ollamaTranslateBatch(cacheMisses, targetLanguage, ollamaModel, signal);
       if (results.length !== cacheMisses.length) throw new Error("Ollama returned a mismatched translation batch");
-      cacheMisses.forEach((text, index) => recordTranslation(text, results[index]));
+      for (let index = 0; index < cacheMisses.length; index += 1) {
+        const text = cacheMisses[index];
+        let result = results[index];
+        let quality = TranslationQuality.validate(text, result, targetLanguage);
+        if (!quality.ok) {
+          try {
+            [result] = await ollamaTranslateBatch([text], targetLanguage, ollamaModel, signal);
+            quality = TranslationQuality.validate(text, result, targetLanguage);
+          } catch (error) {
+            if (error && error.name === "AbortError") throw error;
+            quality = { ok: false, issue: error.message || String(error) };
+          }
+        }
+        if (quality.ok) {
+          recordTranslation(text, result);
+        } else {
+          stats.failed += 1;
+          errors[text] = `Ollama translation quality check failed: ${quality.issue}`;
+        }
+      }
     } catch (error) {
       for (const text of cacheMisses) {
         stats.failed += 1;
@@ -256,7 +280,7 @@ async function translateBatch(message) {
     await Promise.all(
       cacheMisses.map(async (text) => {
         try {
-          const result = await remoteTranslate(text, targetLanguage, cacheScope);
+          const result = await remoteTranslate(text, targetLanguage, cacheScope, signal);
           recordTranslation(text, result);
         } catch (error) {
           stats.failed += 1;
@@ -277,6 +301,37 @@ async function translateBatch(message) {
     errors,
     stats
   };
+}
+
+function operationId(value) {
+  return String(value || "")
+    .trim()
+    .slice(0, 160);
+}
+
+async function checkOllama(message) {
+  if (!(await hasOriginPermission(OLLAMA_ORIGIN))) {
+    return { ok: false, status: "permission-denied", models: [] };
+  }
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => controller.abort(), 3000);
+  try {
+    const response = await fetch("http://localhost:11434/api/tags", { signal: controller.signal });
+    if (!response.ok) return { ok: false, status: "offline", models: [] };
+    const payload = await response.json();
+    const models = Array.isArray(payload.models)
+      ? payload.models
+          .map((item) => String(item && (item.name || item.model) ? item.name || item.model : ""))
+          .filter(Boolean)
+      : [];
+    const model = normalizeOllamaModel(message && message.ollamaModel);
+    const installed = models.includes(model);
+    return { ok: installed, status: installed ? "ready" : "model-missing", model, models };
+  } catch {
+    return { ok: false, status: "offline", models: [] };
+  } finally {
+    clearTimeout(timeoutId);
+  }
 }
 
 async function persistCacheUpdates(message) {
@@ -318,12 +373,37 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
     return true;
   }
 
+  if (message.type === MESSAGE_TYPES.CHECK_OLLAMA) {
+    checkOllama(message)
+      .then(sendResponse)
+      .catch(() => sendResponse({ ok: false, status: "offline", models: [] }));
+    return true;
+  }
+
+  if (message.type === MESSAGE_TYPES.CANCEL_TRANSLATION) {
+    const id = operationId(message.operationId);
+    const controller = activeOperations.get(id);
+    if (controller) controller.abort();
+    sendResponse({ cancelled: Boolean(controller) });
+    return false;
+  }
+
   if (message.type !== MESSAGE_TYPES.TRANSLATE_BATCH) return false;
 
-  translateBatch(message)
+  const id = operationId(message.operationId);
+  const controller = new AbortController();
+  if (id) {
+    const previous = activeOperations.get(id);
+    if (previous) previous.abort();
+    activeOperations.set(id, controller);
+  }
+  translateBatch(message, controller.signal)
     .then(sendResponse)
     .catch((error) => {
       sendResponse({ ok: false, error: error.message || String(error) });
+    })
+    .finally(() => {
+      if (id && activeOperations.get(id) === controller) activeOperations.delete(id);
     });
 
   return true;

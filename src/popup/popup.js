@@ -8,6 +8,9 @@
   const engineNote = document.getElementById("engineNote");
   const ollamaModelField = document.getElementById("ollamaModelField");
   const ollamaModel = document.getElementById("ollamaModel");
+  const ollamaHealth = document.getElementById("ollamaHealth");
+  const ollamaStatus = document.getElementById("ollamaStatus");
+  const ollamaRetry = document.getElementById("ollamaRetry");
   const autoTranslate = document.getElementById("autoTranslate");
   const nativeDownloads = document.getElementById("nativeDownloads");
   const languageSupport = document.getElementById("languageSupport");
@@ -76,6 +79,7 @@
   updateLanguageSupport();
   setEngineNote(`engine.note${engineNoteSuffix(settings.translationEngine)}`);
   updateOllamaModelVisibility();
+  if (C.engineUsesOllama(settings.translationEngine)) await checkOllamaStatus();
 
   function engineNoteSuffix(value) {
     return value.charAt(0).toUpperCase() + value.slice(1);
@@ -86,7 +90,32 @@
   }
 
   function updateOllamaModelVisibility() {
-    ollamaModelField.hidden = !C.engineUsesOllama(engine.value);
+    const visible = C.engineUsesOllama(engine.value);
+    ollamaModelField.hidden = !visible;
+    ollamaHealth.hidden = !visible;
+  }
+
+  async function checkOllamaStatus() {
+    if (!C.engineUsesOllama(engine.value)) return;
+    ollamaStatus.textContent = C.getMessage("ollama.checking", uiLocale);
+    ollamaRetry.disabled = true;
+    try {
+      const response = await chrome.runtime.sendMessage({
+        type: C.MESSAGE_TYPES.CHECK_OLLAMA,
+        ollamaModel: C.normalizeOllamaModel(ollamaModel.value)
+      });
+      if (response && response.status === "ready") {
+        ollamaStatus.textContent = C.getMessage("ollama.ready", uiLocale, { model: response.model });
+      } else if (response && response.status === "model-missing") {
+        ollamaStatus.textContent = C.getMessage("ollama.modelMissing", uiLocale, { model: ollamaModel.value });
+      } else {
+        ollamaStatus.textContent = C.getMessage("ollama.offline", uiLocale);
+      }
+    } catch {
+      ollamaStatus.textContent = C.getMessage("ollama.offline", uiLocale);
+    } finally {
+      ollamaRetry.disabled = false;
+    }
   }
 
   function updateLanguageSupport() {
@@ -142,12 +171,14 @@
     updateOllamaModelVisibility();
     if (resolved === requested) setEngineNote(`engine.note${engineNoteSuffix(resolved)}`);
     await persist({ translationEngine: resolved });
+    if (C.engineUsesOllama(resolved)) await checkOllamaStatus();
   });
 
   ollamaModel.addEventListener("change", async () => {
     const model = C.normalizeOllamaModel(ollamaModel.value);
     ollamaModel.value = model;
     await persist({ ollamaModel: model });
+    await checkOllamaStatus();
   });
 
   autoTranslate.addEventListener("change", async () => {
@@ -157,6 +188,8 @@
   nativeDownloads.addEventListener("change", async () => {
     await persist({ enableBrowserTranslatorDownloads: nativeDownloads.checked });
   });
+
+  ollamaRetry.addEventListener("click", checkOllamaStatus);
 
   // Persist the resolved first-run defaults so the content script sees them too.
   if (!storedSettings.targetLanguage || !storedSettings.translationEngine) {

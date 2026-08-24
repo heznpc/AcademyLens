@@ -30,6 +30,10 @@
         <span data-i18n="field.ollamaModel">Ollama model</span>
         <select id="ollamaModel"></select>
       </label>
+      <div id="ollamaHealth" class="ollama-health" hidden>
+        <p class="hint" id="ollamaStatus" aria-live="polite"></p>
+        <button id="ollamaRetry" type="button" data-i18n="ollama.checkAgain">Check again</button>
+      </div>
       <label class="toggle">
         <input id="autoTranslate" type="checkbox" />
         <span data-i18n="popup.autoTranslate">Auto-translate new course text</span>

@@ -141,8 +141,8 @@ assert(
 
 const ciWorkflow = read(".github/workflows/ci.yml");
 assert(
-  /actions\/checkout@v7[\s\S]*persist-credentials:\s*false/.test(ciWorkflow),
-  "CI checkout must disable credential persistence"
+  /actions\/checkout@[0-9a-f]{40}[\s\S]*persist-credentials:\s*false/.test(ciWorkflow),
+  "CI checkout must be SHA-pinned and disable credential persistence"
 );
 for (const job of ["validate", "unit", "build", "e2e"]) {
   assert(new RegExp(`\\n  ${job}:`).test(ciWorkflow), `CI must define an independent ${job} job`);
@@ -152,7 +152,7 @@ assert(/npm test/.test(ciWorkflow), "CI unit job must run unit tests");
 assert(/npm run build:zip && npm run check:files/.test(ciWorkflow), "CI build job must verify the release archive");
 assert(/npm run test:e2e/.test(ciWorkflow), "CI e2e job must run browser tests");
 assert(
-  /if: failure\(\)[\s\S]*actions\/upload-artifact@v7/.test(ciWorkflow),
+  /if: failure\(\)[\s\S]*actions\/upload-artifact@[0-9a-f]{40}/.test(ciWorkflow),
   "CI e2e job must retain failure artifacts"
 );
 
@@ -160,11 +160,11 @@ const codeqlWorkflow = read(".github/workflows/codeql.yml");
 assert(!/pull_request_target\s*:/.test(codeqlWorkflow), "CodeQL must not run on pull_request_target");
 assert(/security-events:\s*write/.test(codeqlWorkflow), "CodeQL workflow must grant security-events write permission");
 assert(
-  /actions\/checkout@v7[\s\S]*persist-credentials:\s*false/.test(codeqlWorkflow),
-  "CodeQL checkout must disable credential persistence"
+  /actions\/checkout@[0-9a-f]{40}[\s\S]*persist-credentials:\s*false/.test(codeqlWorkflow),
+  "CodeQL checkout must be SHA-pinned and disable credential persistence"
 );
-assert(/github\/codeql-action\/init@v4/.test(codeqlWorkflow), "CodeQL init action must use v4");
-assert(/github\/codeql-action\/analyze@v4/.test(codeqlWorkflow), "CodeQL analyze action must use v4");
+assert(/github\/codeql-action\/init@[0-9a-f]{40}/.test(codeqlWorkflow), "CodeQL init action must be SHA-pinned");
+assert(/github\/codeql-action\/analyze@[0-9a-f]{40}/.test(codeqlWorkflow), "CodeQL analyze action must be SHA-pinned");
 assert(/languages:\s*javascript-typescript/.test(codeqlWorkflow), "CodeQL must analyze JavaScript/TypeScript");
 
 console.log("operations checks ok");

@@ -443,6 +443,87 @@ test("background batches Ollama cache misses into one model request", async () =
   assert.equal(requests[0].body.reasoning_effort, "none");
 });
 
+test("background retries only an Ollama item that fails the quality contract", async () => {
+  const requests = [];
+  const { send } = loadBackground(async (_url, options) => {
+    const body = JSON.parse(options.body);
+    requests.push(body);
+    if (body.messages[1].content.includes("Input JSON")) {
+      return ollamaResponse(200, '["첫 번째", "Second source copied"]');
+    }
+    return ollamaResponse(200, "두 번째 번역");
+  });
+
+  const result = await send({
+    type: "ACADEMYLENS_TRANSLATE_BATCH",
+    translationEngine: "ollama",
+    ollamaModel: "qwen3.5:4b",
+    targetLanguage: "ko",
+    texts: ["First", "Second source copied"]
+  });
+
+  assert.equal(result.ok, true);
+  assert.equal(result.translated.First, "첫 번째");
+  assert.equal(result.translated["Second source copied"], "두 번째 번역");
+  assert.equal(requests.length, 2);
+});
+
+test("background exposes Ollama health and selected model installation", async () => {
+  const { send } = loadBackground(async (url) => {
+    assert.equal(url, "http://localhost:11434/api/tags");
+    return {
+      ok: true,
+      async json() {
+        return { models: [{ name: "qwen3.5:4b" }, { name: "gemma3:4b" }] };
+      }
+    };
+  });
+
+  const ready = await send({ type: "ACADEMYLENS_CHECK_OLLAMA", ollamaModel: "qwen3.5:4b" });
+  assert.equal(ready.ok, true);
+  assert.equal(ready.status, "ready");
+  assert.deepEqual(Array.from(ready.models), ["qwen3.5:4b", "gemma3:4b"]);
+
+  const missing = await send({ type: "ACADEMYLENS_CHECK_OLLAMA", ollamaModel: "gemma4:12b" });
+  assert.equal(missing.ok, false);
+  assert.equal(missing.status, "model-missing");
+});
+
+test("background cancellation aborts the active Ollama fetch", async () => {
+  let fetchAborted = false;
+  const { send } = loadBackground(
+    (_url, options) =>
+      new Promise((_resolve, reject) => {
+        options.signal.addEventListener(
+          "abort",
+          () => {
+            fetchAborted = true;
+            const error = new Error("aborted");
+            error.name = "AbortError";
+            reject(error);
+          },
+          { once: true }
+        );
+      })
+  );
+  const pending = send({
+    type: "ACADEMYLENS_TRANSLATE_BATCH",
+    operationId: "frame:generation-1",
+    translationEngine: "ollama",
+    ollamaModel: "qwen3.5:4b",
+    targetLanguage: "ko",
+    texts: ["A request that should be cancelled"]
+  });
+  await new Promise((resolve) => setTimeout(resolve, 0));
+  const cancelled = await send({ type: "ACADEMYLENS_CANCEL_TRANSLATION", operationId: "frame:generation-1" });
+  const result = await pending;
+
+  assert.equal(cancelled.cancelled, true);
+  assert.equal(fetchAborted, true);
+  assert.equal(result.ok, false);
+  assert.equal(result.stats.failed, 1);
+});
+
 test("background refuses Ollama requests without localhost permission", async () => {
   let fetchCalls = 0;
   const { send } = loadBackground(

@@ -5,11 +5,14 @@
   const Cache = globalThis.AcademyLensCache;
   const BrowserTranslator = globalThis.AcademyLensBrowserTranslator;
   const ContentHelpers = globalThis.AcademyLensContentHelpers;
+  const ContentBackgroundClient = globalThis.AcademyLensContentBackgroundClient;
   const GoogleTranslate = globalThis.AcademyLensGoogleTranslate;
   const Glossary = globalThis.AcademyLensGlossary;
   const ContentLifecycle = globalThis.AcademyLensContentLifecycle;
   const ContentDomObserver = globalThis.AcademyLensContentDomObserver;
   const TranslationController = globalThis.AcademyLensTranslationController;
+  const TranslationProvider = globalThis.AcademyLensTranslationProvider;
+  const SettingsController = globalThis.AcademyLensSettingsController;
   const DomTranslationRuntime = globalThis.AcademyLensDomTranslationRuntime;
   const FrameMessenger = globalThis.AcademyLensFrameMessenger;
   const PanelView = globalThis.AcademyLensPanelView;
@@ -18,7 +21,6 @@
   const uiLocale = C && C.getUiLocale ? C.getUiLocale(navigator.language) : "en";
   const BACKGROUND_RESPONSE_TIMEOUT_MS = 12000;
   const BACKGROUND_RESPONSE_MAX_TIMEOUT_MS = 300000;
-  const BACKGROUND_TIMEOUT_CODE = "ACADEMYLENS_BACKGROUND_TIMEOUT";
   const CONTENT_FALLBACK_FETCH_TIMEOUT_MS = 8000;
   const CONTENT_FALLBACK_MAX_RETRIES = 2;
   const CONTENT_FALLBACK_BASE_BACKOFF_MS = 350;
@@ -35,9 +37,12 @@
   if (
     !C ||
     !ContentHelpers ||
+    !ContentBackgroundClient ||
     !ContentLifecycle ||
     !ContentDomObserver ||
     !TranslationController ||
+    !TranslationProvider ||
+    !SettingsController ||
     !DomTranslationRuntime ||
     !FrameMessenger ||
     !Glossary ||
@@ -61,6 +66,19 @@
   const appendContextText = H.appendContextText;
   const orderedContextTexts = H.orderedContextTexts;
   const mergeDiagnostics = H.mergeDiagnostics;
+  const backgroundClient = ContentBackgroundClient.create({
+    chrome,
+    window,
+    constants: C,
+    uiLocale,
+    createAbortError: abortError
+  });
+  const settingsController = SettingsController.create({
+    chrome,
+    constants: C,
+    navigator,
+    cacheEpochValue
+  });
 
   const state = {
     settings: { ...C.DEFAULT_SETTINGS },
@@ -100,6 +118,31 @@
           createAbortError: abortError
         })
       : null;
+  const translationProvider = TranslationProvider.create({
+    constants: C,
+    Cache,
+    BrowserTranslator,
+    GoogleTranslate,
+    backgroundClient,
+    getSettings: () => state.settings,
+    getCacheEpoch: () => state.cacheEpoch,
+    getLocal,
+    cacheEpochValue,
+    cacheHasTranslation,
+    cacheUpdateMeta,
+    translateTextInContent,
+    throwIfAborted,
+    persistContentCache,
+    setBrowserTranslatorStatus,
+    updateProviderModeFromBrowserStatus,
+    setProviderMode,
+    translationLooksSuspicious,
+    message,
+    untranslatedTexts,
+    mergeTranslationResponses,
+    responseTimeoutMs: BACKGROUND_RESPONSE_TIMEOUT_MS,
+    maxResponseTimeoutMs: BACKGROUND_RESPONSE_MAX_TIMEOUT_MS
+  });
   let lifecycleController = null;
   let domObserverController = null;
   const translationController = TranslationController.create({
@@ -355,50 +398,6 @@
     updateProviderModeFromBrowserStatus(result.status);
   }
 
-  function sendMessage(message, timeoutMs = 30000, signal) {
-    return new Promise((resolve, reject) => {
-      if (signal && signal.aborted) {
-        reject(abortError());
-        return;
-      }
-
-      let settled = false;
-      let cleanup = () => {};
-      const timeoutId = window.setTimeout(() => {
-        settled = true;
-        cleanup();
-        const error = new Error(C.getMessage("status.timeout", uiLocale));
-        error.code = BACKGROUND_TIMEOUT_CODE;
-        reject(error);
-      }, timeoutMs);
-
-      const abort = () => {
-        if (settled) return;
-        settled = true;
-        window.clearTimeout(timeoutId);
-        cleanup();
-        reject(abortError());
-      };
-
-      if (signal) {
-        signal.addEventListener("abort", abort, { once: true });
-        cleanup = () => signal.removeEventListener("abort", abort);
-      }
-
-      chrome.runtime.sendMessage(message, (response) => {
-        if (settled) return;
-        window.clearTimeout(timeoutId);
-        cleanup();
-        const error = chrome.runtime.lastError;
-        if (error) {
-          reject(new Error(error.message));
-          return;
-        }
-        resolve(response);
-      });
-    });
-  }
-
   function sleep(ms) {
     return new Promise((resolve) => window.setTimeout(resolve, ms));
   }
@@ -432,7 +431,7 @@
   async function persistContentCache(cacheUpdates, expectedEpoch = state.cacheEpoch, signal) {
     if (!Cache || !Object.keys(cacheUpdates).length) return false;
     try {
-      const response = await sendMessage(
+      const response = await backgroundClient.send(
         {
           type: C.MESSAGE_TYPES.PERSIST_CACHE_UPDATES,
           cacheUpdates,
@@ -517,7 +516,10 @@
 
   async function clearTranslationCache() {
     try {
-      const response = await sendMessage({ type: C.MESSAGE_TYPES.CLEAR_CACHE }, BACKGROUND_RESPONSE_TIMEOUT_MS);
+      const response = await backgroundClient.send(
+        { type: C.MESSAGE_TYPES.CLEAR_CACHE },
+        BACKGROUND_RESPONSE_TIMEOUT_MS
+      );
       if (!response || !response.cleared) {
         throw new Error((response && response.error) || "cache clear failed");
       }
@@ -649,314 +651,6 @@
     });
   }
 
-  async function translateBatchInContent(texts, targetLanguage, scope = {}, expectedEpoch = state.cacheEpoch, signal) {
-    if (!Cache || !GoogleTranslate || typeof fetch !== "function") {
-      throw new Error(message("status.failed"));
-    }
-    throwIfAborted(signal);
-
-    const stored = await getLocal([C.STORAGE_KEYS.CACHE, C.STORAGE_KEYS.CACHE_EPOCH]);
-    const currentEpoch = cacheEpochValue(stored[C.STORAGE_KEYS.CACHE_EPOCH]);
-    const canReadCache = cacheEpochValue(expectedEpoch) === currentEpoch;
-    const cache = canReadCache ? stored[C.STORAGE_KEYS.CACHE] || {} : {};
-    const translated = {};
-    const errors = {};
-    const cacheUpdates = {};
-    const stats = {
-      cacheHits: 0,
-      cacheMisses: 0,
-      failed: 0,
-      requested: texts.length,
-      fallback: true,
-      cachePersistFailed: false
-    };
-
-    await Promise.all(
-      texts.map(async (text) => {
-        const key = Cache.cacheKey(targetLanguage, text, scope);
-        if (cacheHasTranslation(cache, key, text, targetLanguage, scope)) {
-          translated[text] = cache[key].translated;
-          cacheUpdates[key] = {
-            original: text,
-            targetLanguage,
-            ...cacheUpdateMeta(scope),
-            accessedAt: Date.now()
-          };
-          stats.cacheHits += 1;
-          return;
-        }
-
-        stats.cacheMisses += 1;
-        try {
-          const result = await translateTextInContent(text, targetLanguage, scope, signal);
-          throwIfAborted(signal);
-          translated[text] = result;
-          cacheUpdates[key] = {
-            original: text,
-            translated: result,
-            targetLanguage,
-            ...cacheUpdateMeta(scope),
-            createdAt: Date.now(),
-            accessedAt: Date.now()
-          };
-        } catch (error) {
-          stats.failed += 1;
-          errors[text] = error.message || String(error);
-        }
-      })
-    );
-
-    const persisted = await persistContentCache(cacheUpdates, expectedEpoch, signal);
-    if (!persisted && Object.keys(cacheUpdates).length) {
-      stats.cachePersistFailed = true;
-    }
-
-    return {
-      ok: Object.keys(translated).length > 0 || texts.length === 0,
-      translated,
-      errors,
-      stats
-    };
-  }
-
-  async function translateBatchWithBrowserTranslator(
-    texts,
-    targetLanguage,
-    scope = {},
-    expectedEpoch = state.cacheEpoch,
-    signal
-  ) {
-    if (
-      !Cache ||
-      !BrowserTranslator ||
-      typeof BrowserTranslator.availability !== "function" ||
-      typeof BrowserTranslator.translateBatch !== "function"
-    ) {
-      return null;
-    }
-
-    const requestedTexts = Array.isArray(texts) ? texts : [];
-    const stats = {
-      cacheHits: 0,
-      cacheMisses: 0,
-      failed: 0,
-      requested: requestedTexts.length,
-      provider: BrowserTranslator.PROVIDER_ID || "browser-translator",
-      cachePersistFailed: false
-    };
-
-    if (requestedTexts.length === 0) {
-      return {
-        ok: true,
-        translated: {},
-        errors: {},
-        stats
-      };
-    }
-
-    try {
-      throwIfAborted(signal);
-      const support = await BrowserTranslator.availability({
-        sourceLanguage: "en",
-        targetLanguage
-      });
-      throwIfAborted(signal);
-      setBrowserTranslatorStatus(support.status);
-      const canUseBrowserTranslator =
-        support.status === "available" ||
-        (state.settings.enableBrowserTranslatorDownloads &&
-          (support.status === "downloadable" || support.status === "downloading"));
-      if (!canUseBrowserTranslator) {
-        updateProviderModeFromBrowserStatus(support.status);
-        return null;
-      }
-      setProviderMode(support.status === "available" ? "native" : "nativeDownloading");
-
-      const stored = await getLocal([C.STORAGE_KEYS.CACHE, C.STORAGE_KEYS.CACHE_EPOCH]);
-      const currentEpoch = cacheEpochValue(stored[C.STORAGE_KEYS.CACHE_EPOCH]);
-      const canReadCache = cacheEpochValue(expectedEpoch) === currentEpoch;
-      const cache = canReadCache ? stored[C.STORAGE_KEYS.CACHE] || {} : {};
-      const translated = {};
-      const errors = {};
-      const cacheUpdates = {};
-      const browserTexts = [];
-
-      for (const text of requestedTexts) {
-        const key = Cache.cacheKey(targetLanguage, text, scope);
-        if (cacheHasTranslation(cache, key, text, targetLanguage, scope)) {
-          translated[text] = cache[key].translated;
-          cacheUpdates[key] = {
-            original: text,
-            targetLanguage,
-            ...cacheUpdateMeta(scope),
-            accessedAt: Date.now()
-          };
-          stats.cacheHits += 1;
-          continue;
-        }
-
-        stats.cacheMisses += 1;
-        browserTexts.push(text);
-      }
-
-      if (browserTexts.length > 0) {
-        throwIfAborted(signal);
-        const browserTranslations = await BrowserTranslator.translateBatch(browserTexts, {
-          sourceLanguage: "en",
-          targetLanguage,
-          allowDownload: Boolean(state.settings.enableBrowserTranslatorDownloads),
-          onDownloadProgress() {
-            setBrowserTranslatorStatus("downloading");
-            setProviderMode("nativeDownloading");
-          }
-        });
-        throwIfAborted(signal);
-
-        for (const text of browserTexts) {
-          const result = browserTranslations ? browserTranslations[text] : "";
-          if (translationLooksSuspicious(text, result, targetLanguage)) {
-            stats.failed += 1;
-            errors[text] = message("status.failed");
-            continue;
-          }
-
-          translated[text] = result;
-          cacheUpdates[Cache.cacheKey(targetLanguage, text, scope)] = {
-            original: text,
-            translated: result,
-            targetLanguage,
-            ...cacheUpdateMeta(scope),
-            createdAt: Date.now(),
-            accessedAt: Date.now()
-          };
-        }
-      }
-
-      const persisted = await persistContentCache(cacheUpdates, expectedEpoch, signal);
-      if (!persisted && Object.keys(cacheUpdates).length) {
-        stats.cachePersistFailed = true;
-      }
-
-      return {
-        ok: stats.failed === 0 || Object.keys(translated).length > 0,
-        translated,
-        errors,
-        stats
-      };
-    } catch (error) {
-      console.warn("[AcademyLens] browser translator unavailable; trying background translation", error);
-      return null;
-    }
-  }
-
-  async function sendBackgroundTranslationBatch(payload, timeoutMs, signal) {
-    throwIfAborted(signal);
-    const usesOllama = C.engineUsesOllama(payload.translationEngine);
-    setProviderMode(usesOllama ? "ollama" : "background", usesOllama ? payload.ollamaModel : "");
-    const fallbackScope = {
-      ...((payload && payload.cacheScope) || {}),
-      provider: "google-translate"
-    };
-    const requestedTimeout = Number(timeoutMs) || BACKGROUND_RESPONSE_TIMEOUT_MS;
-    const backgroundTimeout = Math.max(
-      BACKGROUND_RESPONSE_TIMEOUT_MS,
-      Math.min(requestedTimeout, BACKGROUND_RESPONSE_MAX_TIMEOUT_MS)
-    );
-    try {
-      const response = await sendMessage(payload, backgroundTimeout, signal);
-      if (response && response.ok) return response;
-      if (response && response.translated && Object.keys(response.translated).length > 0) return response;
-      if (usesOllama) return response || emptyTranslationResponse(payload.texts || []);
-    } catch (error) {
-      if (usesOllama) throw error;
-      if (error && error.code === BACKGROUND_TIMEOUT_CODE) {
-        throw error;
-      }
-      console.warn("[AcademyLens] background translation unavailable; trying content fallback", error);
-    }
-
-    setProviderMode("fallback");
-    return translateBatchInContent(
-      payload.texts || [],
-      payload.targetLanguage,
-      fallbackScope,
-      payload.cacheEpoch,
-      signal
-    );
-  }
-
-  function emptyTranslationResponse(requestedTexts) {
-    return {
-      ok: false,
-      translated: {},
-      errors: requestedTexts.reduce((errors, text) => {
-        errors[text] = "engine-disallowed";
-        return errors;
-      }, {}),
-      stats: { hits: 0, misses: 0, fallbackTexts: 0 }
-    };
-  }
-
-  async function sendTranslationBatch(payload, timeoutMs, signal) {
-    throwIfAborted(signal);
-    const requestedTexts = payload.texts || [];
-    // The learner's engine choice decides whether the remote path may run at all.
-    // On the on-device engine no course text is allowed to leave the browser.
-    const engine = C.normalizeTranslationEngine(state.settings.translationEngine);
-    const allowRemote = C.engineAllowsRemote(engine);
-    const preferDevice = C.enginePrefersDevice(engine);
-
-    if (C.engineUsesOllama(engine)) {
-      return sendBackgroundTranslationBatch(
-        {
-          ...payload,
-          translationEngine: engine,
-          ollamaModel: C.normalizeOllamaModel(state.settings.ollamaModel)
-        },
-        Math.max(Number(timeoutMs) || 0, 240000),
-        signal
-      );
-    }
-
-    if (!preferDevice) {
-      return allowRemote
-        ? sendBackgroundTranslationBatch(payload, timeoutMs, signal)
-        : emptyTranslationResponse(requestedTexts);
-    }
-
-    const nativeScope = {
-      ...((payload && payload.cacheScope) || {}),
-      provider:
-        BrowserTranslator && BrowserTranslator.PROVIDER_ID ? BrowserTranslator.PROVIDER_ID : "browser-translator"
-    };
-    const browserResponse = await translateBatchWithBrowserTranslator(
-      requestedTexts,
-      payload.targetLanguage,
-      nativeScope,
-      payload.cacheEpoch,
-      signal
-    );
-    if (browserResponse) {
-      const missingTexts = untranslatedTexts(requestedTexts, browserResponse);
-      if (missingTexts.length === 0 || !allowRemote) {
-        return mergeTranslationResponses(browserResponse, null, requestedTexts);
-      }
-      throwIfAborted(signal);
-      const fallbackResponse = await sendBackgroundTranslationBatch(
-        {
-          ...payload,
-          texts: missingTexts
-        },
-        timeoutMs,
-        signal
-      );
-      return mergeTranslationResponses(browserResponse, fallbackResponse, requestedTexts);
-    }
-    return allowRemote
-      ? sendBackgroundTranslationBatch(payload, timeoutMs, signal)
-      : emptyTranslationResponse(requestedTexts);
-  }
-
   function message(key, params) {
     return C.getMessage(key, uiLocale, params);
   }
@@ -1053,29 +747,6 @@
     state.placementSettleTimers = [100, 350, 800, 1500, 3000, 5000].map((delay) =>
       window.setTimeout(requestPanelPlacementFrame, delay)
     );
-  }
-
-  async function loadSettings() {
-    const stored = await getLocal([C.STORAGE_KEYS.SETTINGS]);
-    const storedSettings = stored[C.STORAGE_KEYS.SETTINGS] || {};
-    state.settings = {
-      ...C.DEFAULT_SETTINGS,
-      ...storedSettings
-    };
-    if (!state.settings.targetLanguage) {
-      state.settings.targetLanguage = C.resolveDefaultTargetLanguage(
-        Array.isArray(navigator.languages) && navigator.languages.length ? navigator.languages : [navigator.language]
-      );
-    }
-    state.settings.translationEngine = C.normalizeTranslationEngine(state.settings.translationEngine);
-    state.settings.ollamaModel = C.normalizeOllamaModel(state.settings.ollamaModel);
-    if (
-      state.settings.targetLanguage !== storedSettings.targetLanguage ||
-      state.settings.translationEngine !== storedSettings.translationEngine ||
-      state.settings.ollamaModel !== storedSettings.ollamaModel
-    ) {
-      await chrome.storage.local.set({ [C.STORAGE_KEYS.SETTINGS]: state.settings });
-    }
   }
 
   async function loadCacheEpoch() {
@@ -1352,13 +1023,14 @@
         for (let index = 0; index < textChunks.length; index += 1) {
           if (!isCurrentGeneration(generation, targetLanguage, pageUrl)) return;
           const chunkResponse = await raceCurrentGeneration(
-            sendTranslationBatch(
+            translationProvider.sendTranslationBatch(
               {
                 type: C.MESSAGE_TYPES.TRANSLATE_BATCH,
                 targetLanguage,
                 texts: textChunks[index],
                 cacheScope: baseScope,
-                cacheEpoch: state.cacheEpoch
+                cacheEpoch: state.cacheEpoch,
+                operationId: `${frameMessenger.getFrameSessionToken()}:${generation}`
               },
               90000,
               signal
@@ -1737,19 +1409,8 @@
     }
   }
 
-  function watchSettingsChanges() {
-    chrome.storage.onChanged.addListener((changes, areaName) => {
-      if (areaName !== "local") return;
-      if (changes[C.STORAGE_KEYS.CACHE_EPOCH]) {
-        state.cacheEpoch = cacheEpochValue(changes[C.STORAGE_KEYS.CACHE_EPOCH].newValue);
-      }
-      if (changes[C.STORAGE_KEYS.SETTINGS]) {
-        applySettings(changes[C.STORAGE_KEYS.SETTINGS].newValue);
-      }
-    });
-  }
-
   function teardownContent() {
+    settingsController.stop();
     translationController.stop();
     domObserverController.stop();
     frameMessenger.clearAggregates();
@@ -1766,7 +1427,7 @@
   }
 
   try {
-    await loadSettings();
+    state.settings = await settingsController.load();
     await loadCacheEpoch();
     await loadGlossaryIndex();
     await loadCorrections();
@@ -1777,7 +1438,12 @@
     frameMessenger.watchMessages();
     lifecycleController.start();
     domObserverController.start();
-    watchSettingsChanges();
+    settingsController.start({
+      onCacheEpoch: (value) => {
+        state.cacheEpoch = value;
+      },
+      onSettings: (settings) => applySettings(settings)
+    });
     document.addEventListener("click", handleCorrectionClick, true);
     frameMessenger.postReady();
     if (state.settings.autoTranslate) {

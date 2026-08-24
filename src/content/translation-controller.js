@@ -4,7 +4,7 @@
     return;
   }
 
-  root.AcademyLensTranslationController = factory();
+  /** @type {any} */ (root).AcademyLensTranslationController = factory();
 })(typeof globalThis !== "undefined" ? globalThis : this, function translationControllerFactory() {
   "use strict";
 
@@ -76,12 +76,13 @@
       if (!isCurrent(expectedGeneration, targetLanguage, pageUrl)) return undefined;
       const watcher = watchGenerationChange(expectedGeneration);
       try {
+        /** @type {{type: "value", value: any} | {type: "error", error: any} | {type: "stale"}} */
         const result = await Promise.race([
           Promise.resolve(promise).then(
-            (value) => ({ type: "value", value }),
-            (error) => ({ type: "error", error })
+            (value) => /** @type {const} */ ({ type: "value", value }),
+            (error) => /** @type {const} */ ({ type: "error", error })
           ),
-          watcher.promise.then(() => ({ type: "stale" }))
+          watcher.promise.then(() => /** @type {const} */ ({ type: "stale" }))
         ]);
         if (result.type === "stale" || !isCurrent(expectedGeneration, targetLanguage, pageUrl)) return undefined;
         if (result.type === "error") throw result.error;

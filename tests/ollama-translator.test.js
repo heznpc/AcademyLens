@@ -84,26 +84,32 @@ test("Ollama translator sends multiple texts in one ordered JSON batch", async (
   assert.match(requests[0].body.messages[1].content, /\["First","Second"\]/);
 });
 
-test("Ollama translator rejects malformed or mismatched batches", async () => {
-  const malformed = OllamaTranslator.create({
-    async fetchImpl() {
-      return completion("not json");
+test("Ollama translator splits malformed batches and recovers with single requests", async () => {
+  const requests = [];
+  const translator = OllamaTranslator.create({
+    async fetchImpl(_url, options) {
+      const body = JSON.parse(options.body);
+      requests.push(body);
+      const user = body.messages[1].content;
+      if (user.includes("Input JSON")) return completion("not json");
+      return completion(user.includes("First") ? "첫 번째" : "두 번째");
     }
   });
-  await assert.rejects(
-    () => malformed.translateTexts(["First", "Second"], "ko", "gemma3:4b"),
-    /invalid translation batch/
-  );
 
-  const mismatched = OllamaTranslator.create({
+  assert.deepEqual(await translator.translateTexts(["First", "Second"], "ko", "gemma3:4b"), ["첫 번째", "두 번째"]);
+  assert.equal(requests.length, 3);
+});
+
+test("Ollama translator does not multiply transport failures by splitting the batch", async () => {
+  let calls = 0;
+  const translator = OllamaTranslator.create({
     async fetchImpl() {
-      return completion('["하나"]');
+      calls += 1;
+      return completion("", 503);
     }
   });
-  await assert.rejects(
-    () => mismatched.translateTexts(["First", "Second"], "ko", "gemma3:4b"),
-    /mismatched translation batch/
-  );
+  await assert.rejects(() => translator.translateTexts(["First", "Second"], "ko", "gemma3:4b"), /503/);
+  assert.equal(calls, 1);
 });
 
 test("Ollama translator serializes requests for a one-model, one-parallel server", async () => {
