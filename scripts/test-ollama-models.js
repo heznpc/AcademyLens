@@ -79,7 +79,7 @@ async function main() {
 
   const failures = results.filter((result) => !result.ok);
   if (failures.length > 0) {
-    throw new Error(`${failures.length} Ollama model smoke test(s) failed`);
+    throw new Error(`${failures.length} Ollama model evaluation(s) failed`);
   }
 }
 

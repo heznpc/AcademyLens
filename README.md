@@ -144,6 +144,8 @@ npm run test:ollama
 
 Add `-- --out=/tmp/academylens-ollama-results.json` to retain the per-case quality, protected-placeholder, terminology, and latency report. The `qwen3.5` requests set `reasoning_effort: "none"` because page-translation turns request short, deterministic output. Runtime batches recover structurally malformed output by splitting only the affected batch, retry a quality-failed item once, and propagate restore/language-switch cancellation to the active local request.
 
+The latest measured model-by-model results are recorded in [docs/OLLAMA_MODEL_EVALUATION.md](docs/OLLAMA_MODEL_EVALUATION.md).
+
 Install dependencies once:
 
 ```bash
