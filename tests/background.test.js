@@ -28,7 +28,13 @@ function ollamaResponse(status, translated) {
 
 function loadBackground(fetchImpl, options = {}) {
   const listeners = [];
-  const storage = {};
+  const storage = {
+    "academylens.settings": {
+      targetLanguage: "ko",
+      translationEngine: options.selectedTranslationEngine || "remote",
+      ollamaModel: options.selectedOllamaModel || "qwen3.5:4b"
+    }
+  };
   let storageSetCalls = 0;
   const context = {
     AbortController,
@@ -108,6 +114,7 @@ test("background translation retries transient failures", async () => {
 
   const result = await send({
     type: "ACADEMYLENS_TRANSLATE_BATCH",
+    translationEngine: "remote",
     targetLanguage: "ko",
     texts: ["AI Foundations"]
   });
@@ -125,6 +132,7 @@ test("background translation returns partial success with per-text errors", asyn
 
   const result = await send({
     type: "ACADEMYLENS_TRANSLATE_BATCH",
+    translationEngine: "remote",
     targetLanguage: "ko",
     texts: ["Good text", "Broken text"]
   });
@@ -144,6 +152,7 @@ test("background translation does not retry non-retryable HTTP failures", async 
 
   const result = await send({
     type: "ACADEMYLENS_TRANSLATE_BATCH",
+    translationEngine: "remote",
     targetLanguage: "ko",
     texts: ["Missing text"]
   });
@@ -167,11 +176,13 @@ test("background translation dedupes in-flight requests across batches", async (
 
   const first = send({
     type: "ACADEMYLENS_TRANSLATE_BATCH",
+    translationEngine: "remote",
     targetLanguage: "ko",
     texts: ["Shared text"]
   });
   const second = send({
     type: "ACADEMYLENS_TRANSLATE_BATCH",
+    translationEngine: "remote",
     targetLanguage: "ko",
     texts: ["Shared text"]
   });
@@ -200,6 +211,7 @@ test("background translation limits concurrent remote fetches", async () => {
   const texts = Array.from({ length: 12 }, (_, index) => `Text ${index}`);
   const result = await send({
     type: "ACADEMYLENS_TRANSLATE_BATCH",
+    translationEngine: "remote",
     targetLanguage: "ko",
     texts
   });
@@ -222,12 +234,14 @@ test("background translation merges concurrent cache writes", async () => {
 
   const first = send({
     type: "ACADEMYLENS_TRANSLATE_BATCH",
+    translationEngine: "remote",
     targetLanguage: "ko",
     texts: ["First text"]
   });
   await new Promise((resolve) => setTimeout(resolve, 10));
   const second = send({
     type: "ACADEMYLENS_TRANSLATE_BATCH",
+    translationEngine: "remote",
     targetLanguage: "ko",
     texts: ["Second text"]
   });
@@ -333,6 +347,7 @@ test("background translation returns fetched translations when cache persistence
 
   const result = await send({
     type: "ACADEMYLENS_TRANSLATE_BATCH",
+    translationEngine: "remote",
     targetLanguage: "ko",
     texts: ["Good text"]
   });
@@ -340,6 +355,86 @@ test("background translation returns fetched translations when cache persistence
   assert.equal(result.ok, true);
   assert.equal(result.translated["Good text"], "Good text translated");
   assert.equal(result.stats.cachePersistFailed, true);
+});
+
+test("background rejects every non-explicit remote engine without fetching", async (t) => {
+  const invalidEngines = [
+    { name: "missing", value: undefined },
+    { name: "legacy auto", value: "auto" },
+    { name: "device", value: "device" },
+    { name: "unknown", value: "hosted" }
+  ];
+
+  for (const permissionGranted of [true, false]) {
+    for (const invalidEngine of invalidEngines) {
+      await t.test(`${invalidEngine.name}; permission ${permissionGranted ? "granted" : "denied"}`, async () => {
+        let fetchCalls = 0;
+        const { send } = loadBackground(
+          async () => {
+            fetchCalls += 1;
+            return response(200, "should not happen");
+          },
+          { remotePermissionGranted: permissionGranted }
+        );
+        const message = {
+          type: "ACADEMYLENS_TRANSLATE_BATCH",
+          targetLanguage: "ko",
+          texts: ["Course text"]
+        };
+        if (invalidEngine.value !== undefined) message.translationEngine = invalidEngine.value;
+
+        const result = await send(message);
+
+        assert.equal(result.ok, false);
+        assert.match(result.error, /explicit remote translation engine required/i);
+        assert.equal(fetchCalls, 0);
+      });
+    }
+  }
+});
+
+test("background rejects stale requests that no longer match the stored engine or Ollama model", async (t) => {
+  const mismatches = [
+    {
+      name: "device selected after a remote request was prepared",
+      options: { selectedTranslationEngine: "device" },
+      message: { translationEngine: "remote" },
+      error: /selected translation engine/i
+    },
+    {
+      name: "remote selected after an Ollama request was prepared",
+      options: { selectedTranslationEngine: "remote" },
+      message: { translationEngine: "ollama", ollamaModel: "qwen3.5:4b" },
+      error: /selected translation engine/i
+    },
+    {
+      name: "Ollama model changed before the request arrived",
+      options: { selectedTranslationEngine: "ollama", selectedOllamaModel: "qwen3.5:4b" },
+      message: { translationEngine: "ollama", ollamaModel: "qwen3.5:9b" },
+      error: /selected Ollama model/i
+    }
+  ];
+
+  for (const mismatch of mismatches) {
+    await t.test(mismatch.name, async () => {
+      let fetchCalls = 0;
+      const { send } = loadBackground(async () => {
+        fetchCalls += 1;
+        return response(200, "should not happen");
+      }, mismatch.options);
+
+      const result = await send({
+        type: "ACADEMYLENS_TRANSLATE_BATCH",
+        targetLanguage: "ko",
+        texts: ["Course text"],
+        ...mismatch.message
+      });
+
+      assert.equal(result.ok, false);
+      assert.match(result.error, mismatch.error);
+      assert.equal(fetchCalls, 0);
+    });
+  }
 });
 
 test("background translation refuses to fetch when the optional remote permission is not granted", async () => {
@@ -353,6 +448,7 @@ test("background translation refuses to fetch when the optional remote permissio
   );
   const result = await send({
     type: "ACADEMYLENS_TRANSLATE_BATCH",
+    translationEngine: "remote",
     targetLanguage: "ko",
     texts: ["Good text"]
   });
@@ -373,6 +469,7 @@ test("background translation fails closed when the permission check itself throw
   );
   const result = await send({
     type: "ACADEMYLENS_TRANSLATE_BATCH",
+    translationEngine: "remote",
     targetLanguage: "ko",
     texts: ["Good text"]
   });
@@ -388,6 +485,7 @@ test("background translation rejects a batch with no target language instead of 
   });
   const result = await send({
     type: "ACADEMYLENS_TRANSLATE_BATCH",
+    translationEngine: "remote",
     texts: ["Good text"]
   });
   assert.equal(result.ok, false);
@@ -397,10 +495,13 @@ test("background translation rejects a batch with no target language instead of 
 
 test("background routes the Ollama engine through the selected local model", async () => {
   let request;
-  const { send, storage } = loadBackground(async (url, options) => {
-    request = { url, options };
-    return ollamaResponse(200, "신뢰할 수 있는 에이전트를 구축하세요.");
-  });
+  const { send, storage } = loadBackground(
+    async (url, options) => {
+      request = { url, options };
+      return ollamaResponse(200, "신뢰할 수 있는 에이전트를 구축하세요.");
+    },
+    { selectedTranslationEngine: "ollama", selectedOllamaModel: "qwen3.5:9b" }
+  );
 
   const result = await send({
     type: "ACADEMYLENS_TRANSLATE_BATCH",
@@ -422,10 +523,13 @@ test("background routes the Ollama engine through the selected local model", asy
 
 test("background batches Ollama cache misses into one model request", async () => {
   const requests = [];
-  const { send } = loadBackground(async (url, options) => {
-    requests.push({ url, body: JSON.parse(options.body) });
-    return ollamaResponse(200, '["첫 번째", "두 번째", "세 번째"]');
-  });
+  const { send } = loadBackground(
+    async (url, options) => {
+      requests.push({ url, body: JSON.parse(options.body) });
+      return ollamaResponse(200, '["첫 번째", "두 번째", "세 번째"]');
+    },
+    { selectedTranslationEngine: "ollama" }
+  );
 
   const result = await send({
     type: "ACADEMYLENS_TRANSLATE_BATCH",
@@ -445,14 +549,17 @@ test("background batches Ollama cache misses into one model request", async () =
 
 test("background retries only an Ollama item that fails the quality contract", async () => {
   const requests = [];
-  const { send } = loadBackground(async (_url, options) => {
-    const body = JSON.parse(options.body);
-    requests.push(body);
-    if (body.messages[1].content.includes("Input JSON")) {
-      return ollamaResponse(200, '["첫 번째", "Second source copied"]');
-    }
-    return ollamaResponse(200, "두 번째 번역");
-  });
+  const { send } = loadBackground(
+    async (_url, options) => {
+      const body = JSON.parse(options.body);
+      requests.push(body);
+      if (body.messages[1].content.includes("Input JSON")) {
+        return ollamaResponse(200, '["첫 번째", "Second source copied"]');
+      }
+      return ollamaResponse(200, "두 번째 번역");
+    },
+    { selectedTranslationEngine: "ollama" }
+  );
 
   const result = await send({
     type: "ACADEMYLENS_TRANSLATE_BATCH",
@@ -469,24 +576,50 @@ test("background retries only an Ollama item that fails the quality contract", a
 });
 
 test("background exposes Ollama health and selected model installation", async () => {
-  const { send } = loadBackground(async (url) => {
-    assert.equal(url, "http://localhost:11434/api/tags");
-    return {
-      ok: true,
-      async json() {
-        return { models: [{ name: "qwen3.5:4b" }, { name: "gemma3:4b" }] };
-      }
-    };
-  });
+  const { send, storage } = loadBackground(
+    async (url) => {
+      assert.equal(url, "http://localhost:11434/api/tags");
+      return {
+        ok: true,
+        async json() {
+          return { models: [{ name: "qwen3.5:4b" }, { name: "gemma3:4b" }] };
+        }
+      };
+    },
+    { selectedTranslationEngine: "ollama" }
+  );
 
   const ready = await send({ type: "ACADEMYLENS_CHECK_OLLAMA", ollamaModel: "qwen3.5:4b" });
   assert.equal(ready.ok, true);
   assert.equal(ready.status, "ready");
   assert.deepEqual(Array.from(ready.models), ["qwen3.5:4b", "gemma3:4b"]);
 
+  storage["academylens.settings"].ollamaModel = "gemma4:12b";
   const missing = await send({ type: "ACADEMYLENS_CHECK_OLLAMA", ollamaModel: "gemma4:12b" });
   assert.equal(missing.ok, false);
   assert.equal(missing.status, "model-missing");
+});
+
+test("background refuses stale Ollama health checks before localhost access", async () => {
+  let fetchCalls = 0;
+  const { send } = loadBackground(
+    async () => {
+      fetchCalls += 1;
+      return {
+        ok: true,
+        async json() {
+          return { models: [] };
+        }
+      };
+    },
+    { selectedTranslationEngine: "device" }
+  );
+
+  const result = await send({ type: "ACADEMYLENS_CHECK_OLLAMA", ollamaModel: "qwen3.5:4b" });
+
+  assert.equal(result.ok, false);
+  assert.equal(result.status, "selection-mismatch");
+  assert.equal(fetchCalls, 0);
 });
 
 test("background cancellation aborts the active Ollama fetch", async () => {
@@ -504,7 +637,8 @@ test("background cancellation aborts the active Ollama fetch", async () => {
           },
           { once: true }
         );
-      })
+      }),
+    { selectedTranslationEngine: "ollama" }
   );
   const pending = send({
     type: "ACADEMYLENS_TRANSLATE_BATCH",
@@ -531,7 +665,11 @@ test("background refuses Ollama requests without localhost permission", async ()
       fetchCalls += 1;
       return ollamaResponse(200, "번역");
     },
-    { ollamaPermissionGranted: false }
+    {
+      ollamaPermissionGranted: false,
+      selectedTranslationEngine: "ollama",
+      selectedOllamaModel: "gemma3:4b"
+    }
   );
 
   const result = await send({

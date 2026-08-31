@@ -73,16 +73,18 @@ test("language support messages distinguish glossary-backed languages", () => {
 });
 
 test("translation engine helpers gate the remote path", () => {
-  assert.deepEqual(Constants.TRANSLATION_ENGINE_VALUES, ["device", "auto", "remote", "ollama"]);
+  assert.deepEqual(Constants.TRANSLATION_ENGINE_VALUES, ["device", "remote", "ollama"]);
+  assert.equal(Constants.TRANSLATION_ENGINES.AUTO, undefined);
   assert.equal(Constants.DEFAULT_SETTINGS.translationEngine, "device");
 
   // Unknown or missing values must fall back to the privacy-preserving engine.
   assert.equal(Constants.normalizeTranslationEngine(undefined), "device");
+  assert.equal(Constants.normalizeTranslationEngine("auto"), "device");
   assert.equal(Constants.normalizeTranslationEngine("hosted"), "device");
   assert.equal(Constants.normalizeTranslationEngine("remote"), "remote");
 
   assert.equal(Constants.engineAllowsRemote("device"), false);
-  assert.equal(Constants.engineAllowsRemote("auto"), true);
+  assert.equal(Constants.engineAllowsRemote("auto"), false);
   assert.equal(Constants.engineAllowsRemote("remote"), true);
   assert.equal(Constants.engineAllowsRemote("nonsense"), false);
 

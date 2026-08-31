@@ -1,6 +1,6 @@
 # Trust Evidence
 
-Last reviewed: 2026-08-21 KST
+Last reviewed: 2026-09-01 KST
 
 AcademyLens is an open-source beta for OpenAI Academy learners.
 
@@ -18,10 +18,12 @@ This page collects release evidence that should stay easy to inspect before any 
 
 ## Provider And Privacy Evidence
 
-- Browser-native Translator API is tried first when available.
+- Browser-native Translator API is used only when the learner selects the on-device engine.
 - Browser-managed translator downloads remain disabled unless the user explicitly enables them.
-- Google Translate through `translate.googleapis.com` is the fallback when browser-native translation is unavailable or misses text.
-- Local Ollama is an independently selected engine, requires an optional localhost permission, and does not fall through to Google Translate.
+- Google Translate through `translate.googleapis.com` is an independently selected engine and requires its optional host permission.
+- Local Ollama is an independently selected engine and requires its optional localhost permission.
+- The service worker rejects stale requests whose engine or Ollama model no longer matches the stored selection before checking permission or sending text.
+- A provider failure is reported without sending the text to a different provider.
 - The six selectable Ollama models are exercised against a protected-placeholder and terminology evaluation corpus through the real OpenAI-compatible endpoint with `npm run test:ollama` when preparing a local-provider build.
 - The latest hardware, runtime, latency, and per-model pass counts are recorded in [OLLAMA_MODEL_EVALUATION.md](OLLAMA_MODEL_EVALUATION.md).
 - Translation cache entries are scoped by provider, glossary state, and local correction state.
@@ -30,7 +32,7 @@ This page collects release evidence that should stay easy to inspect before any 
 
 Before release, confirm:
 
-- `PRIVACY_POLICY.md` and `store-assets/STORE_LISTING.md` describe the same provider order and fallback behavior.
+- `PRIVACY_POLICY.md` and `store-assets/STORE_LISTING.md` describe the same explicit engine choices and no-cross-provider-fallback behavior.
 - Runtime files do not load remote hosted SDK scripts.
 - AI review remains disabled unless a compliant explicit opt-in bridge and updated privacy text exist.
 

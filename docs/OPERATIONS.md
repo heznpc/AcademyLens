@@ -93,8 +93,11 @@ Promotion rules:
 
 Current runtime behavior:
 
-- Browser-native Translator API is used when already available, or when the user explicitly allows browser-managed translator downloads.
-- Google Translate endpoint is the fallback translation provider.
+- Browser-native Translator API is used only when the learner selects the on-device engine; browser-managed translator downloads require a separate explicit opt-in.
+- Google Translate is an independently selected engine behind its optional host permission.
+- Local Ollama is an independently selected engine behind its optional localhost permission.
+- The service worker rejects a request when its engine/model no longer matches the current stored selection, then checks the relevant optional permission.
+- A provider failure never sends the same text to a different provider.
 - Translation cache entries are scoped by provider and glossary state; local corrections bypass cached provider text.
 - Correction management and runtime diagnostics are local-only browser storage/UI features.
 - GPT/Puter/OpenAI review is disabled.
@@ -102,7 +105,7 @@ Current runtime behavior:
 
 Before public release:
 
-1. Confirm `PRIVACY_POLICY.md` still says extension-selected visible lesson text can be handled by browser-native Translator or sent to Google Translate fallback.
+1. Confirm `PRIVACY_POLICY.md` describes browser-native Translator, Google Translate, and local Ollama as independently selected engines with no cross-provider fallback.
 2. Confirm store copy does not describe the endpoint as Google Cloud Translation API.
 3. Confirm runtime files do not load remote hosted SDK scripts.
 4. Confirm browser-native translator downloads remain explicit opt-in.

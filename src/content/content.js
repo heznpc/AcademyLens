@@ -6,7 +6,6 @@
   const BrowserTranslator = globalThis.AcademyLensBrowserTranslator;
   const ContentHelpers = globalThis.AcademyLensContentHelpers;
   const ContentBackgroundClient = globalThis.AcademyLensContentBackgroundClient;
-  const GoogleTranslate = globalThis.AcademyLensGoogleTranslate;
   const Glossary = globalThis.AcademyLensGlossary;
   const ContentLifecycle = globalThis.AcademyLensContentLifecycle;
   const ContentDomObserver = globalThis.AcademyLensContentDomObserver;
@@ -16,24 +15,14 @@
   const DomTranslationRuntime = globalThis.AcademyLensDomTranslationRuntime;
   const FrameMessenger = globalThis.AcademyLensFrameMessenger;
   const PanelView = globalThis.AcademyLensPanelView;
-  const RemoteGoogleTranslator = globalThis.AcademyLensRemoteGoogleTranslator;
   const Text = globalThis.AcademyLensTextUtils;
   const uiLocale = C && C.getUiLocale ? C.getUiLocale(navigator.language) : "en";
   const BACKGROUND_RESPONSE_TIMEOUT_MS = 12000;
   const BACKGROUND_RESPONSE_MAX_TIMEOUT_MS = 300000;
-  const CONTENT_FALLBACK_FETCH_TIMEOUT_MS = 8000;
-  const CONTENT_FALLBACK_MAX_RETRIES = 2;
-  const CONTENT_FALLBACK_BASE_BACKOFF_MS = 350;
-  const CONTENT_FALLBACK_MAX_CONCURRENT_FETCHES = 5;
-  const RETRYABLE_TRANSLATE_STATUS = new Set([408, 425, 429, 500, 502, 503, 504]);
   const isTopFrame = window.top === window;
 
-  // This guard lists only the modules the panel cannot run without. Cache,
-  // GoogleTranslate, and RemoteGoogleTranslator are deliberately absent: the
-  // remote Google fallback is optional and degrades gracefully when they are
-  // missing (contentFallbackTranslator stays null and sendTranslationBatch
-  // reports status.failed instead of crashing), matching the existing
-  // treatment of BrowserTranslator.
+  // Remote translation code lives only in the background service worker. The
+  // content script deliberately has no direct Google fetch implementation.
   if (
     !C ||
     !ContentHelpers ||
@@ -60,7 +49,6 @@
   const cacheUpdateMeta = H.cacheUpdateMeta;
   const correctionKey = H.correctionKey;
   const correctionFor = H.correctionFor;
-  const untranslatedTexts = H.untranslatedTexts;
   const translationLooksSuspicious = H.translationLooksSuspicious;
   const mergeTranslationResponses = H.mergeTranslationResponses;
   const appendContextText = H.appendContextText;
@@ -102,27 +90,10 @@
     pendingDangerAction: "",
     dangerActionTimer: 0
   };
-  const contentFallbackTranslator =
-    RemoteGoogleTranslator && RemoteGoogleTranslator.create && Cache && GoogleTranslate && typeof fetch === "function"
-      ? RemoteGoogleTranslator.create({
-          Cache,
-          GoogleTranslate,
-          fetchImpl: (url, options) => fetch(url, options),
-          setTimeoutImpl: window.setTimeout.bind(window),
-          clearTimeoutImpl: window.clearTimeout.bind(window),
-          retryableStatus: RETRYABLE_TRANSLATE_STATUS,
-          timeoutMs: CONTENT_FALLBACK_FETCH_TIMEOUT_MS,
-          maxRetries: CONTENT_FALLBACK_MAX_RETRIES,
-          baseBackoffMs: CONTENT_FALLBACK_BASE_BACKOFF_MS,
-          maxConcurrent: CONTENT_FALLBACK_MAX_CONCURRENT_FETCHES,
-          createAbortError: abortError
-        })
-      : null;
   const translationProvider = TranslationProvider.create({
     constants: C,
     Cache,
     BrowserTranslator,
-    GoogleTranslate,
     backgroundClient,
     getSettings: () => state.settings,
     getCacheEpoch: () => state.cacheEpoch,
@@ -130,7 +101,6 @@
     cacheEpochValue,
     cacheHasTranslation,
     cacheUpdateMeta,
-    translateTextInContent,
     throwIfAborted,
     persistContentCache,
     setBrowserTranslatorStatus,
@@ -138,7 +108,6 @@
     setProviderMode,
     translationLooksSuspicious,
     message,
-    untranslatedTexts,
     mergeTranslationResponses,
     responseTimeoutMs: BACKGROUND_RESPONSE_TIMEOUT_MS,
     maxResponseTimeoutMs: BACKGROUND_RESPONSE_MAX_TIMEOUT_MS
@@ -327,16 +296,16 @@
         nativeReady: "provider.nativeReady",
         nativeDownloadable: "provider.nativeDownloadable",
         nativeDownloading: "provider.nativeDownloading",
-        fallback: "provider.fallback",
+        nativeUnavailable: "provider.nativeUnavailable",
         background: "provider.background",
         local: "provider.local",
         ollama: "provider.ollama"
-      }[mode] || "provider.fallback"
+      }[mode] || "provider.checking"
     );
   }
 
   function setProviderMode(mode, detail = "") {
-    state.providerMode = mode || "fallback";
+    state.providerMode = mode || "checking";
     state.providerDetail = detail || "";
     if (state.panel) {
       state.panel.dataset.provider = state.providerMode;
@@ -365,25 +334,31 @@
       setProviderMode(state.settings.enableBrowserTranslatorDownloads ? "nativeDownloading" : "nativeDownloadable");
       return;
     }
-    setProviderMode("fallback");
+    setProviderMode("nativeUnavailable");
   }
 
   async function refreshBrowserTranslatorStatus() {
-    if (C.engineUsesOllama(state.settings.translationEngine)) {
+    const engine = C.normalizeTranslationEngine(state.settings.translationEngine);
+    if (C.engineUsesOllama(engine)) {
       setBrowserTranslatorStatus("local");
       setProviderMode("ollama", C.normalizeOllamaModel(state.settings.ollamaModel));
       return;
     }
+    if (C.engineAllowsRemote(engine)) {
+      setBrowserTranslatorStatus("not-selected");
+      setProviderMode("background");
+      return;
+    }
     if (!isTopFrame || !BrowserTranslator || typeof BrowserTranslator.availability !== "function") {
       setBrowserTranslatorStatus("unsupported");
-      setProviderMode("fallback");
+      setProviderMode("nativeUnavailable");
       return;
     }
 
     const targetLanguage = state.settings.targetLanguage;
     if (!targetLanguage || targetLanguage === "en") {
       setBrowserTranslatorStatus("unavailable");
-      setProviderMode("fallback");
+      setProviderMode("nativeUnavailable");
       return;
     }
 
@@ -400,11 +375,6 @@
 
   function sleep(ms) {
     return new Promise((resolve) => window.setTimeout(resolve, ms));
-  }
-
-  function translateTextInContent(text, targetLanguage, scope, signal) {
-    if (!contentFallbackTranslator) throw new Error(message("status.failed"));
-    return contentFallbackTranslator.translateText(text, targetLanguage, scope, signal);
   }
 
   async function persistContentCacheLocally(cacheUpdates, expectedEpoch = state.cacheEpoch) {
@@ -640,10 +610,9 @@
       return;
     }
     output.textContent = message("panel.diagnosticsSummary", {
-      provider: diagnostics.provider || state.providerMode || "fallback",
+      provider: diagnostics.provider || state.providerMode || "checking",
       hits: diagnostics.cacheHits || 0,
       misses: diagnostics.cacheMisses || 0,
-      fallback: diagnostics.fallbackTexts || 0,
       corrections: diagnostics.corrections || 0,
       groups: diagnostics.contextGroups || 0,
       frameApplied: diagnostics.frameApplied || 0,

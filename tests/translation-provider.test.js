@@ -7,7 +7,7 @@ const TranslationProvider = require("../src/content/translation-provider.js");
 function createProvider(settings, send) {
   return TranslationProvider.create({
     constants: Constants,
-    Cache: {},
+    Cache: { cacheKey: (_targetLanguage, text) => text },
     BrowserTranslator: {
       PROVIDER_ID: "browser-translator",
       async availability() {
@@ -17,15 +17,13 @@ function createProvider(settings, send) {
         return {};
       }
     },
-    GoogleTranslate: {},
     backgroundClient: { send, timeoutCode: "TIMEOUT" },
     getSettings: () => settings,
     getCacheEpoch: () => 0,
-    getLocal: async () => ({}),
+    getLocal: async () => ({ [Constants.STORAGE_KEYS.CACHE_EPOCH]: 0 }),
     cacheEpochValue: (value) => Number(value) || 0,
     cacheHasTranslation: () => false,
     cacheUpdateMeta: () => ({}),
-    translateTextInContent: async () => "fallback",
     throwIfAborted: () => {},
     persistContentCache: async () => true,
     setBrowserTranslatorStatus: () => {},
@@ -33,21 +31,38 @@ function createProvider(settings, send) {
     setProviderMode: () => {},
     translationLooksSuspicious: () => false,
     message: () => "failed",
-    untranslatedTexts: (texts, response) => texts.filter((text) => !response.translated[text]),
     mergeTranslationResponses: (first) => first
   });
 }
 
-test("translation provider keeps the on-device-only engine fail-closed", async () => {
-  let backgroundCalls = 0;
-  const provider = createProvider({ ...Constants.DEFAULT_SETTINGS, translationEngine: "device" }, async () => {
-    backgroundCalls += 1;
-    return { ok: true };
+test("translation provider keeps device and legacy auto engines fail-closed", async (t) => {
+  for (const translationEngine of ["device", "auto"]) {
+    await t.test(translationEngine, async () => {
+      let backgroundCalls = 0;
+      const provider = createProvider({ ...Constants.DEFAULT_SETTINGS, translationEngine }, async () => {
+        backgroundCalls += 1;
+        return { ok: true };
+      });
+      const response = await provider.sendTranslationBatch({ targetLanguage: "ko", texts: ["Course text"] }, 1000);
+      assert.equal(response.ok, false);
+      assert.equal(response.errors["Course text"], "engine-disallowed");
+      assert.equal(backgroundCalls, 0);
+    });
+  }
+});
+
+test("translation provider marks Google requests with the explicit remote engine", async () => {
+  let payload;
+  const expected = { ok: true, translated: { "Course text": "강의 텍스트" }, errors: {} };
+  const provider = createProvider({ ...Constants.DEFAULT_SETTINGS, translationEngine: "remote" }, async (message) => {
+    payload = message;
+    return expected;
   });
+
   const response = await provider.sendTranslationBatch({ targetLanguage: "ko", texts: ["Course text"] }, 1000);
-  assert.equal(response.ok, false);
-  assert.equal(response.errors["Course text"], "engine-disallowed");
-  assert.equal(backgroundCalls, 0);
+
+  assert.equal(payload.translationEngine, "remote");
+  assert.deepEqual(response, expected);
 });
 
 test("translation provider sends Ollama through the selected model without remote fallback", async () => {
@@ -63,4 +78,31 @@ test("translation provider sends Ollama through the selected model without remot
   assert.equal(payload.translationEngine, "ollama");
   assert.equal(payload.ollamaModel, "qwen3.5:9b");
   assert.equal(response.errors["Course text"], "offline");
+});
+
+test("translation provider keeps remote background failures fail-closed", async (t) => {
+  const failures = [
+    { name: "permission denial", response: { ok: false, error: "permission not granted" } },
+    {
+      name: "generic provider failure",
+      response: {
+        ok: false,
+        translated: {},
+        errors: { "Course text": "provider unavailable" }
+      }
+    }
+  ];
+
+  for (const failure of failures) {
+    await t.test(failure.name, async () => {
+      const provider = createProvider(
+        { ...Constants.DEFAULT_SETTINGS, translationEngine: "remote" },
+        async () => failure.response
+      );
+
+      const response = await provider.sendTranslationBatch({ targetLanguage: "ko", texts: ["Course text"] }, 1000);
+
+      assert.deepEqual(response, failure.response);
+    });
+  }
 });

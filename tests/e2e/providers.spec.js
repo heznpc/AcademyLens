@@ -27,8 +27,8 @@ test.describe("AcademyLens providers E2E", () => {
     }
   });
 
-  test("uses browser-native provider before Google fallback when available", async () => {
-    const harness = await startHarness({ browserTranslatorStub: "available" });
+  test("uses only the selected browser-native provider when available", async () => {
+    const harness = await startHarness({ browserTranslatorStub: "available", translationEngine: "device" });
     try {
       await harness.page.evaluate(() => {
         document.querySelector("#lesson-main").innerHTML = `<p id="native-only">Native provider unique sentence</p>`;
@@ -45,7 +45,7 @@ test.describe("AcademyLens providers E2E", () => {
   });
 
   test("keeps glossary and inline placeholders on the native provider path", async () => {
-    const harness = await startHarness({ browserTranslatorStub: "available" });
+    const harness = await startHarness({ browserTranslatorStub: "available", translationEngine: "device" });
     try {
       await expandPanel(harness.page);
       await clickPanelButton(harness.page, "[data-translate]");
@@ -62,8 +62,8 @@ test.describe("AcademyLens providers E2E", () => {
     }
   });
 
-  test("falls back only for native provider misses", async () => {
-    const harness = await startHarness({ browserTranslatorStub: "partial" });
+  test("keeps native provider misses unchanged without calling Google", async () => {
+    const harness = await startHarness({ browserTranslatorStub: "partial", translationEngine: "device" });
     try {
       await harness.page.evaluate(() => {
         document.querySelector("#lesson-main").innerHTML = `
@@ -75,15 +75,15 @@ test.describe("AcademyLens providers E2E", () => {
       await clickPanelButton(harness.page, "[data-translate]");
 
       await expect(harness.page.locator("#native-hit")).toHaveText("[native] Native provider keeps this sentence");
-      await expect(harness.page.locator("#native-miss")).toHaveText("[ko] Native fallback miss sentence");
-      expect(harness.calls.map((call) => call.text)).toEqual(["Native fallback miss sentence"]);
+      await expect(harness.page.locator("#native-miss")).toHaveText("Native fallback miss sentence");
+      expect(harness.calls).toEqual([]);
     } finally {
       await stopHarness(harness);
     }
   });
 
-  test("falls back when browser-native returns source-like output", async () => {
-    const harness = await startHarness({ browserTranslatorStub: "copy" });
+  test("rejects source-like native output without calling Google", async () => {
+    const harness = await startHarness({ browserTranslatorStub: "copy", translationEngine: "device" });
     try {
       await harness.page.evaluate(() => {
         document.querySelector("#lesson-main").innerHTML = `<p id="native-copy">Native copy fallback sentence</p>`;
@@ -91,15 +91,15 @@ test.describe("AcademyLens providers E2E", () => {
       await expandPanel(harness.page);
       await clickPanelButton(harness.page, "[data-translate]");
 
-      await expect(harness.page.locator("#native-copy")).toHaveText("[ko] Native copy fallback sentence");
-      expect(harness.calls.map((call) => call.text)).toEqual(["Native copy fallback sentence"]);
+      await expect(harness.page.locator("#native-copy")).toHaveText("Native copy fallback sentence");
+      expect(harness.calls).toEqual([]);
     } finally {
       await stopHarness(harness);
     }
   });
 
   test("uses downloadable browser-native provider only after explicit opt-in", async () => {
-    const harness = await startHarness({ browserTranslatorStub: "downloadable" });
+    const harness = await startHarness({ browserTranslatorStub: "downloadable", translationEngine: "device" });
     try {
       await harness.page.evaluate(() => {
         document.querySelector("#lesson-main").innerHTML =
@@ -108,8 +108,8 @@ test.describe("AcademyLens providers E2E", () => {
       await expandPanel(harness.page);
       await clickPanelButton(harness.page, "[data-translate]");
 
-      await expect(harness.page.locator("#downloadable-native")).toHaveText("[ko] Downloadable native sentence");
-      expect(harness.calls.map((call) => call.text)).toEqual(["Downloadable native sentence"]);
+      await expect(harness.page.locator("#downloadable-native")).toHaveText("Downloadable native sentence");
+      expect(harness.calls).toEqual([]);
 
       await clickPanelButton(harness.page, "[data-restore]");
       await expect(harness.page.locator("#downloadable-native")).toHaveText("Downloadable native sentence");

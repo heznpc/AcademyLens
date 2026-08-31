@@ -192,7 +192,11 @@
   ollamaRetry.addEventListener("click", checkOllamaStatus);
 
   // Persist the resolved first-run defaults so the content script sees them too.
-  if (!storedSettings.targetLanguage || !storedSettings.translationEngine) {
+  if (
+    settings.targetLanguage !== storedSettings.targetLanguage ||
+    settings.translationEngine !== storedSettings.translationEngine ||
+    settings.ollamaModel !== storedSettings.ollamaModel
+  ) {
     await persist({});
   }
 })();

@@ -113,7 +113,12 @@ assertContains(
 assertContains(
   "docs/TRUST_EVIDENCE.md",
   /translate\.googleapis\.com/,
-  "Trust evidence must describe Google Translate fallback"
+  "Trust evidence must describe the explicit Google Translate engine"
+);
+assertContains(
+  "docs/TRUST_EVIDENCE.md",
+  /without sending the text to a different provider/i,
+  "Trust evidence must describe fail-closed provider isolation"
 );
 assertContains(
   "docs/TRUST_EVIDENCE.md",

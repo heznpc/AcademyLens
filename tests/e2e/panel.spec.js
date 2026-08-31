@@ -108,9 +108,15 @@ test.describe("AcademyLens panel E2E", () => {
         expect(box.width).toBeLessThanOrEqual(72);
         expect(box.hostVersion).toBe(manifest.version);
         expect(box.panelVersion).toBe(manifest.version);
-        expect(["checking", "unsupported", "unavailable", "available", "downloadable", "downloading"]).toContain(
-          box.browserTranslatorStatus
-        );
+        expect([
+          "checking",
+          "not-selected",
+          "unsupported",
+          "unavailable",
+          "available",
+          "downloadable",
+          "downloading"
+        ]).toContain(box.browserTranslatorStatus);
         expect(box.topHeight).toBeGreaterThanOrEqual(52);
         expect(box.collapsed).toBe("true");
         expect(box.bodyVisible).toBe(false);

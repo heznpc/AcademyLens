@@ -5,17 +5,23 @@ const { chromium } = require("@playwright/test");
 
 const ROOT = path.join(__dirname, "..", "..", "..");
 
-function patchManifest(manifest) {
+function patchManifest(manifest, options = {}) {
+  const fixtureOrigins = options.preserveOptionalProviderPermissions
+    ? ["http://127.0.0.1:*/*"]
+    : ["http://localhost:*/*", "http://127.0.0.1:*/*"];
   for (const contentScript of manifest.content_scripts || []) {
-    contentScript.matches.push("http://localhost:*/*", "http://127.0.0.1:*/*");
+    contentScript.matches.push(...fixtureOrigins);
   }
   manifest.host_permissions = manifest.host_permissions || [];
-  manifest.host_permissions.push("http://localhost:*/*", "http://127.0.0.1:*/*", "https://translate.googleapis.com/*");
-  manifest.optional_host_permissions = (manifest.optional_host_permissions || []).filter(
-    (origin) => origin !== "https://translate.googleapis.com/*"
-  );
+  manifest.host_permissions.push(...fixtureOrigins);
+  if (!options.preserveOptionalProviderPermissions) {
+    manifest.host_permissions.push("https://translate.googleapis.com/*");
+    manifest.optional_host_permissions = (manifest.optional_host_permissions || []).filter(
+      (origin) => origin !== "https://translate.googleapis.com/*" && origin !== "http://localhost:11434/*"
+    );
+  }
   for (const resource of manifest.web_accessible_resources || []) {
-    resource.matches.push("http://localhost:*/*", "http://127.0.0.1:*/*");
+    resource.matches.push(...fixtureOrigins);
   }
 }
 
@@ -66,7 +72,7 @@ function patchBrowserTranslatorStub(extensionPath, mode) {
   fs.writeFileSync(browserTranslatorPath, source);
 }
 
-function makePatchedExtension() {
+function makePatchedExtension(options = {}) {
   const extensionPath = fs.mkdtempSync(path.join(os.tmpdir(), "academylens-e2e-ext-"));
   for (const entry of ["manifest.json", "_locales", "assets", "src", "README.md", "PRIVACY_POLICY.md", "LICENSE"]) {
     fs.cpSync(path.join(ROOT, entry), path.join(extensionPath, entry), { recursive: true });
@@ -74,7 +80,7 @@ function makePatchedExtension() {
 
   const manifestPath = path.join(extensionPath, "manifest.json");
   const manifest = JSON.parse(fs.readFileSync(manifestPath, "utf8"));
-  patchManifest(manifest);
+  patchManifest(manifest, options);
   fs.writeFileSync(manifestPath, JSON.stringify(manifest, null, 2));
   patchAcademyUrlGate(extensionPath);
 
@@ -82,7 +88,9 @@ function makePatchedExtension() {
 }
 
 async function launchExtension(options = {}) {
-  const extensionPath = makePatchedExtension();
+  const freshInstall = options.freshInstall === true;
+  const locale = options.locale || "ko-KR";
+  const extensionPath = makePatchedExtension({ preserveOptionalProviderPermissions: freshInstall });
   patchBrowserTranslatorStub(extensionPath, options.browserTranslatorStub);
   const userDataDir = fs.mkdtempSync(path.join(os.tmpdir(), "academylens-e2e-profile-"));
   const channel = process.env.E2E_BROWSER_CHANNEL || "chromium";
@@ -90,7 +98,7 @@ async function launchExtension(options = {}) {
   const context = await chromium.launchPersistentContext(userDataDir, {
     channel,
     headless: false,
-    locale: "ko-KR",
+    locale,
     args: [
       `--disable-extensions-except=${extensionPath}`,
       `--load-extension=${extensionPath}`,
@@ -98,7 +106,7 @@ async function launchExtension(options = {}) {
       "--enable-unsafe-extension-debugging",
       "--no-first-run",
       "--no-default-browser-check",
-      "--lang=ko-KR"
+      `--lang=${locale}`
     ]
   });
 
@@ -106,7 +114,8 @@ async function launchExtension(options = {}) {
   if (!serviceWorker) {
     serviceWorker = await context.waitForEvent("serviceworker", { timeout: 5000 }).catch(() => null);
   }
-  if (serviceWorker) {
+  if (serviceWorker && !freshInstall) {
+    const translationEngine = options.translationEngine || (options.browserTranslatorStub ? "device" : "remote");
     await serviceWorker.evaluate(async (translationEngine) => {
       await chrome.storage.local.set({
         "academylens.settings": {
@@ -117,13 +126,14 @@ async function launchExtension(options = {}) {
           ollamaModel: "qwen3.5:4b"
         }
       });
-    }, options.translationEngine || "auto");
+    }, translationEngine);
   }
 
   return {
     context,
     extensionId: serviceWorker ? serviceWorker.url().split("/")[2] : null,
     extensionPath,
+    serviceWorker,
     userDataDir
   };
 }

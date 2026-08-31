@@ -17,8 +17,6 @@ test("content scripts load in dependency order", () => {
     "src/lib/cache.js",
     "src/lib/translation-quality.js",
     "src/lib/browser-translator.js",
-    "src/lib/google-translate.js",
-    "src/lib/remote-google-translator.js",
     "src/lib/glossary.js",
     "src/lib/text-utils.js",
     "src/content/content-helpers.js",

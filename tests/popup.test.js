@@ -102,6 +102,50 @@ test("popup exposes every allowlisted Ollama model and persists the selection", 
   assert.equal(stored[Constants.STORAGE_KEYS.SETTINGS].ollamaModel, "gemma4:12b");
 });
 
+test("popup removes auto without requesting permission and migrates stored auto to device", async () => {
+  const { permissionRequests, stored, window } = await loadPopup({
+    settings: { ...Constants.DEFAULT_SETTINGS, targetLanguage: "ko", translationEngine: "auto" }
+  });
+  const engine = window.document.getElementById("translationEngine");
+
+  assert.deepEqual(
+    Array.from(engine.options, (option) => option.value),
+    ["device", "remote", "ollama"]
+  );
+  assert.equal(engine.value, "device");
+  assert.equal(stored[Constants.STORAGE_KEYS.SETTINGS].translationEngine, "device");
+  assert.equal(permissionRequests.length, 0);
+});
+
+test("popup stores Google remote only after the exact optional permission is granted", async () => {
+  const { permissionRequests, stored, window } = await loadPopup();
+  const engine = window.document.getElementById("translationEngine");
+
+  engine.value = "remote";
+  engine.dispatchEvent(new window.Event("change"));
+  await flush();
+
+  assert.equal(permissionRequests.length, 1);
+  assert.deepEqual(Array.from(permissionRequests[0].origins), [Constants.REMOTE_TRANSLATION_ORIGIN]);
+  assert.equal(engine.value, "remote");
+  assert.equal(stored[Constants.STORAGE_KEYS.SETTINGS].translationEngine, "remote");
+});
+
+test("popup restores device when the Google remote permission is declined", async () => {
+  const { permissionRequests, stored, window } = await loadPopup({ permissionGranted: false });
+  const engine = window.document.getElementById("translationEngine");
+
+  engine.value = "remote";
+  engine.dispatchEvent(new window.Event("change"));
+  await flush();
+
+  assert.equal(permissionRequests.length, 1);
+  assert.deepEqual(Array.from(permissionRequests[0].origins), [Constants.REMOTE_TRANSLATION_ORIGIN]);
+  assert.equal(engine.value, "device");
+  assert.equal(stored[Constants.STORAGE_KEYS.SETTINGS].translationEngine, "device");
+  assert.match(window.document.getElementById("engineNote").textContent, /권한이 거부/);
+});
+
 test("popup reports an offline Ollama server and can retry", async () => {
   const { runtimeMessages, window } = await loadPopup({
     settings: { ...Constants.DEFAULT_SETTINGS, targetLanguage: "ko", translationEngine: "ollama" },

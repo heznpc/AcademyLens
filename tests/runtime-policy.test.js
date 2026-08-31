@@ -21,7 +21,7 @@ function listRuntimeFiles(dir) {
   return out;
 }
 
-test("content translation fallback does not race background translation by default", () => {
+test("remote translation stays fail-closed when background translation fails", () => {
   const source = read("src/content/content.js");
   const providerSource = read("src/content/translation-provider.js");
   const sendBackgroundTranslationBatch = providerSource.slice(
@@ -41,31 +41,29 @@ test("content translation fallback does not race background translation by defau
   assert.match(sendBackgroundTranslationBatch, /await backgroundClient\.send/);
   assert.match(sendBackgroundTranslationBatch, /maxResponseTimeoutMs/);
   assert.match(sendBackgroundTranslationBatch, /backgroundClient\.timeoutCode/);
-  assert.match(sendBackgroundTranslationBatch, /throw error/);
-  assert.match(sendBackgroundTranslationBatch, /translateBatchInContent/);
+  assert.doesNotMatch(sendBackgroundTranslationBatch, /translateBatchInContent/);
+  assert.doesNotMatch(providerSource, /translateTextInContent/);
+  assert.doesNotMatch(source, /contentFallbackTranslator/);
+  assert.doesNotMatch(source, /CONTENT_FALLBACK/);
   assert.match(sendTranslationBatch, /translateBatchWithBrowserTranslator/);
   assert.match(sendTranslationBatch, /sendBackgroundTranslationBatch/);
 });
 
-test("content translation fallback has retry, timeout, dedupe, and concurrency controls", () => {
+test("remote Google translation code is loaded only in the background", () => {
   const source = read("src/content/content.js");
-  const remote = read("src/lib/remote-google-translator.js");
+  const background = read("src/background/background.js");
   const manifest = JSON.parse(read("manifest.json"));
   const contentScripts = manifest.content_scripts[0].js;
 
-  assert(contentScripts.includes("src/lib/remote-google-translator.js"));
-  assert(contentScripts.includes("src/content/content-helpers.js"));
-  assert(
-    contentScripts.indexOf("src/lib/remote-google-translator.js") < contentScripts.indexOf("src/content/content.js")
-  );
-  assert(contentScripts.indexOf("src/content/content-helpers.js") < contentScripts.indexOf("src/content/content.js"));
-  assert.match(source, /CONTENT_FALLBACK_MAX_CONCURRENT_FETCHES = 5/);
-  assert.match(source, /AcademyLensRemoteGoogleTranslator/);
-  assert.match(source, /contentFallbackTranslator\.translateText\(text, targetLanguage, scope, signal\)/);
-  assert.match(remote, /inFlightTranslations/);
-  assert.match(remote, /AbortController/);
-  assert.match(remote, /retryableStatus/);
-  assert.match(remote, /runWithFetchLimit/);
+  assert(!contentScripts.includes("src/lib/google-translate.js"));
+  assert(!contentScripts.includes("src/lib/remote-google-translator.js"));
+  assert.doesNotMatch(source, /AcademyLensGoogleTranslate/);
+  assert.doesNotMatch(source, /AcademyLensRemoteGoogleTranslator/);
+  assert.match(background, /\.\.\/lib\/google-translate\.js/);
+  assert.match(background, /\.\.\/lib\/remote-google-translator\.js/);
+  assert.match(background, /getLocal\(\[STORAGE_KEYS\.SETTINGS\]\)/);
+  assert.match(background, /selectedEngine !== engine/);
+  assert.match(background, /hasOriginPermission\(permissionOrigin\)/);
   assert.match(source, /currentAbortSignal/);
   assert.match(source, /throwIfAborted/);
 });
@@ -179,7 +177,7 @@ test("content cache scope tracks provider and glossary while cache clears invali
   assert.match(helpers, /function cacheEpochValue/);
   assert.match(source, /state\.cacheEpoch/);
   assert.match(source, /cacheEpoch: state\.cacheEpoch/);
-  assert.match(provider, /provider: "google-translate"/);
+  assert.doesNotMatch(provider, /provider: "google-translate"/);
   assert.match(source, /type: C\.MESSAGE_TYPES\.PERSIST_CACHE_UPDATES/);
   assert.match(source, /type: C\.MESSAGE_TYPES\.CLEAR_CACHE/);
   assert.match(background, /function googleCacheScope/);
@@ -190,19 +188,16 @@ test("content cache scope tracks provider and glossary while cache clears invali
   assert.match(background, /expectedCacheEpoch/);
 });
 
-test("content fallback only retries texts missed by browser-native translation", () => {
+test("on-device translation never retries missed text through a remote provider", () => {
   const source = read("src/content/translation-provider.js");
-  const helpers = read("src/content/content-helpers.js");
   const sendTranslationBatch = source.slice(
     source.indexOf("async function sendTranslationBatch"),
     source.indexOf("return Object.freeze", source.indexOf("async function sendTranslationBatch"))
   );
 
-  assert.match(helpers, /function untranslatedTexts/);
-  assert.match(helpers, /function mergeTranslationResponses/);
-  assert.match(helpers, /function hasUnexpectedPlaceholderTokens/);
-  assert.match(sendTranslationBatch, /const missingTexts = untranslatedTexts\(requestedTexts, browserResponse\)/);
-  assert.match(sendTranslationBatch, /texts: missingTexts/);
+  assert.match(sendTranslationBatch, /return browserResponse/);
+  assert.match(sendTranslationBatch, /mergeTranslationResponses\(browserResponse, null, requestedTexts\)/);
+  assert.doesNotMatch(sendTranslationBatch, /texts: missingTexts/);
 });
 
 test("frame commands are scoped to the current route before redispatch", () => {

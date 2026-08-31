@@ -18,6 +18,7 @@ const {
   REMOTE_TRANSLATION_ORIGIN,
   OLLAMA_ORIGIN,
   TRANSLATION_ENGINES,
+  normalizeTranslationEngine,
   normalizeOllamaModel
 } = self.AcademyLensConstants || {
   MESSAGE_TYPES: {
@@ -28,13 +29,15 @@ const {
     CLEAR_CACHE: "ACADEMYLENS_CLEAR_CACHE"
   },
   STORAGE_KEYS: {
+    SETTINGS: "academylens.settings",
     CACHE: "academylens.translationCache.v1",
     CACHE_EPOCH: "academylens.translationCacheEpoch.v1"
   },
   LIMITS: { cacheEntries: 600 },
   REMOTE_TRANSLATION_ORIGIN: "https://translate.googleapis.com/*",
   OLLAMA_ORIGIN: "http://localhost:11434/*",
-  TRANSLATION_ENGINES: { OLLAMA: "ollama" },
+  TRANSLATION_ENGINES: { REMOTE: "remote", OLLAMA: "ollama" },
+  normalizeTranslationEngine: (value) => (value === "remote" || value === "ollama" ? value : "device"),
   normalizeOllamaModel: (value) => value || "qwen3.5:4b"
 };
 
@@ -183,7 +186,21 @@ async function translateBatch(message, signal) {
   if (!targetLanguage) {
     return { ok: false, translated: {}, errors: {}, error: "No target language selected" };
   }
-  const usesOllama = message.translationEngine === TRANSLATION_ENGINES.OLLAMA;
+  const engine = message.translationEngine;
+  if (engine !== TRANSLATION_ENGINES.REMOTE && engine !== TRANSLATION_ENGINES.OLLAMA) {
+    return { ok: false, translated: {}, errors: {}, error: "Explicit remote translation engine required" };
+  }
+  const usesOllama = engine === TRANSLATION_ENGINES.OLLAMA;
+  const settingsState = await getLocal([STORAGE_KEYS.SETTINGS]);
+  const selectedSettings = settingsState[STORAGE_KEYS.SETTINGS] || {};
+  const selectedEngine = normalizeTranslationEngine(selectedSettings.translationEngine);
+  if (selectedEngine !== engine) {
+    return { ok: false, translated: {}, errors: {}, error: "Request does not match the selected translation engine" };
+  }
+  const ollamaModel = normalizeOllamaModel(message.ollamaModel);
+  if (usesOllama && normalizeOllamaModel(selectedSettings.ollamaModel) !== ollamaModel) {
+    return { ok: false, translated: {}, errors: {}, error: "Request does not match the selected Ollama model" };
+  }
   const permissionOrigin = usesOllama ? OLLAMA_ORIGIN : REMOTE_TRANSLATION_ORIGIN;
   if (!(await hasOriginPermission(permissionOrigin))) {
     return {
@@ -193,7 +210,6 @@ async function translateBatch(message, signal) {
       error: usesOllama ? "Ollama localhost permission not granted" : "Remote translation permission not granted"
     };
   }
-  const ollamaModel = normalizeOllamaModel(message.ollamaModel);
   const cacheScope = usesOllama ? ollamaCacheScope(message, ollamaModel) : googleCacheScope(message);
   const allTexts = Array.isArray(message.texts)
     ? [...new Set(message.texts.map((text) => String(text)).filter(Boolean))]
@@ -310,6 +326,15 @@ function operationId(value) {
 }
 
 async function checkOllama(message) {
+  const model = normalizeOllamaModel(message && message.ollamaModel);
+  const settingsState = await getLocal([STORAGE_KEYS.SETTINGS]);
+  const selectedSettings = settingsState[STORAGE_KEYS.SETTINGS] || {};
+  if (
+    normalizeTranslationEngine(selectedSettings.translationEngine) !== TRANSLATION_ENGINES.OLLAMA ||
+    normalizeOllamaModel(selectedSettings.ollamaModel) !== model
+  ) {
+    return { ok: false, status: "selection-mismatch", model, models: [] };
+  }
   if (!(await hasOriginPermission(OLLAMA_ORIGIN))) {
     return { ok: false, status: "permission-denied", models: [] };
   }
@@ -324,7 +349,6 @@ async function checkOllama(message) {
           .map((item) => String(item && (item.name || item.model) ? item.name || item.model : ""))
           .filter(Boolean)
       : [];
-    const model = normalizeOllamaModel(message && message.ollamaModel);
     const installed = models.includes(model);
     return { ok: installed, status: installed ? "ready" : "model-missing", model, models };
   } catch {

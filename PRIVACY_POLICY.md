@@ -12,16 +12,15 @@ AcademyLens does not collect, sell, rent, or transfer personal data to the exten
 
 ### You choose the translation engine
 
-AcademyLens ships with four engines and defaults to the one that sends nothing off your device.
+AcademyLens ships with three independently selected engines and defaults to the one that sends nothing off your device.
 
-| Engine                                        | What happens to course text                                                                                                        | Network access                                                                                 |
-| --------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------- |
-| **On-device only** (default)                  | Chrome's built-in Translator API translates on your device. No course text leaves your computer.                                   | None                                                                                           |
-| **On-device, then Google Translate** (`auto`) | On-device translation runs first. Only text the on-device engine could not translate is sent to Google Translate for that request. | Requires your explicit permission grant                                                        |
-| **Google Translate** (`remote`)               | Extension-selected visible lesson text is sent to Google Translate.                                                                | Requires your explicit permission grant                                                        |
-| **Local Ollama** (`ollama`)                   | Extension-selected visible lesson text is sent to the Ollama server on `localhost` and processed by the model you selected.        | Requires your explicit localhost permission grant and a separately running local Ollama server |
+| Engine                          | What happens to course text                                                                                                 | Network access                                                                                 |
+| ------------------------------- | --------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------- |
+| **On-device only** (default)    | Chrome's built-in Translator API translates on your device. No course text leaves your computer.                            | None                                                                                           |
+| **Google Translate** (`remote`) | Extension-selected visible lesson text is sent to Google Translate.                                                         | Requires your explicit permission grant                                                        |
+| **Local Ollama** (`ollama`)     | Extension-selected visible lesson text is sent to the Ollama server on `localhost` and processed by the model you selected. | Requires your explicit localhost permission grant and a separately running local Ollama server |
 
-The Google Translate host `translate.googleapis.com` and local Ollama host `localhost:11434` are declared as **optional** host permissions. A default installation has neither. AcademyLens asks only for the permission required by the engine you pick, and the extension's service worker re-checks the grant before every request. Ollama text is sent to the server on your own computer; AcademyLens does not configure any remote Ollama host.
+The Google Translate host `translate.googleapis.com` and local Ollama host `localhost:11434` are declared as **optional** host permissions. A default installation has neither. AcademyLens asks only for the permission required by the engine you pick, and the extension's service worker re-checks both the stored engine/model selection and the permission grant before every request. An engine failure is reported without sending the text to another provider. Ollama text is sent to the server on your own computer; AcademyLens does not configure any remote Ollama host.
 
 When you translate page text, the extension processes extension-selected visible lesson text from `academy.openai.com`. Browser-managed translator downloads are disabled unless you explicitly turn them on. If auto-translate is enabled, newly rendered visible lesson text can be translated automatically after page changes, using whichever engine you selected. The DOM filtering logic is designed to avoid platform chrome such as enrollment, progress, certificate, account, form, navigation, and credential UI. Because OpenAI Academy and Gradual page markup can change, avoid translating pages that contain sensitive personal content.
 
@@ -41,7 +40,7 @@ AcademyLens stores settings, optional local correction overrides, and a local tr
 - cached translated text
 - provider, glossary state, target language, creation time, and last-access time for cache entries
 
-The panel may show local diagnostics such as provider path, cache hit/miss counts, fallback count, correction count, context grouping count, and embedded-frame applied/failed counts. These diagnostics are displayed locally and do not include the translated page text.
+The panel may show local diagnostics such as provider path, cache hit/miss counts, correction count, context grouping count, and embedded-frame applied/failed counts. These diagnostics are displayed locally and do not include the translated page text.
 
 Bundled glossary files are stored inside the extension package. They do not require a network request to AcademyLens or any AcademyLens server.
 

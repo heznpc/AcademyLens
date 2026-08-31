@@ -12,7 +12,6 @@
     const C = options.constants;
     const Cache = options.Cache;
     const BrowserTranslator = options.BrowserTranslator;
-    const GoogleTranslate = options.GoogleTranslate;
     const backgroundClient = options.backgroundClient;
     const getSettings = options.getSettings;
     const getCacheEpoch = options.getCacheEpoch;
@@ -20,7 +19,6 @@
     const cacheEpochValue = options.cacheEpochValue;
     const cacheHasTranslation = options.cacheHasTranslation;
     const cacheUpdateMeta = options.cacheUpdateMeta;
-    const translateTextInContent = options.translateTextInContent;
     const throwIfAborted = options.throwIfAborted;
     const persistContentCache = options.persistContentCache;
     const setBrowserTranslatorStatus = options.setBrowserTranslatorStatus;
@@ -28,65 +26,9 @@
     const setProviderMode = options.setProviderMode;
     const translationLooksSuspicious = options.translationLooksSuspicious;
     const message = options.message;
-    const untranslatedTexts = options.untranslatedTexts;
     const mergeTranslationResponses = options.mergeTranslationResponses;
     const responseTimeoutMs = options.responseTimeoutMs || 12000;
     const maxResponseTimeoutMs = options.maxResponseTimeoutMs || 300000;
-
-    async function translateBatchInContent(texts, targetLanguage, scope = {}, expectedEpoch = getCacheEpoch(), signal) {
-      if (!Cache || !GoogleTranslate || typeof fetch !== "function") throw new Error(message("status.failed"));
-      throwIfAborted(signal);
-      const stored = await getLocal([C.STORAGE_KEYS.CACHE, C.STORAGE_KEYS.CACHE_EPOCH]);
-      const currentEpoch = cacheEpochValue(stored[C.STORAGE_KEYS.CACHE_EPOCH]);
-      const cache = cacheEpochValue(expectedEpoch) === currentEpoch ? stored[C.STORAGE_KEYS.CACHE] || {} : {};
-      const translated = {};
-      const errors = {};
-      const cacheUpdates = {};
-      const stats = {
-        cacheHits: 0,
-        cacheMisses: 0,
-        failed: 0,
-        requested: texts.length,
-        fallback: true,
-        cachePersistFailed: false
-      };
-      await Promise.all(
-        texts.map(async (text) => {
-          const key = Cache.cacheKey(targetLanguage, text, scope);
-          if (cacheHasTranslation(cache, key, text, targetLanguage, scope)) {
-            translated[text] = cache[key].translated;
-            cacheUpdates[key] = {
-              original: text,
-              targetLanguage,
-              ...cacheUpdateMeta(scope),
-              accessedAt: Date.now()
-            };
-            stats.cacheHits += 1;
-            return;
-          }
-          stats.cacheMisses += 1;
-          try {
-            const result = await translateTextInContent(text, targetLanguage, scope, signal);
-            throwIfAborted(signal);
-            translated[text] = result;
-            cacheUpdates[key] = {
-              original: text,
-              translated: result,
-              targetLanguage,
-              ...cacheUpdateMeta(scope),
-              createdAt: Date.now(),
-              accessedAt: Date.now()
-            };
-          } catch (error) {
-            stats.failed += 1;
-            errors[text] = error.message || String(error);
-          }
-        })
-      );
-      const persisted = await persistContentCache(cacheUpdates, expectedEpoch, signal);
-      if (!persisted && Object.keys(cacheUpdates).length) stats.cachePersistFailed = true;
-      return { ok: Object.keys(translated).length > 0 || texts.length === 0, translated, errors, stats };
-    }
 
     async function translateBatchWithBrowserTranslator(
       texts,
@@ -185,20 +127,23 @@
         if (!persisted && Object.keys(cacheUpdates).length) stats.cachePersistFailed = true;
         return { ok: stats.failed === 0 || Object.keys(translated).length > 0, translated, errors, stats };
       } catch (error) {
-        console.warn("[AcademyLens] browser translator unavailable; trying background translation", error);
+        setBrowserTranslatorStatus("unavailable");
+        updateProviderModeFromBrowserStatus("unavailable");
+        console.warn("[AcademyLens] browser translator unavailable; device request stopped", error);
         return null;
       }
     }
 
-    function emptyTranslationResponse(requestedTexts) {
+    function emptyTranslationResponse(requestedTexts, reason = "engine-disallowed") {
       return {
         ok: false,
         translated: {},
         errors: requestedTexts.reduce((errors, text) => {
-          errors[text] = "engine-disallowed";
+          errors[text] = reason;
           return errors;
         }, {}),
-        stats: { hits: 0, misses: 0, fallbackTexts: 0 }
+        error: reason,
+        stats: { hits: 0, misses: 0, failed: requestedTexts.length, fallbackTexts: 0 }
       };
     }
 
@@ -206,27 +151,17 @@
       throwIfAborted(signal);
       const usesOllama = C.engineUsesOllama(payload.translationEngine);
       setProviderMode(usesOllama ? "ollama" : "background", usesOllama ? payload.ollamaModel : "");
-      const fallbackScope = { ...((payload && payload.cacheScope) || {}), provider: "google-translate" };
       const requestedTimeout = Number(timeoutMs) || responseTimeoutMs;
       const backgroundTimeout = Math.max(responseTimeoutMs, Math.min(requestedTimeout, maxResponseTimeoutMs));
       try {
         const response = await backgroundClient.send(payload, backgroundTimeout, signal);
-        if (response && response.ok) return response;
-        if (response && response.translated && Object.keys(response.translated).length) return response;
-        if (usesOllama) return response || emptyTranslationResponse(payload.texts || []);
+        return response || emptyTranslationResponse(payload.texts || [], "background-unavailable");
       } catch (error) {
         if (usesOllama) throw error;
         if (error && error.code === backgroundClient.timeoutCode) throw error;
-        console.warn("[AcademyLens] background translation unavailable; trying content fallback", error);
+        console.warn("[AcademyLens] background translation unavailable; remote request blocked", error);
+        return emptyTranslationResponse(payload.texts || [], error?.message || "background-unavailable");
       }
-      setProviderMode("fallback");
-      return translateBatchInContent(
-        payload.texts || [],
-        payload.targetLanguage,
-        fallbackScope,
-        payload.cacheEpoch,
-        signal
-      );
     }
 
     async function sendTranslationBatch(payload, timeoutMs, signal) {
@@ -234,8 +169,6 @@
       const requestedTexts = payload.texts || [];
       const settings = getSettings();
       const engine = C.normalizeTranslationEngine(settings.translationEngine);
-      const allowRemote = C.engineAllowsRemote(engine);
-      const preferDevice = C.enginePrefersDevice(engine);
       if (C.engineUsesOllama(engine)) {
         return sendBackgroundTranslationBatch(
           { ...payload, translationEngine: engine, ollamaModel: C.normalizeOllamaModel(settings.ollamaModel) },
@@ -243,10 +176,11 @@
           signal
         );
       }
-      if (!preferDevice) {
-        return allowRemote
-          ? sendBackgroundTranslationBatch(payload, timeoutMs, signal)
-          : emptyTranslationResponse(requestedTexts);
+      if (C.engineAllowsRemote(engine)) {
+        return sendBackgroundTranslationBatch({ ...payload, translationEngine: engine }, timeoutMs, signal);
+      }
+      if (!C.enginePrefersDevice(engine)) {
+        return emptyTranslationResponse(requestedTexts);
       }
       const nativeScope = {
         ...((payload && payload.cacheScope) || {}),
@@ -260,21 +194,8 @@
         payload.cacheEpoch,
         signal
       );
-      if (browserResponse) {
-        const missingTexts = untranslatedTexts(requestedTexts, browserResponse);
-        if (!missingTexts.length || !allowRemote) {
-          return mergeTranslationResponses(browserResponse, null, requestedTexts);
-        }
-        throwIfAborted(signal);
-        const fallbackResponse = await sendBackgroundTranslationBatch(
-          { ...payload, texts: missingTexts },
-          timeoutMs,
-          signal
-        );
-        return mergeTranslationResponses(browserResponse, fallbackResponse, requestedTexts);
-      }
-      return allowRemote
-        ? sendBackgroundTranslationBatch(payload, timeoutMs, signal)
+      return browserResponse
+        ? mergeTranslationResponses(browserResponse, null, requestedTexts)
         : emptyTranslationResponse(requestedTexts);
     }
 

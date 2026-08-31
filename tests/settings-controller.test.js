@@ -43,6 +43,21 @@ test("settings controller resolves and persists safe first-run defaults", async 
   assert.equal(storage[Constants.STORAGE_KEYS.SETTINGS].ollamaModel, "qwen3.5:4b");
 });
 
+test("settings controller migrates a stored auto engine to device-only", async () => {
+  const { controller, storage } = harness({
+    targetLanguage: "ja",
+    translationEngine: "auto",
+    ollamaModel: "gemma3:4b"
+  });
+
+  const settings = await controller.load();
+
+  assert.equal(settings.translationEngine, "device");
+  assert.equal(storage[Constants.STORAGE_KEYS.SETTINGS].translationEngine, "device");
+  assert.equal(storage[Constants.STORAGE_KEYS.SETTINGS].targetLanguage, "ja");
+  assert.equal(storage[Constants.STORAGE_KEYS.SETTINGS].ollamaModel, "gemma3:4b");
+});
+
 test("settings controller owns storage listener lifecycle and normalizes changes", () => {
   const { controller, listeners } = harness();
   let nextSettings;

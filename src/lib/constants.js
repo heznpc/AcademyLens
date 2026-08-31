@@ -14,20 +14,18 @@
 
   // Translation engines the learner can pick between.
   //   device — Chrome's built-in on-device Translator API only. Nothing leaves the device.
-  //   auto   — on-device first, remote Google Translate only when the device path cannot serve
-  //            the selected language pair. Requires the optional host permission.
   //   remote — always remote Google Translate. For browsers or language pairs the
   //            on-device translator does not support. Requires the optional host permission.
+  //   ollama — the learner's explicitly selected local Ollama model. Requires the
+  //            optional localhost permission and never falls through to another engine.
   const TRANSLATION_ENGINES = Object.freeze({
     DEVICE: "device",
-    AUTO: "auto",
     REMOTE: "remote",
     OLLAMA: "ollama"
   });
 
   const TRANSLATION_ENGINE_VALUES = Object.freeze([
     TRANSLATION_ENGINES.DEVICE,
-    TRANSLATION_ENGINES.AUTO,
     TRANSLATION_ENGINES.REMOTE,
     TRANSLATION_ENGINES.OLLAMA
   ]);
@@ -122,12 +120,9 @@
       "popup.nativeDownloads": "Allow built-in translator downloads",
       "field.translationEngine": "Translation engine",
       "engine.device": "On-device only",
-      "engine.auto": "On-device, then Google Translate",
       "engine.remote": "Google Translate",
       "engine.ollama": "Local Ollama",
       "engine.noteDevice": "Chrome translates on your device. No course text leaves your computer.",
-      "engine.noteAuto":
-        "Chrome translates on your device when it can. Otherwise the course text for that request is sent to Google Translate.",
       "engine.noteRemote": "Course text is sent to Google Translate. Works on older Chrome and more language pairs.",
       "engine.noteOllama": "Course text is sent only to Ollama on this computer.",
       "engine.permissionNeeded": "Sending text to Google Translate needs your permission.",
@@ -156,7 +151,7 @@
       "panel.diagnostics": "Diagnostics",
       "panel.diagnosticsIdle": "No translation run yet",
       "panel.diagnosticsSummary":
-        "Provider {provider}; cache {hits}/{misses}; fallback {fallback}; corrections {corrections}; groups {groups}; frames {frameApplied}/{frameFailed}.",
+        "Provider {provider}; cache {hits}/{misses}; corrections {corrections}; groups {groups}; frames {frameApplied}/{frameFailed}.",
       "action.saveCorrection": "Save",
       "action.cancelCorrection": "Cancel",
       "action.deleteCorrection": "Delete",
@@ -175,8 +170,8 @@
       "provider.nativeReady": "Built-in ready",
       "provider.nativeDownloadable": "Built-in available",
       "provider.nativeDownloading": "Built-in downloading",
-      "provider.fallback": "Fallback",
-      "provider.background": "Background",
+      "provider.nativeUnavailable": "Built-in unavailable",
+      "provider.background": "Google Translate",
       "provider.local": "Local correction",
       "provider.ollama": "Local Ollama",
       "status.ready": "Ready on OpenAI Academy.",
@@ -210,12 +205,9 @@
       "popup.nativeDownloads": "내장 번역 다운로드 허용",
       "field.translationEngine": "번역 엔진",
       "engine.device": "기기 내 번역만",
-      "engine.auto": "기기 내 번역, 실패 시 Google 번역",
       "engine.remote": "Google 번역",
       "engine.ollama": "로컬 Ollama",
       "engine.noteDevice": "Chrome이 기기 안에서 번역합니다. 강의 텍스트가 컴퓨터를 벗어나지 않습니다.",
-      "engine.noteAuto":
-        "가능하면 기기 안에서 번역하고, 불가능한 경우 해당 요청의 강의 텍스트를 Google 번역으로 보냅니다.",
       "engine.noteRemote": "강의 텍스트를 Google 번역으로 보냅니다. 구형 Chrome과 더 많은 언어쌍에서 동작합니다.",
       "engine.noteOllama": "강의 텍스트를 이 컴퓨터의 Ollama로만 보냅니다.",
       "engine.permissionNeeded": "Google 번역으로 텍스트를 보내려면 권한이 필요합니다.",
@@ -243,7 +235,7 @@
       "panel.diagnostics": "진단",
       "panel.diagnosticsIdle": "아직 번역 실행 기록이 없습니다",
       "panel.diagnosticsSummary":
-        "경로 {provider}; 캐시 {hits}/{misses}; 대체 {fallback}; 보정 {corrections}; 묶음 {groups}; 프레임 {frameApplied}/{frameFailed}.",
+        "경로 {provider}; 캐시 {hits}/{misses}; 보정 {corrections}; 묶음 {groups}; 프레임 {frameApplied}/{frameFailed}.",
       "action.saveCorrection": "저장",
       "action.cancelCorrection": "취소",
       "action.deleteCorrection": "삭제",
@@ -262,8 +254,8 @@
       "provider.nativeReady": "내장 번역 준비됨",
       "provider.nativeDownloadable": "내장 번역 사용 가능",
       "provider.nativeDownloading": "내장 번역 다운로드 중",
-      "provider.fallback": "대체 경로",
-      "provider.background": "백그라운드",
+      "provider.nativeUnavailable": "내장 번역 사용 불가",
+      "provider.background": "Google 번역",
       "provider.local": "로컬 보정",
       "provider.ollama": "로컬 Ollama",
       "status.ready": "OpenAI Academy에서 사용할 준비가 됐습니다.",
@@ -409,19 +401,20 @@
   }
 
   function normalizeTranslationEngine(value) {
+    // `auto` was an unreleased experimental value. Treat any stored copy as
+    // device-only so an update can never preserve or silently restore a
+    // cross-provider network fallback.
     return TRANSLATION_ENGINE_VALUES.includes(value) ? value : TRANSLATION_ENGINES.DEVICE;
   }
 
   // True when the engine is allowed to reach the remote Google Translate endpoint.
   function engineAllowsRemote(value) {
-    const engine = normalizeTranslationEngine(value);
-    return engine === TRANSLATION_ENGINES.AUTO || engine === TRANSLATION_ENGINES.REMOTE;
+    return normalizeTranslationEngine(value) === TRANSLATION_ENGINES.REMOTE;
   }
 
   // True when the engine should try Chrome's on-device translator first.
   function enginePrefersDevice(value) {
-    const engine = normalizeTranslationEngine(value);
-    return engine === TRANSLATION_ENGINES.DEVICE || engine === TRANSLATION_ENGINES.AUTO;
+    return normalizeTranslationEngine(value) === TRANSLATION_ENGINES.DEVICE;
   }
 
   function engineUsesOllama(value) {

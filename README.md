@@ -30,13 +30,13 @@ Store name: **AcademyLens — AI Course Translator (Unofficial)**. The name deli
 
 You pick the engine. The default sends nothing off your device.
 
-| Engine                           | Course text                                                            | Needs permission |
-| -------------------------------- | ---------------------------------------------------------------------- | ---------------- |
-| On-device only (default)         | Translated by Chrome on your device. Never leaves your computer.       | No               |
-| On-device, then Google Translate | On-device first; only untranslatable text goes to Google Translate.    | Yes              |
-| Google Translate                 | Sent to Google Translate. Covers older Chrome and more language pairs. | Yes              |
+| Engine                   | Course text                                                            | Needs permission |
+| ------------------------ | ---------------------------------------------------------------------- | ---------------- |
+| On-device only (default) | Translated by Chrome on your device. Never leaves your computer.       | No               |
+| Google Translate         | Sent to Google Translate. Covers older Chrome and more language pairs. | Yes              |
+| Local Ollama             | Sent only to the selected Ollama model on your computer.               | Yes, localhost   |
 
-`translate.googleapis.com` is an **optional** host permission, so a fresh install cannot reach it. AcademyLens requests it only when you select an engine that needs it, and the service worker re-checks the grant before every remote request. Declining reverts you to the on-device engine.
+`translate.googleapis.com` and `localhost:11434` are **optional** host permissions, so a fresh install cannot reach either one. AcademyLens requests only the permission for the engine you explicitly select, and the service worker re-checks both the stored engine/model selection and the permission grant before every request. Declining reverts you to the on-device engine. If a selected engine fails, AcademyLens reports the failure instead of sending the text to a different provider.
 
 ## Table of Contents
 
@@ -62,10 +62,10 @@ You pick the engine. The default sends nothing off your device.
 - Applies installed premium glossaries built from OpenAI Academy course language and OpenAI documentation terminology before machine translation.
 - Uses native language names in the language picker.
 - Shows whether the selected language has a final/native-reviewed, community-reviewed, AI-audited beta, AI-drafted beta, or protected-term machine translation status.
-- Uses browser-native Translator when available; browser language-pack downloads require explicit opt-in, and Google Translate remains the fallback runtime.
+- Keeps browser-native Translator, Google Translate, and local Ollama as independently selected engines; browser language-pack downloads require explicit opt-in.
 - Stores optional local correction overrides so a learner can fix repeated awkward translations on their own device.
 - Keeps translation cache entries scoped by provider and glossary state; local corrections bypass cached provider text and are applied directly.
-- Includes local-only correction management and diagnostics for provider, cache, fallback, context grouping, and embedded-frame applied/failed counts.
+- Includes local-only correction management and diagnostics for provider, cache, context grouping, and embedded-frame applied/failed counts.
 - Guards against late translation responses after Restore, language switches, and Gradual/Next.js route changes.
 - Does not modify enrollment, progress tracking, certificates, account state, or Gradual platform data.
 - Does not load remote AI scripts.
@@ -105,7 +105,7 @@ AcademyLens is a separate project because OpenAI Academy has a different product
 - Content script for OpenAI Academy DOM translation
 - Background service worker for translation requests and cache
 
-The current build lets the learner choose browser-native Translator, browser-native with an opt-in Google Translate fallback, Google Translate, or a local Ollama model. Ollama uses `http://localhost:11434/v1/chat/completions`, requires an explicit localhost permission, and never falls through to Google Translate. Chrome Web Store submission is blocked until the final provider/privacy posture is reviewed. Browser-native Translator APIs are not treated as universally available because support depends on browser, version, language availability, and page context. See [docs/TECH_STACK_REVIEW.md](docs/TECH_STACK_REVIEW.md).
+The current build lets the learner explicitly choose browser-native Translator, Google Translate, or a local Ollama model. The engines are independent: a failure never sends course text to another provider. Ollama uses `http://localhost:11434/v1/chat/completions` and requires an explicit localhost permission. Chrome Web Store submission is blocked until the final provider/privacy posture is reviewed. Browser-native Translator APIs are not treated as universally available because support depends on browser, version, language availability, and page context. See [docs/TECH_STACK_REVIEW.md](docs/TECH_STACK_REVIEW.md).
 
 OpenAI Academy is hosted through Gradual for course enrollment, progress tracking, and course-completion certificates. AcademyLens intentionally stays outside those flows and works only with visible page text.
 

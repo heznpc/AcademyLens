@@ -23,7 +23,7 @@ Unlike a generic page translator, AcademyLens keeps AI terminology intact and le
 Features:
 
 - Translate OpenAI Academy course pages.
-- Choose your translation engine: on-device only (the default), on-device with an opt-in Google Translate fallback, Google Translate, or one of six models on your local Ollama server. Network and localhost permissions are requested only when needed.
+- Choose your translation engine: on-device only (the default), Google Translate, or one of six models on your local Ollama server. Each engine is selected explicitly, and network or localhost permission is requested only when needed. A provider failure never sends text to a different provider.
 - Preserve terms such as OpenAI, ChatGPT, GPT, LLM, API, Responses API, Agents SDK, JSON, and Gradual.
 - Apply installed premium glossary packs based on OpenAI Academy course language and OpenAI documentation terminology.
 - Show whether the selected language has final/native-reviewed, community-reviewed, AI-audited beta, AI-drafted beta, or protected-term machine translation support.
@@ -42,7 +42,7 @@ This extension is unofficial and not affiliated with OpenAI.
 
 ## Privacy Summary
 
-Page text selected for translation follows the engine chosen by the learner. The default browser-native Translator API keeps text on the device. Browser-managed translator downloads stay off unless the user explicitly enables them. Google Translate paths require an optional permission before text is sent to `translate.googleapis.com`. Local Ollama requires a separately running server and optional access to `localhost:11434`; text stays on that computer and is processed by the selected local model. If auto-translate is enabled, newly rendered visible lesson text can be translated automatically after page changes. Original visible text, translated text, language, provider/model/glossary state, and cache timestamps may be stored locally in Chrome extension storage. The extension does not run an AcademyLens server, does not load remote AI scripts in v1, and does not collect personal data for the developer.
+Page text selected for translation follows the engine chosen by the learner. The default browser-native Translator API keeps text on the device. Browser-managed translator downloads stay off unless the user explicitly enables them. Google Translate requires an optional permission before text is sent to `translate.googleapis.com`. Local Ollama requires a separately running server and optional access to `localhost:11434`; text stays on that computer and is processed by the selected local model. The engines are independent, so a failure never sends the text to another provider. If auto-translate is enabled, newly rendered visible lesson text can be translated automatically after page changes. Original visible text, translated text, language, provider/model/glossary state, and cache timestamps may be stored locally in Chrome extension storage. The extension does not run an AcademyLens server, does not load remote AI scripts in v1, and does not collect personal data for the developer.
 
 ## Planned Later
 
