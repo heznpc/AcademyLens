@@ -69,7 +69,11 @@
     function isPendingCommandCurrent(payload) {
       if (!payload) return false;
       if (!isTopFrame) return true;
-      return payload.pageUrl === getPageUrl() && payload.routeVersion === getRouteVersion();
+      return (
+        payload.pageUrl === getPageUrl() &&
+        payload.routeVersion === getRouteVersion() &&
+        payload.generation === getGeneration()
+      );
     }
 
     function postPayloadToWindow(targetWindow, payload) {
@@ -122,14 +126,14 @@
       frameAggregates.clear();
     }
 
-    function postFrameResult(kind, result = {}) {
+    function postFrameResult(kind, result = {}, command = latestFrameCommand) {
       if (isTopFrame || !view.top) return;
       view.top.postMessage(
         {
           source: FRAME_MESSAGE_SOURCE,
           action: "frameResult",
-          messageId: latestFrameCommand ? latestFrameCommand.messageId : "",
-          frameToken: latestFrameCommand ? latestFrameCommand.frameToken : "",
+          messageId: command ? command.messageId : "",
+          frameToken: command ? command.frameToken : "",
           kind,
           applied: result.applied || 0,
           failed: result.failed || 0
@@ -188,6 +192,16 @@
     function handleFrameResult(event, data) {
       if (!isTopFrame || !data || data.action !== "frameResult") return;
       if (data.frameToken !== frameSessionToken) return;
+      const expectedAction = data.kind === "translate" ? "translate" : data.kind === "restore" ? "restore" : "";
+      if (
+        !expectedAction ||
+        !latestFrameCommand ||
+        latestFrameCommand.action !== expectedAction ||
+        latestFrameCommand.messageId !== data.messageId ||
+        !isPendingCommandCurrent(latestFrameCommand)
+      ) {
+        return;
+      }
       const aggregate = data.messageId ? frameAggregates.get(data.messageId) : null;
       if (aggregate) {
         if (markAggregateSource(aggregate, event && event.source)) return;
@@ -245,7 +259,8 @@
       if (data.targetLanguage) {
         setTargetLanguage(data.targetLanguage);
       }
-      rememberCommand(framePayload(data.action, data));
+      const command = framePayload(data.action, data);
+      rememberCommand(command);
 
       if (data.action === "translate") {
         postToChildFrames("translate", {
@@ -256,7 +271,7 @@
           remember: true
         });
         const result = await translatePage({ broadcastFrames: false });
-        postFrameResult("translate", result);
+        postFrameResult("translate", result, command);
       }
 
       if (data.action === "restore") {
@@ -268,7 +283,7 @@
           remember: true
         });
         const result = restorePage({ broadcastFrames: false });
-        postFrameResult("restore", result);
+        postFrameResult("restore", result, command);
       }
     }
 

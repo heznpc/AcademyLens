@@ -1,11 +1,11 @@
 (function initAcademyLensContentHelpers(root, factory) {
   if (typeof module === "object" && module.exports) {
-    module.exports = factory();
+    module.exports = factory(require("../lib/translation-quality.js"));
     return;
   }
 
-  root.AcademyLensContentHelpers = factory();
-})(typeof globalThis !== "undefined" ? globalThis : this, function contentHelpersFactory() {
+  root.AcademyLensContentHelpers = factory(root.AcademyLensTranslationQuality);
+})(typeof globalThis !== "undefined" ? globalThis : this, function contentHelpersFactory(defaultTranslationQuality) {
   "use strict";
 
   function cacheEpochValue(value) {
@@ -112,7 +112,10 @@
     return Array.from(resultTokens).some((token) => !sourceTokens.has(token));
   }
 
-  function translationLooksSuspicious(Text, original, translated, targetLanguage) {
+  function translationLooksSuspicious(Text, TranslationQuality, original, translated, targetLanguage) {
+    if (TranslationQuality && typeof TranslationQuality.validate === "function") {
+      return !TranslationQuality.validate(original, translated, targetLanguage).ok;
+    }
     const source = Text.normalizeWhitespace(original || "");
     const result = Text.normalizeWhitespace(translated || "");
     if (!result) return true;
@@ -217,6 +220,7 @@
   function create(options = {}) {
     const Cache = options.Cache;
     const Text = options.Text;
+    const TranslationQuality = options.TranslationQuality || defaultTranslationQuality;
     const NodeRef = options.Node || (typeof Node !== "undefined" ? Node : null);
 
     return Object.freeze({
@@ -234,7 +238,7 @@
       untranslatedTexts,
       hasUnexpectedPlaceholderTokens,
       translationLooksSuspicious: (original, translated, targetLanguage) =>
-        translationLooksSuspicious(Text, original, translated, targetLanguage),
+        translationLooksSuspicious(Text, TranslationQuality, original, translated, targetLanguage),
       mergeTranslationResponses,
       candidateElement: (candidate) => candidateElement(NodeRef, candidate),
       candidateContextKey: (candidate) => candidateContextKey(NodeRef, candidate),
@@ -259,7 +263,8 @@
     correctionEntries,
     untranslatedTexts,
     hasUnexpectedPlaceholderTokens,
-    translationLooksSuspicious,
+    translationLooksSuspicious: (Text, original, translated, targetLanguage) =>
+      translationLooksSuspicious(Text, defaultTranslationQuality, original, translated, targetLanguage),
     mergeTranslationResponses,
     candidateElement,
     candidateContextKey,

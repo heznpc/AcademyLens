@@ -64,6 +64,198 @@ test("remote Google translator dedupes requests by cache scope", async () => {
   assert.equal(calls, 2);
 });
 
+test("canceling one deduplicated caller does not abort another caller", async () => {
+  let calls = 0;
+  let fetchAborted = false;
+  let release;
+  let markFetchStarted;
+  const blocker = new Promise((resolve) => {
+    release = resolve;
+  });
+  const fetchStarted = new Promise((resolve) => {
+    markFetchStarted = resolve;
+  });
+  const translator = RemoteGoogleTranslator.create({
+    Cache,
+    GoogleTranslate,
+    async fetchImpl(_url, requestOptions) {
+      calls += 1;
+      requestOptions.signal.addEventListener("abort", () => {
+        fetchAborted = true;
+      });
+      markFetchStarted();
+      await blocker;
+      return response(200, "공유 번역");
+    }
+  });
+  const scope = { provider: "google-translate", glossarySignature: "shared", correctionSignature: "shared" };
+  const firstController = new AbortController();
+  const secondController = new AbortController();
+
+  const first = translator.translateText("Shared cancellation text", "ko", scope, firstController.signal);
+  await fetchStarted;
+  const second = translator.translateText("Shared cancellation text", "ko", scope, secondController.signal);
+  firstController.abort();
+
+  await assert.rejects(first, isAbortError);
+  assert.equal(fetchAborted, false, "the shared fetch must remain active for the second caller");
+  release();
+  assert.equal(await second, "공유 번역");
+  assert.equal(calls, 1);
+  assert.equal(fetchAborted, false);
+});
+
+test("aborts the underlying shared fetch exactly once when every caller cancels", async () => {
+  let calls = 0;
+  let underlyingAborts = 0;
+  let markFetchStarted;
+  const fetchStarted = new Promise((resolve) => {
+    markFetchStarted = resolve;
+  });
+  const translator = RemoteGoogleTranslator.create({
+    Cache,
+    GoogleTranslate,
+    maxRetries: 0,
+    async fetchImpl(_url, requestOptions) {
+      calls += 1;
+      markFetchStarted();
+      return new Promise((_resolve, reject) => {
+        requestOptions.signal.addEventListener(
+          "abort",
+          () => {
+            underlyingAborts += 1;
+            const error = new Error("shared fetch aborted");
+            error.name = "AbortError";
+            reject(error);
+          },
+          { once: true }
+        );
+      });
+    }
+  });
+  const firstController = new AbortController();
+  const secondController = new AbortController();
+  const first = translator.translateText("Every caller cancels", "ko", SCOPE, firstController.signal);
+  const second = translator.translateText("Every caller cancels", "ko", SCOPE, secondController.signal);
+  const firstRejected = assert.rejects(first, isAbortError);
+  const secondRejected = assert.rejects(second, isAbortError);
+
+  await fetchStarted;
+  firstController.abort();
+  await firstRejected;
+  assert.equal(underlyingAborts, 0, "one remaining caller must keep the shared fetch alive");
+
+  secondController.abort();
+  await secondRejected;
+  assert.equal(calls, 1);
+  assert.equal(underlyingAborts, 1);
+});
+
+test("a third caller joins the existing request after one shared caller cancels", async () => {
+  let calls = 0;
+  let release;
+  let markFetchStarted;
+  const blocker = new Promise((resolve) => {
+    release = resolve;
+  });
+  const fetchStarted = new Promise((resolve) => {
+    markFetchStarted = resolve;
+  });
+  const translator = RemoteGoogleTranslator.create({
+    Cache,
+    GoogleTranslate,
+    async fetchImpl() {
+      calls += 1;
+      markFetchStarted();
+      await blocker;
+      return response(200, "기존 공유 번역");
+    }
+  });
+  const firstController = new AbortController();
+  const secondController = new AbortController();
+  const first = translator.translateText("Join an active request", "ko", SCOPE, firstController.signal);
+  const second = translator.translateText("Join an active request", "ko", SCOPE, secondController.signal);
+  const firstRejected = assert.rejects(first, isAbortError);
+
+  await fetchStarted;
+  firstController.abort();
+  await firstRejected;
+  const third = translator.translateText("Join an active request", "ko", SCOPE);
+  release();
+
+  assert.deepEqual(await Promise.all([second, third]), ["기존 공유 번역", "기존 공유 번역"]);
+  assert.equal(calls, 1, "the third caller must subscribe instead of starting another fetch");
+});
+
+test("a shared failure is evicted so the same key can fetch again", async () => {
+  let calls = 0;
+  const translator = RemoteGoogleTranslator.create({
+    Cache,
+    GoogleTranslate,
+    maxRetries: 0,
+    async fetchImpl() {
+      calls += 1;
+      if (calls === 1) return response(500);
+      return response(200, "재시도 번역");
+    }
+  });
+
+  const first = translator.translateText("Retry after shared failure", "ko", SCOPE);
+  const second = translator.translateText("Retry after shared failure", "ko", SCOPE);
+  await Promise.all([
+    assert.rejects(first, /Google Translate request failed with 500/),
+    assert.rejects(second, /Google Translate request failed with 500/)
+  ]);
+
+  assert.equal(await translator.translateText("Retry after shared failure", "ko", SCOPE), "재시도 번역");
+  assert.equal(calls, 2);
+});
+
+test("never fetches a queued shared request when all of its callers cancel", async () => {
+  let calls = 0;
+  let releaseRunning;
+  let markRunningFetchStarted;
+  const runningBlocker = new Promise((resolve) => {
+    releaseRunning = resolve;
+  });
+  const runningFetchStarted = new Promise((resolve) => {
+    markRunningFetchStarted = resolve;
+  });
+  const translator = RemoteGoogleTranslator.create({
+    Cache,
+    GoogleTranslate,
+    maxConcurrent: 1,
+    async fetchImpl(url) {
+      calls += 1;
+      const text = new URL(url).searchParams.get("q");
+      if (text === "Occupy the only slot") {
+        markRunningFetchStarted();
+        await runningBlocker;
+      }
+      return response(200, `translated: ${text}`);
+    }
+  });
+  const running = translator.translateText("Occupy the only slot", "ko", SCOPE);
+  await runningFetchStarted;
+
+  const firstController = new AbortController();
+  const secondController = new AbortController();
+  const firstQueued = translator.translateText("Queued shared request", "ko", SCOPE, firstController.signal);
+  const secondQueued = translator.translateText("Queued shared request", "ko", SCOPE, secondController.signal);
+  const firstRejected = assert.rejects(firstQueued, isAbortError);
+  const secondRejected = assert.rejects(secondQueued, isAbortError);
+
+  firstController.abort();
+  secondController.abort();
+  await Promise.all([firstRejected, secondRejected]);
+  assert.equal(calls, 1, "the shared queued request must not start while the slot is occupied");
+
+  releaseRunning();
+  await running;
+  await new Promise((resolve) => setTimeout(resolve, 0));
+  assert.equal(calls, 1, "the canceled queued request must have been removed from the fetch queue");
+});
+
 test("remote Google translator limits concurrent fetches", async () => {
   let active = 0;
   let maxActive = 0;

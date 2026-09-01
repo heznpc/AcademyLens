@@ -6,7 +6,11 @@ const OllamaTranslator = require("../src/lib/ollama-translator.js");
 const TranslationQuality = require("../src/lib/translation-quality.js");
 
 const endpoint = process.env.OLLAMA_OPENAI_ENDPOINT || OllamaTranslator.DEFAULT_ENDPOINT;
-const corpus = JSON.parse(readFileSync(join(__dirname, "fixtures/ollama-evaluation.json"), "utf8"));
+const corpus = Object.freeze(
+  JSON.parse(readFileSync(join(__dirname, "fixtures/ollama-evaluation.json"), "utf8")).map((item) =>
+    Object.freeze(item)
+  )
+);
 
 function argValue(name, fallback = "") {
   const inline = process.argv.find((argument) => argument.startsWith(`${name}=`));
@@ -21,6 +25,90 @@ function keywordScore(translated, groups) {
   return { matched, total: groups.length };
 }
 
+function groupCorpus(items) {
+  const groups = new Map();
+  for (const item of items || []) {
+    if (!Constants.SUPPORTED_LANGUAGE_CODES.includes(item.targetLanguage)) {
+      throw new Error(`Unsupported evaluation target language: ${item.targetLanguage || "missing"}`);
+    }
+    if (!item.source || !Array.isArray(item.keywords) || !item.keywords.length) {
+      throw new Error(`Invalid evaluation case for ${item.targetLanguage}`);
+    }
+    if (!groups.has(item.targetLanguage)) groups.set(item.targetLanguage, []);
+    groups.get(item.targetLanguage).push(item);
+  }
+  return groups;
+}
+
+async function evaluateLanguage(translator, model, targetLanguage, items) {
+  const startedAt = Date.now();
+  try {
+    const translations = await translator.translateTexts(
+      items.map((item) => item.source),
+      targetLanguage,
+      model
+    );
+    if (translations.length !== items.length) {
+      throw new Error(`Ollama returned ${translations.length}/${items.length} translations`);
+    }
+    const cases = items.map((item, index) => {
+      const translated = translations[index];
+      const quality = TranslationQuality.validate(item.source, translated, targetLanguage);
+      const keywords = keywordScore(translated, item.keywords);
+      return {
+        targetLanguage,
+        source: item.source,
+        translated,
+        quality,
+        keywords,
+        ok: quality.ok && keywords.matched === keywords.total
+      };
+    });
+    const passed = cases.filter((item) => item.ok).length;
+    return {
+      targetLanguage,
+      validation: TranslationQuality.validationProfile(targetLanguage),
+      ok: passed === cases.length,
+      elapsedMs: Date.now() - startedAt,
+      passed,
+      total: cases.length,
+      score: cases.length ? Math.round((passed / cases.length) * 100) : 0,
+      cases
+    };
+  } catch (error) {
+    return {
+      targetLanguage,
+      validation: TranslationQuality.validationProfile(targetLanguage),
+      ok: false,
+      elapsedMs: Date.now() - startedAt,
+      passed: 0,
+      total: items.length,
+      score: 0,
+      error: error.message || String(error),
+      cases: []
+    };
+  }
+}
+
+async function evaluateModel(translator, model, items = corpus) {
+  const startedAt = Date.now();
+  const languages = [];
+  for (const [targetLanguage, languageItems] of groupCorpus(items)) {
+    languages.push(await evaluateLanguage(translator, model, targetLanguage, languageItems));
+  }
+  const passed = languages.reduce((total, language) => total + language.passed, 0);
+  const total = languages.reduce((sum, language) => sum + language.total, 0);
+  return {
+    model,
+    ok: languages.length > 0 && languages.every((language) => language.ok),
+    elapsedMs: Date.now() - startedAt,
+    passed,
+    total,
+    score: total ? Math.round((passed / total) * 100) : 0,
+    languages
+  };
+}
+
 async function main() {
   const translator = OllamaTranslator.create({ endpoint, timeoutMs: 300000 });
   const results = [];
@@ -28,43 +116,10 @@ async function main() {
   const models = requestedModel ? [Constants.normalizeOllamaModel(requestedModel)] : Constants.OLLAMA_MODELS;
 
   for (const model of models) {
-    const startedAt = Date.now();
-    try {
-      const translations = await translator.translateTexts(
-        corpus.map((item) => item.source),
-        "ko",
-        model
-      );
-      const elapsedMs = Date.now() - startedAt;
-      const cases = corpus.map((item, index) => {
-        const translated = translations[index];
-        const quality = TranslationQuality.validate(item.source, translated, "ko");
-        const keywords = keywordScore(translated, item.keywords);
-        return {
-          source: item.source,
-          translated,
-          quality,
-          keywords,
-          ok: quality.ok && keywords.matched === keywords.total
-        };
-      });
-      const passed = cases.filter((item) => item.ok).length;
-      const result = {
-        model,
-        ok: passed === cases.length,
-        elapsedMs,
-        passed,
-        total: cases.length,
-        score: Math.round((passed / cases.length) * 100),
-        cases
-      };
-      results.push(result);
-      console.log(JSON.stringify(result));
-    } catch (error) {
-      const result = { model, ok: false, elapsedMs: Date.now() - startedAt, error: error.message || String(error) };
-      results.push(result);
-      console.error(JSON.stringify(result));
-    }
+    const result = await evaluateModel(translator, model);
+    results.push(result);
+    const log = result.ok ? console.log : console.error;
+    log(JSON.stringify(result));
   }
 
   const output = argValue("--out");
@@ -73,7 +128,17 @@ async function main() {
     mkdirSync(dirname(resolved), { recursive: true });
     writeFileSync(
       resolved,
-      `${JSON.stringify({ endpoint, evaluatedAt: new Date().toISOString(), results }, null, 2)}\n`
+      `${JSON.stringify(
+        {
+          endpoint,
+          evaluatedAt: new Date().toISOString(),
+          targetLanguages: [...groupCorpus(corpus).keys()],
+          corpusCases: corpus.length,
+          results
+        },
+        null,
+        2
+      )}\n`
     );
   }
 
@@ -83,7 +148,18 @@ async function main() {
   }
 }
 
-main().catch((error) => {
-  console.error(error.message || String(error));
-  process.exitCode = 1;
+if (require.main === module) {
+  main().catch((error) => {
+    console.error(error.message || String(error));
+    process.exitCode = 1;
+  });
+}
+
+module.exports = Object.freeze({
+  corpus,
+  evaluateLanguage,
+  evaluateModel,
+  groupCorpus,
+  keywordScore,
+  main
 });

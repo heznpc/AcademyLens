@@ -15,6 +15,10 @@
   const nativeDownloads = document.getElementById("nativeDownloads");
   const languageSupport = document.getElementById("languageSupport");
   let glossaryIndex = null;
+  let engineChangeGeneration = 0;
+  let ollamaHealthGeneration = 0;
+  let ollamaModelGeneration = 0;
+  let storageWriteChain = Promise.resolve();
 
   document.documentElement.lang = uiLocale;
   for (const node of document.querySelectorAll("[data-i18n]")) {
@@ -96,25 +100,40 @@
   }
 
   async function checkOllamaStatus() {
+    const generation = ++ollamaHealthGeneration;
+    const model = C.normalizeOllamaModel(ollamaModel.value);
     if (!C.engineUsesOllama(engine.value)) return;
     ollamaStatus.textContent = C.getMessage("ollama.checking", uiLocale);
     ollamaRetry.disabled = true;
     try {
       const response = await chrome.runtime.sendMessage({
         type: C.MESSAGE_TYPES.CHECK_OLLAMA,
-        ollamaModel: C.normalizeOllamaModel(ollamaModel.value)
+        ollamaModel: model
       });
+      if (
+        generation !== ollamaHealthGeneration ||
+        !C.engineUsesOllama(engine.value) ||
+        C.normalizeOllamaModel(ollamaModel.value) !== model
+      ) {
+        return;
+      }
       if (response && response.status === "ready") {
         ollamaStatus.textContent = C.getMessage("ollama.ready", uiLocale, { model: response.model });
       } else if (response && response.status === "model-missing") {
-        ollamaStatus.textContent = C.getMessage("ollama.modelMissing", uiLocale, { model: ollamaModel.value });
+        ollamaStatus.textContent = C.getMessage("ollama.modelMissing", uiLocale, { model });
       } else {
         ollamaStatus.textContent = C.getMessage("ollama.offline", uiLocale);
       }
     } catch {
-      ollamaStatus.textContent = C.getMessage("ollama.offline", uiLocale);
+      if (
+        generation === ollamaHealthGeneration &&
+        C.engineUsesOllama(engine.value) &&
+        C.normalizeOllamaModel(ollamaModel.value) === model
+      ) {
+        ollamaStatus.textContent = C.getMessage("ollama.offline", uiLocale);
+      }
     } finally {
-      ollamaRetry.disabled = false;
+      if (generation === ollamaHealthGeneration) ollamaRetry.disabled = false;
     }
   }
 
@@ -129,34 +148,50 @@
 
   // The remote engine needs the optional host permission. Ask only when the
   // learner picks it, and fall back to the on-device engine if they decline.
-  async function ensureRemotePermission(nextEngine) {
+  async function ensureRemotePermission(nextEngine, isCurrent) {
     if (C.engineUsesOllama(nextEngine)) {
       const origins = [C.OLLAMA_ORIGIN];
       if (await chrome.permissions.contains({ origins })) return nextEngine;
+      if (!isCurrent()) return nextEngine;
 
       setEngineNote("ollama.permissionNeeded");
-      const granted = await chrome.permissions.request({ origins });
+      let granted;
+      try {
+        granted = await chrome.permissions.request({ origins });
+      } catch {
+        granted = false;
+      }
       if (granted) return nextEngine;
 
-      setEngineNote("ollama.permissionDenied");
+      if (isCurrent()) setEngineNote("ollama.permissionDenied");
       return C.TRANSLATION_ENGINES.DEVICE;
     }
     if (!C.engineAllowsRemote(nextEngine)) return nextEngine;
 
     const origins = [C.REMOTE_TRANSLATION_ORIGIN];
     if (await chrome.permissions.contains({ origins })) return nextEngine;
+    if (!isCurrent()) return nextEngine;
 
     setEngineNote("engine.permissionNeeded");
-    const granted = await chrome.permissions.request({ origins });
+    let granted;
+    try {
+      granted = await chrome.permissions.request({ origins });
+    } catch {
+      granted = false;
+    }
     if (granted) return nextEngine;
 
-    setEngineNote("engine.permissionDenied");
+    if (isCurrent()) setEngineNote("engine.permissionDenied");
     return C.TRANSLATION_ENGINES.DEVICE;
   }
 
-  async function persist(next) {
+  function persist(next) {
     Object.assign(settings, next);
-    await chrome.storage.local.set({ [C.STORAGE_KEYS.SETTINGS]: { ...settings } });
+    const snapshot = { ...settings };
+    const write = () => chrome.storage.local.set({ [C.STORAGE_KEYS.SETTINGS]: snapshot });
+    const pending = storageWriteChain.then(write, write);
+    storageWriteChain = pending.catch(() => {});
+    return pending;
   }
 
   language.addEventListener("change", async () => {
@@ -165,20 +200,27 @@
   });
 
   engine.addEventListener("change", async () => {
+    const generation = ++engineChangeGeneration;
     const requested = C.normalizeTranslationEngine(engine.value);
-    const resolved = await ensureRemotePermission(requested);
+    if (!C.engineUsesOllama(requested)) ++ollamaHealthGeneration;
+    const isCurrent = () =>
+      generation === engineChangeGeneration && C.normalizeTranslationEngine(engine.value) === requested;
+    const resolved = await ensureRemotePermission(requested, isCurrent);
+    if (!isCurrent()) return;
     engine.value = resolved;
     updateOllamaModelVisibility();
     if (resolved === requested) setEngineNote(`engine.note${engineNoteSuffix(resolved)}`);
     await persist({ translationEngine: resolved });
-    if (C.engineUsesOllama(resolved)) await checkOllamaStatus();
+    if (generation === engineChangeGeneration && C.engineUsesOllama(resolved)) await checkOllamaStatus();
   });
 
   ollamaModel.addEventListener("change", async () => {
+    const generation = ++ollamaModelGeneration;
     const model = C.normalizeOllamaModel(ollamaModel.value);
     ollamaModel.value = model;
+    ++ollamaHealthGeneration;
     await persist({ ollamaModel: model });
-    await checkOllamaStatus();
+    if (generation === ollamaModelGeneration) await checkOllamaStatus();
   });
 
   autoTranslate.addEventListener("change", async () => {

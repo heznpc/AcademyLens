@@ -4,6 +4,8 @@ const { join, resolve } = require("node:path");
 const test = require("node:test");
 const vm = require("node:vm");
 
+const Cache = require("../src/lib/cache.js");
+
 const ROOT = join(__dirname, "..");
 
 function response(status, translated) {
@@ -82,6 +84,9 @@ function loadBackground(fetchImpl, options = {}) {
       }
     }
   };
+  if (typeof options.detectLanguage === "function") {
+    context.chrome.i18n = { detectLanguage: options.detectLanguage };
+  }
   context.self = context;
   context.globalThis = context;
   context.importScripts = (...scripts) => {
@@ -124,10 +129,155 @@ test("background translation retries transient failures", async () => {
   assert.equal(calls, 2);
 });
 
+test("background rejects Google output in the wrong target language", async () => {
+  const source = "Build reliable agents.";
+  const { send, storage } = loadBackground(async () => response(200, "Completely unrelated English sentence."));
+
+  const result = await send({
+    type: "ACADEMYLENS_TRANSLATE_BATCH",
+    translationEngine: "remote",
+    targetLanguage: "es",
+    texts: [source]
+  });
+
+  assert.equal(result.ok, false);
+  assert.equal(result.translated[source], undefined);
+  assert.match(result.errors[source], /quality check failed: wrong-target-language:en/);
+  assert.equal(result.stats.failed, 1);
+  assert.equal(Object.keys(storage["academylens.translationCache.v1"] || {}).length, 0);
+});
+
+test("background rejects high-confidence cross-Latin Google output", async () => {
+  const source = "Build reliable systems with clear review instructions.";
+  const french = "Les équipes construisent des systèmes fiables avec des instructions de révision claires.";
+  const detectedSamples = [];
+  const { send, storage } = loadBackground(async () => response(200, french), {
+    async detectLanguage(sample) {
+      detectedSamples.push(sample);
+      return { isReliable: true, languages: [{ language: "fr", percentage: 96 }] };
+    }
+  });
+
+  const result = await send({
+    type: "ACADEMYLENS_TRANSLATE_BATCH",
+    translationEngine: "remote",
+    targetLanguage: "es",
+    texts: [source]
+  });
+
+  assert.equal(result.ok, false);
+  assert.equal(result.translated[source], undefined);
+  assert.match(result.errors[source], /quality check failed: detected-language-mismatch:fr/);
+  assert.deepEqual(detectedSamples, [french]);
+  assert.equal(Object.keys(storage["academylens.translationCache.v1"] || {}).length, 0);
+});
+
+test("background accepts Latin loanwords when Google output is reliably in the target language", async () => {
+  const source = "Use software and internet tools safely to complete the course and review every result.";
+  const spanish =
+    "Utilice software e internet de forma segura para completar el curso y revisar cuidadosamente todos los resultados.";
+  const { send, storage } = loadBackground(async () => response(200, spanish), {
+    async detectLanguage() {
+      return { isReliable: true, languages: [{ language: "es", percentage: 98 }] };
+    }
+  });
+
+  const result = await send({
+    type: "ACADEMYLENS_TRANSLATE_BATCH",
+    translationEngine: "remote",
+    targetLanguage: "es",
+    texts: [source]
+  });
+
+  assert.equal(result.ok, true);
+  assert.equal(result.translated[source], spanish);
+  assert.equal(result.stats.failed, 0);
+  assert.equal(Object.keys(storage["academylens.translationCache.v1"] || {}).length, 1);
+});
+
+test("background revalidates and replaces a bad Google cache hit", async () => {
+  let fetchCalls = 0;
+  const { send, storage } = loadBackground(async () => {
+    fetchCalls += 1;
+    return response(200, "신뢰할 수 있는 에이전트를 구축하세요.");
+  });
+  const source = "Build reliable agents.";
+  const scope = { provider: "google-translate" };
+  const key = Cache.cacheKey("ko", source, scope);
+  storage["academylens.translationCache.v1"] = {
+    [key]: {
+      original: source,
+      translated: "Completely unrelated English sentence.",
+      targetLanguage: "ko",
+      ...Cache.normalizeScope(scope),
+      createdAt: 1,
+      accessedAt: 1
+    }
+  };
+
+  const result = await send({
+    type: "ACADEMYLENS_TRANSLATE_BATCH",
+    translationEngine: "remote",
+    targetLanguage: "ko",
+    texts: [source]
+  });
+
+  assert.equal(result.ok, true);
+  assert.equal(result.translated[source], "신뢰할 수 있는 에이전트를 구축하세요.");
+  assert.equal(result.stats.cacheHits, 0);
+  assert.equal(result.stats.cacheMisses, 1);
+  assert.equal(result.stats.qualityRejectedCacheHits, 1);
+  assert.equal(fetchCalls, 1);
+  assert.equal(storage["academylens.translationCache.v1"][key].translated, "신뢰할 수 있는 에이전트를 구축하세요.");
+});
+
+test("background revalidates a Google cache hit with high-confidence language detection", async () => {
+  let fetchCalls = 0;
+  const source = "Build reliable systems with clear review instructions.";
+  const french = "Les équipes construisent des systèmes fiables avec des instructions de révision claires.";
+  const spanish = "Los equipos construyen sistemas fiables con instrucciones claras para revisar los resultados.";
+  const { send, storage } = loadBackground(
+    async () => {
+      fetchCalls += 1;
+      return response(200, spanish);
+    },
+    {
+      async detectLanguage(sample) {
+        const language = sample.includes("Les équipes") ? "fr" : "es";
+        return { isReliable: true, languages: [{ language, percentage: 97 }] };
+      }
+    }
+  );
+  const scope = { provider: "google-translate" };
+  const key = Cache.cacheKey("es", source, scope);
+  storage["academylens.translationCache.v1"] = {
+    [key]: {
+      original: source,
+      translated: french,
+      targetLanguage: "es",
+      ...Cache.normalizeScope(scope)
+    }
+  };
+
+  const result = await send({
+    type: "ACADEMYLENS_TRANSLATE_BATCH",
+    translationEngine: "remote",
+    targetLanguage: "es",
+    texts: [source]
+  });
+
+  assert.equal(result.ok, true);
+  assert.equal(result.stats.cacheHits, 0);
+  assert.equal(result.stats.qualityRejectedCacheHits, 1);
+  assert.equal(fetchCalls, 1);
+  assert.equal(result.translated[source], spanish);
+  assert.equal(storage["academylens.translationCache.v1"][key].translated, spanish);
+});
+
 test("background translation returns partial success with per-text errors", async () => {
   const { send } = loadBackground(async (url) => {
     const text = new URL(url).searchParams.get("q");
-    return text === "Broken text" ? response(500) : response(200, `${text} translated`);
+    return text === "Broken text" ? response(500) : response(200, "좋은 번역입니다");
   });
 
   const result = await send({
@@ -138,7 +288,7 @@ test("background translation returns partial success with per-text errors", asyn
   });
 
   assert.equal(result.ok, true);
-  assert.equal(result.translated["Good text"], "Good text translated");
+  assert.equal(result.translated["Good text"], "좋은 번역입니다");
   assert.match(result.errors["Broken text"], /500/);
   assert.equal(result.stats.failed, 1);
 });
@@ -198,14 +348,13 @@ test("background translation limits concurrent remote fetches", async () => {
   let active = 0;
   let maxActive = 0;
   let calls = 0;
-  const { send } = loadBackground(async (url) => {
+  const { send } = loadBackground(async () => {
     calls += 1;
     active += 1;
     maxActive = Math.max(maxActive, active);
     await new Promise((resolve) => setTimeout(resolve, 20));
     active -= 1;
-    const text = new URL(url).searchParams.get("q");
-    return response(200, `${text} translated`);
+    return response(200, `번역 문장 ${calls}`);
   });
 
   const texts = Array.from({ length: 12 }, (_, index) => `Text ${index}`);
@@ -229,7 +378,7 @@ test("background translation merges concurrent cache writes", async () => {
   const { send, storage } = loadBackground(async (url) => {
     const text = new URL(url).searchParams.get("q");
     if (text === "First text") await blocker;
-    return response(200, `${text} translated`);
+    return response(200, text === "First text" ? "첫 번째 번역" : "두 번째 번역");
   });
 
   const first = send({
@@ -304,6 +453,27 @@ test("background cache persistence message serializes concurrent content writes"
   assert.deepEqual(originals, ["Frame one text", "Frame two text"]);
 });
 
+test("background cache persistence message applies native-provider deletion keys", async () => {
+  const { send, storage } = loadBackground(async () => response(200));
+  const rejectedKey = "es:browser-translator:g0:c0:rejected";
+  const retainedKey = "es:browser-translator:g0:c0:retained";
+  storage["academylens.translationCache.v1"] = {
+    [rejectedKey]: { original: "Rejected", translated: "Incorrect", targetLanguage: "es" },
+    [retainedKey]: { original: "Retained", translated: "Correcto", targetLanguage: "es" }
+  };
+
+  const result = await send({
+    type: "ACADEMYLENS_PERSIST_CACHE_UPDATES",
+    expectedCacheEpoch: 0,
+    cacheUpdates: {},
+    cacheDeleteKeys: [rejectedKey]
+  });
+
+  assert.equal(result.persisted, true);
+  assert.equal(storage["academylens.translationCache.v1"][rejectedKey], undefined);
+  assert.equal(storage["academylens.translationCache.v1"][retainedKey].translated, "Correcto");
+});
+
 test("background cache clear serializes with pending cache writes", async () => {
   const { send, storage } = loadBackground(async () => response(200), {
     delayFirstStorageSetMs: 25
@@ -337,13 +507,7 @@ test("background cache clear serializes with pending cache writes", async () => 
 });
 
 test("background translation returns fetched translations when cache persistence fails", async () => {
-  const { send } = loadBackground(
-    async (url) => {
-      const text = new URL(url).searchParams.get("q");
-      return response(200, `${text} translated`);
-    },
-    { failStorageSet: true }
-  );
+  const { send } = loadBackground(async () => response(200, "좋은 번역입니다"), { failStorageSet: true });
 
   const result = await send({
     type: "ACADEMYLENS_TRANSLATE_BATCH",
@@ -353,7 +517,7 @@ test("background translation returns fetched translations when cache persistence
   });
 
   assert.equal(result.ok, true);
-  assert.equal(result.translated["Good text"], "Good text translated");
+  assert.equal(result.translated["Good text"], "좋은 번역입니다");
   assert.equal(result.stats.cachePersistFailed, true);
 });
 
@@ -573,6 +737,261 @@ test("background retries only an Ollama item that fails the quality contract", a
   assert.equal(result.translated.First, "첫 번째");
   assert.equal(result.translated["Second source copied"], "두 번째 번역");
   assert.equal(requests.length, 2);
+});
+
+test("background retries high-confidence cross-Latin Ollama output", async () => {
+  const source = "Build reliable systems with clear review instructions.";
+  const french = "Les équipes construisent des systèmes fiables avec des instructions de révision claires.";
+  const spanish = "Los equipos construyen sistemas fiables con instrucciones claras para revisar los resultados.";
+  let fetchCalls = 0;
+  const { send } = loadBackground(
+    async () => {
+      fetchCalls += 1;
+      return ollamaResponse(200, fetchCalls === 1 ? french : spanish);
+    },
+    {
+      selectedTranslationEngine: "ollama",
+      async detectLanguage(sample) {
+        const language = sample.includes("Les équipes") ? "fr" : "es";
+        return { isReliable: true, languages: [{ language, percentage: 98 }] };
+      }
+    }
+  );
+
+  const result = await send({
+    type: "ACADEMYLENS_TRANSLATE_BATCH",
+    translationEngine: "ollama",
+    ollamaModel: "qwen3.5:4b",
+    targetLanguage: "es",
+    texts: [source]
+  });
+
+  assert.equal(result.ok, true);
+  assert.equal(fetchCalls, 2);
+  assert.equal(result.translated[source], spanish);
+});
+
+test("background revalidates and replaces a bad Ollama cache hit", async () => {
+  let fetchCalls = 0;
+  const { send, storage } = loadBackground(
+    async () => {
+      fetchCalls += 1;
+      return ollamaResponse(200, "신뢰할 수 있는 에이전트를 구축하세요.");
+    },
+    { selectedTranslationEngine: "ollama", selectedOllamaModel: "qwen3.5:4b" }
+  );
+  const source = "Build reliable agents.";
+  const scope = { provider: "ollama-qwen3.5:4b" };
+  const key = Cache.cacheKey("ko", source, scope);
+  storage["academylens.translationCache.v1"] = {
+    [key]: {
+      original: source,
+      translated: "Completely unrelated English sentence.",
+      targetLanguage: "ko",
+      ...Cache.normalizeScope(scope),
+      createdAt: 1,
+      accessedAt: 1
+    }
+  };
+
+  const result = await send({
+    type: "ACADEMYLENS_TRANSLATE_BATCH",
+    translationEngine: "ollama",
+    ollamaModel: "qwen3.5:4b",
+    targetLanguage: "ko",
+    texts: [source]
+  });
+
+  assert.equal(result.ok, true);
+  assert.equal(result.translated[source], "신뢰할 수 있는 에이전트를 구축하세요.");
+  assert.equal(result.stats.cacheHits, 0);
+  assert.equal(result.stats.cacheMisses, 1);
+  assert.equal(result.stats.qualityRejectedCacheHits, 1);
+  assert.equal(fetchCalls, 1);
+  assert.equal(storage["academylens.translationCache.v1"][key].translated, "신뢰할 수 있는 에이전트를 구축하세요.");
+});
+
+test("background removes a rejected Ollama cache entry when replacement quality also fails", async () => {
+  let fetchCalls = 0;
+  const { send, storage } = loadBackground(
+    async () => {
+      fetchCalls += 1;
+      return ollamaResponse(200, "Completely unrelated English sentence.");
+    },
+    { selectedTranslationEngine: "ollama" }
+  );
+  const source = "Build reliable agents.";
+  const scope = { provider: "ollama-qwen3.5:4b" };
+  const key = Cache.cacheKey("ko", source, scope);
+  storage["academylens.translationCache.v1"] = {
+    [key]: {
+      original: source,
+      translated: "Another unrelated English answer.",
+      targetLanguage: "ko",
+      ...Cache.normalizeScope(scope)
+    }
+  };
+
+  const result = await send({
+    type: "ACADEMYLENS_TRANSLATE_BATCH",
+    translationEngine: "ollama",
+    ollamaModel: "qwen3.5:4b",
+    targetLanguage: "ko",
+    texts: [source]
+  });
+
+  assert.equal(result.ok, false);
+  assert.equal(result.stats.qualityRejectedCacheHits, 1);
+  assert.equal(result.stats.failed, 1);
+  assert.equal(fetchCalls, 2, "a bad fresh result gets one item-level retry");
+  assert.equal(storage["academylens.translationCache.v1"][key], undefined);
+});
+
+test("background removes a rejected Ollama cache entry when replacement transport fails", async () => {
+  const { send, storage } = loadBackground(async () => ollamaResponse(503), {
+    selectedTranslationEngine: "ollama"
+  });
+  const source = "Build reliable agents.";
+  const scope = { provider: "ollama-qwen3.5:4b" };
+  const key = Cache.cacheKey("ko", source, scope);
+  storage["academylens.translationCache.v1"] = {
+    [key]: {
+      original: source,
+      translated: "Completely unrelated English sentence.",
+      targetLanguage: "ko",
+      ...Cache.normalizeScope(scope)
+    }
+  };
+
+  const result = await send({
+    type: "ACADEMYLENS_TRANSLATE_BATCH",
+    translationEngine: "ollama",
+    ollamaModel: "qwen3.5:4b",
+    targetLanguage: "ko",
+    texts: [source]
+  });
+
+  assert.equal(result.ok, false);
+  assert.equal(result.stats.qualityRejectedCacheHits, 1);
+  assert.equal(result.stats.failed, 1);
+  assert.equal(storage["academylens.translationCache.v1"][key], undefined);
+});
+
+test("background preserves valid Ollama cache hits while replacing rejected entries in the same batch", async () => {
+  const { send, storage } = loadBackground(async () => ollamaResponse(200, "교체된 번역입니다."), {
+    selectedTranslationEngine: "ollama"
+  });
+  const validSource = "Keep cached translation.";
+  const invalidSource = "Replace invalid translation.";
+  const scope = { provider: "ollama-qwen3.5:4b" };
+  const validKey = Cache.cacheKey("ko", validSource, scope);
+  const invalidKey = Cache.cacheKey("ko", invalidSource, scope);
+  storage["academylens.translationCache.v1"] = {
+    [validKey]: {
+      original: validSource,
+      translated: "캐시된 번역을 유지합니다.",
+      targetLanguage: "ko",
+      ...Cache.normalizeScope(scope)
+    },
+    [invalidKey]: {
+      original: invalidSource,
+      translated: "Completely unrelated English sentence.",
+      targetLanguage: "ko",
+      ...Cache.normalizeScope(scope)
+    }
+  };
+
+  const result = await send({
+    type: "ACADEMYLENS_TRANSLATE_BATCH",
+    translationEngine: "ollama",
+    ollamaModel: "qwen3.5:4b",
+    targetLanguage: "ko",
+    texts: [validSource, invalidSource]
+  });
+
+  assert.equal(result.ok, true);
+  assert.equal(result.stats.cacheHits, 1);
+  assert.equal(result.stats.cacheMisses, 1);
+  assert.equal(result.stats.qualityRejectedCacheHits, 1);
+  assert.equal(result.translated[validSource], "캐시된 번역을 유지합니다.");
+  assert.equal(result.translated[invalidSource], "교체된 번역입니다.");
+  assert.equal(storage["academylens.translationCache.v1"][validKey].translated, "캐시된 번역을 유지합니다.");
+  assert.equal(storage["academylens.translationCache.v1"][invalidKey].translated, "교체된 번역입니다.");
+});
+
+test("background rejects an English Ollama cache hit for a Latin-language target", async () => {
+  const { send, storage } = loadBackground(async () => ollamaResponse(200, "Construya agentes fiables."), {
+    selectedTranslationEngine: "ollama"
+  });
+  const source = "Build reliable agents.";
+  const scope = { provider: "ollama-qwen3.5:4b" };
+  const key = Cache.cacheKey("es", source, scope);
+  storage["academylens.translationCache.v1"] = {
+    [key]: {
+      original: source,
+      translated: "Completely unrelated English sentence.",
+      targetLanguage: "es",
+      ...Cache.normalizeScope(scope)
+    }
+  };
+
+  const result = await send({
+    type: "ACADEMYLENS_TRANSLATE_BATCH",
+    translationEngine: "ollama",
+    ollamaModel: "qwen3.5:4b",
+    targetLanguage: "es",
+    texts: [source]
+  });
+
+  assert.equal(result.ok, true);
+  assert.equal(result.stats.qualityRejectedCacheHits, 1);
+  assert.equal(result.translated[source], "Construya agentes fiables.");
+  assert.equal(storage["academylens.translationCache.v1"][key].translated, "Construya agentes fiables.");
+});
+
+test("background rejects a cross-Latin Ollama cache hit using high-confidence detection", async () => {
+  const source = "Build reliable systems with clear review instructions.";
+  const french = "Les équipes construisent des systèmes fiables avec des instructions de révision claires.";
+  const spanish = "Los equipos construyen sistemas fiables con instrucciones claras para revisar los resultados.";
+  let fetchCalls = 0;
+  const { send, storage } = loadBackground(
+    async () => {
+      fetchCalls += 1;
+      return ollamaResponse(200, spanish);
+    },
+    {
+      selectedTranslationEngine: "ollama",
+      async detectLanguage(sample) {
+        const language = sample.includes("Les équipes") ? "fr" : "es";
+        return { isReliable: true, languages: [{ language, percentage: 98 }] };
+      }
+    }
+  );
+  const scope = { provider: "ollama-qwen3.5:4b" };
+  const key = Cache.cacheKey("es", source, scope);
+  storage["academylens.translationCache.v1"] = {
+    [key]: {
+      original: source,
+      translated: french,
+      targetLanguage: "es",
+      ...Cache.normalizeScope(scope)
+    }
+  };
+
+  const result = await send({
+    type: "ACADEMYLENS_TRANSLATE_BATCH",
+    translationEngine: "ollama",
+    ollamaModel: "qwen3.5:4b",
+    targetLanguage: "es",
+    texts: [source]
+  });
+
+  assert.equal(result.ok, true);
+  assert.equal(result.stats.cacheHits, 0);
+  assert.equal(result.stats.qualityRejectedCacheHits, 1);
+  assert.equal(fetchCalls, 1);
+  assert.equal(result.translated[source], spanish);
+  assert.equal(storage["academylens.translationCache.v1"][key].translated, spanish);
 });
 
 test("background exposes Ollama health and selected model installation", async () => {

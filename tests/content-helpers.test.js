@@ -63,6 +63,18 @@ test("content helpers reject placeholder drift and merge native fallback respons
     helpers.translationLooksSuspicious("Use ChatGPT safely.", "ChatGPT를 안전하게 사용하세요.", "ko"),
     false
   );
+  assert.equal(
+    helpers.translationLooksSuspicious("Build reliable agents.", "An unrelated English answer.", "ko"),
+    true
+  );
+  assert.equal(
+    helpers.translationLooksSuspicious(
+      "Build reliable agents with clear instructions.",
+      "Construya reliable agents con instrucciones claras.",
+      "es"
+    ),
+    true
+  );
 
   const merged = helpers.mergeTranslationResponses(
     {

@@ -17,9 +17,11 @@ npm run store:screenshots
 npm run check:operations
 npm run check:github-security
 npm run release:preflight
+npm run qa:optional-permission
 ```
 
 `npm run check:full` is the product correctness gate. `npm run release:preflight` is the heavier operations gate: it runs the full product gate, generates local store screenshot drafts, and re-checks operations metadata.
+`npm run qa:optional-permission` is an attended release gate for any build that exposes the Google Translate engine. It stays outside `release:preflight` because Chrome renders the approval in browser chrome, which page automation cannot approve on the learner's behalf.
 
 ## Security Operations
 
@@ -67,6 +69,26 @@ npm run qa:live
 
 The command writes to `/tmp` by default and prints a redaction report. To intentionally write under `tests/fixtures`, first review the output and then rerun `npm run capture:academy` with `--allow-fixture-write`.
 
+Run the actual unpacked extension against the live Academy host without writing a page fixture or logging page text:
+
+```bash
+npm run qa:live-extension -- --engine device
+```
+
+This probe rejects unexpected redirects, checks the public course-listing DOM contract, disables auto-translate, and verifies panel injection, translation, and restore for both a cache-unique non-sensitive sentinel and at least one existing Academy text candidate. The harness does not log either text or write either into a fixture. Browser-native model downloads remain disabled unless `--allow-native-downloads` is passed explicitly; use that flag on a fresh profile only after reviewing the browser-managed download. Use `--engine remote` only during an attended run so the optional-host permission prompt can be reviewed and approved. Pass `--profile <path-outside-the-repository>` when signed-in surfaces are required; repository-internal profile paths are rejected.
+
+Verify the positive optional-permission path in a fresh temporary Chromium profile:
+
+```bash
+npm run qa:optional-permission
+```
+
+The harness confirms the host is absent initially, opens the real AcademyLens popup, and
+selects Google Translate. Approve Chrome's native prompt; the harness then verifies the exact
+origin grant and persisted remote-engine selection. The normal Playwright suite covers the
+automatable complement: optional manifest declaration, initial absence, rejection handling,
+and fail-closed remote requests before and after an MV3 worker restart.
+
 ## Glossary Operations
 
 The current glossary board is generated in [GLOSSARY_STATUS.md](GLOSSARY_STATUS.md).
@@ -105,13 +127,14 @@ Current runtime behavior:
 
 Before public release:
 
-1. Confirm `PRIVACY_POLICY.md` describes browser-native Translator, Google Translate, and local Ollama as independently selected engines with no cross-provider fallback.
-2. Confirm store copy does not describe the endpoint as Google Cloud Translation API.
-3. Confirm runtime files do not load remote hosted SDK scripts.
-4. Confirm browser-native translator downloads remain explicit opt-in.
-5. Confirm local correction storage is described.
-6. Confirm diagnostics do not expose original or translated lesson text.
-7. Confirm AI review remains disabled unless there is explicit opt-in UX and updated privacy text.
+1. Run `npm run qa:optional-permission` and approve the real Chrome host prompt for any build that exposes Google Translate.
+2. Confirm `PRIVACY_POLICY.md` describes browser-native Translator, Google Translate, and local Ollama as independently selected engines with no cross-provider fallback.
+3. Confirm store copy does not describe the endpoint as Google Cloud Translation API.
+4. Confirm runtime files do not load remote hosted SDK scripts.
+5. Confirm browser-native translator downloads remain explicit opt-in.
+6. Confirm local correction storage is described.
+7. Confirm diagnostics do not expose original or translated lesson text.
+8. Confirm AI review remains disabled unless there is explicit opt-in UX and updated privacy text.
 
 ## Store Asset Operations
 

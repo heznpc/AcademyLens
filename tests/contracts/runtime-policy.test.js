@@ -3,7 +3,7 @@ const { readFileSync, readdirSync, statSync } = require("node:fs");
 const { join } = require("node:path");
 const test = require("node:test");
 
-const ROOT = join(__dirname, "..");
+const ROOT = join(__dirname, "..", "..");
 
 function read(path) {
   return readFileSync(join(ROOT, path), "utf8");
@@ -78,7 +78,9 @@ test("browser translator provider only runs when already available", () => {
   assert.match(provider, /const canUse/);
   assert.match(provider, /!canUse/);
   assert.match(provider, /allowDownload: Boolean\(settings\.enableBrowserTranslatorDownloads\)/);
-  assert.match(provider, /translationLooksSuspicious/);
+  assert.match(provider, /await validateTranslation/);
+  assert.match(provider, /qualityRejectedCacheHits/);
+  assert.match(provider, /rejectedCacheKeys/);
   assert.match(provider, /cacheHasTranslation/);
   assert.match(provider, /persistContentCache/);
   assert.match(provider, /ok: stats\.failed === 0 \|\| Object\.keys\(translated\)\.length > 0/);
@@ -261,7 +263,8 @@ test("CI separates validation, unit, build, and browser failure diagnostics", ()
   assert.match(ci, /\n {2}build:/);
   assert.match(ci, /\n {2}e2e:/);
   assert.match(ci, /npm run check:operations/);
-  assert.match(ci, /npm test/);
+  assert.match(ci, /npm run test:coverage/);
+  assert.match(ci, /npm run test:contracts/);
   assert.match(ci, /npm run build:zip && npm run check:files/);
   assert.match(ci, /npm run test:e2e/);
   assert.match(ci, /if: failure\(\)[\s\S]*actions\/upload-artifact@[0-9a-f]{40}/);

@@ -255,9 +255,9 @@ test.describe("AcademyLens translation E2E", () => {
       await expandPanel(harness.page);
       await clickPanelButton(harness.page, "[data-translate]");
 
-      await expect(harness.page.locator("#chunk-0")).toHaveText("[ko] Chunked translation sample 0");
-      await expect(harness.page.locator("#chunk-119")).toHaveText("[ko] Chunked translation sample 119");
-      await expect(harness.page.locator("#chunk-144")).toHaveText("[ko] Chunked translation sample 144");
+      await expect(harness.page.locator("#chunk-0")).toHaveText("번역된 강의 문장 0");
+      await expect(harness.page.locator("#chunk-119")).toHaveText("번역된 강의 문장 119");
+      await expect(harness.page.locator("#chunk-144")).toHaveText("번역된 강의 문장 144");
       expect(harness.calls.filter((call) => call.text.startsWith("Chunked translation sample")).length).toBe(145);
     } finally {
       await stopHarness(harness);
@@ -279,7 +279,7 @@ test.describe("AcademyLens translation E2E", () => {
       await expandPanel(harness.page);
       await clickPanelButton(harness.page, "[data-translate]");
 
-      await expect(harness.page.locator("#visible-priority")).toHaveText("[ko] Viewport priority 레슨");
+      await expect(harness.page.locator("#visible-priority")).toHaveText("번역된 강의 문장 레슨");
       await expect
         .poll(() => harness.calls.findIndex((call) => call.text.includes("sample 0")))
         .toBeGreaterThanOrEqual(0);

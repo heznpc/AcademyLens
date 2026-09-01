@@ -17,6 +17,10 @@
         ? options.mutationElement
         : (node) => (node?.nodeType === 1 ? node : node?.parentElement || null);
     const shouldIgnore = typeof options.shouldIgnore === "function" ? options.shouldIgnore : () => false;
+    const shouldIgnoreSuppressedMutation =
+      typeof options.shouldIgnoreSuppressedMutation === "function"
+        ? options.shouldIgnoreSuppressedMutation
+        : () => false;
     const inspectNode = typeof options.inspectNode === "function" ? options.inspectNode : () => ({});
     const reconcileMutations =
       typeof options.reconcileMutations === "function" ? options.reconcileMutations : () => ({});
@@ -39,8 +43,11 @@
 
     let observer = null;
     let mutationScanTimer = 0;
+    let suppressedMutationTimer = 0;
     let suppressMutationUntil = 0;
+    let suppressedRouteChanged = false;
     let overflowed = false;
+    const pendingSuppressedMutations = [];
     const pendingMutationScanNodes = new Set();
 
     function suppress(durationMs = 250) {
@@ -65,6 +72,33 @@
 
     function dispatchFramesSoon() {
       view.setTimeout(() => dispatchPendingFrameCommand(), Math.max(0, frameDispatchDelay));
+    }
+
+    function processMutations(mutations, routeChanged) {
+      const signal = reconcileMutations(mutations, queueScan) || {};
+      if (signal.sawFrameMutation) dispatchFramesSoon();
+      onSignals(signal, routeChanged);
+    }
+
+    function drainSuppressedMutations() {
+      suppressedMutationTimer = 0;
+      const remainingSuppression = suppressMutationUntil - now();
+      if (remainingSuppression > 0) {
+        suppressedMutationTimer = view.setTimeout(drainSuppressedMutations, remainingSuppression + 20);
+        return;
+      }
+      if (pendingSuppressedMutations.length === 0 && !suppressedRouteChanged) return;
+
+      const mutations = pendingSuppressedMutations.splice(0);
+      const routeChanged = suppressedRouteChanged;
+      suppressedRouteChanged = false;
+      processMutations(mutations, routeChanged);
+    }
+
+    function scheduleSuppressedMutationDrain() {
+      view.clearTimeout(suppressedMutationTimer);
+      const remainingSuppression = Math.max(0, suppressMutationUntil - now());
+      suppressedMutationTimer = view.setTimeout(drainSuppressedMutations, remainingSuppression + 20);
     }
 
     function runScan() {
@@ -104,11 +138,22 @@
     }
 
     function handleMutations(mutations) {
-      const routeChanged = checkRouteChange();
-      if (now() < suppressMutationUntil) return;
-      const signal = reconcileMutations(mutations, queueScan) || {};
-      if (signal.sawFrameMutation) dispatchFramesSoon();
-      onSignals(signal, routeChanged);
+      let routeChanged = checkRouteChange();
+      if (now() < suppressMutationUntil) {
+        pendingSuppressedMutations.push(...mutations.filter((mutation) => !shouldIgnoreSuppressedMutation(mutation)));
+        suppressedRouteChanged ||= routeChanged;
+        if (pendingSuppressedMutations.length > 0 || suppressedRouteChanged) scheduleSuppressedMutationDrain();
+        return;
+      }
+
+      if (pendingSuppressedMutations.length > 0 || suppressedRouteChanged) {
+        view.clearTimeout(suppressedMutationTimer);
+        suppressedMutationTimer = 0;
+        mutations = [...pendingSuppressedMutations.splice(0), ...mutations];
+        routeChanged ||= suppressedRouteChanged;
+        suppressedRouteChanged = false;
+      }
+      processMutations(mutations, routeChanged);
     }
 
     function start() {
@@ -127,6 +172,11 @@
       observer = null;
       view.clearTimeout(mutationScanTimer);
       mutationScanTimer = 0;
+      view.clearTimeout(suppressedMutationTimer);
+      suppressedMutationTimer = 0;
+      suppressMutationUntil = 0;
+      suppressedRouteChanged = false;
+      pendingSuppressedMutations.length = 0;
       pendingMutationScanNodes.clear();
       overflowed = false;
     }

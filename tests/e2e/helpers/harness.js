@@ -28,6 +28,7 @@ async function startHarness(options = {}) {
   const fixture = await startFixtureServer();
   const ext = await launchExtension({
     browserTranslatorStub: options.browserTranslatorStub,
+    enableBackForwardCache: options.enableBackForwardCache,
     translationEngine: options.translationEngine
   });
   const calls = await registerTranslateStub(ext.context, options);

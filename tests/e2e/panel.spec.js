@@ -58,7 +58,7 @@ test.describe("AcademyLens panel E2E", () => {
     }
   });
 
-  test("panel has viewport-safe visual smoke coverage on desktop and mobile sizes", async () => {
+  test("panel geometry stays viewport-safe on desktop and mobile sizes", async () => {
     const harness = await startHarness();
     try {
       for (const viewport of [

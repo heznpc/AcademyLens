@@ -44,6 +44,37 @@
 
     let replacements = [];
     let nodeRecords = new WeakMap();
+    const internalWriteMarkers = new WeakMap();
+
+    function markInternalWrite(target) {
+      if (!target) return;
+      const marker = {
+        text: target.textContent,
+        html: target.nodeType === view.Node.ELEMENT_NODE ? target.innerHTML : null
+      };
+      internalWriteMarkers.set(target, marker);
+      // MutationObserver callbacks run before timers. Retain the marker for
+      // the full microtask checkpoint (including mutations triggered by other
+      // observers), then discard it so future site writes are never masked.
+      view.setTimeout(() => {
+        if (internalWriteMarkers.get(target) === marker) internalWriteMarkers.delete(target);
+      }, 0);
+    }
+
+    function isExpectedInternalMutation(mutation) {
+      let target = mutation && mutation.target;
+      while (target && target !== doc) {
+        const marker = internalWriteMarkers.get(target);
+        if (marker) {
+          return (
+            target.textContent === marker.text &&
+            (marker.html === null || (target.nodeType === view.Node.ELEMENT_NODE && target.innerHTML === marker.html))
+          );
+        }
+        target = target.parentNode;
+      }
+      return false;
+    }
 
     function currentRecords() {
       return replacements.filter((record) => record.target && record.target.isConnected);
@@ -78,6 +109,7 @@
       } else {
         target.textContent = record.original;
       }
+      markInternalWrite(target);
       nodeRecords.delete(target);
       return true;
     }
@@ -371,6 +403,7 @@
       } else {
         Text.applyTranslatedText(candidate.target, translated);
       }
+      markInternalWrite(candidate.target);
       return true;
     }
 
@@ -401,6 +434,7 @@
       } else {
         target.textContent = translated;
       }
+      markInternalWrite(target);
       return true;
     }
 
@@ -410,6 +444,7 @@
       recordForTarget,
       forgetRecord,
       isCurrentRecordStillOwned,
+      isExpectedInternalMutation,
       restoreRecordOriginal,
       restoreAllRecords,
       collectCandidates,

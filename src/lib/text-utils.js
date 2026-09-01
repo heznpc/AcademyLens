@@ -1,11 +1,11 @@
 (function initAcademyLensTextUtils(root, factory) {
   if (typeof module === "object" && module.exports) {
-    module.exports = factory(require("./constants.js"));
+    module.exports = factory(require("./constants.js"), require("./translation-quality.js"));
     return;
   }
 
-  root.AcademyLensTextUtils = factory(root.AcademyLensConstants);
-})(typeof globalThis !== "undefined" ? globalThis : this, function textUtilsFactory(constants) {
+  root.AcademyLensTextUtils = factory(root.AcademyLensConstants, root.AcademyLensTranslationQuality);
+})(typeof globalThis !== "undefined" ? globalThis : this, function textUtilsFactory(constants, translationQuality) {
   "use strict";
 
   const EXCLUDED_SELECTOR = constants && constants.EXCLUDED_SELECTOR ? constants.EXCLUDED_SELECTOR : "";
@@ -36,18 +36,28 @@
     return /[A-Za-z]/.test(value);
   }
 
-  const TARGET_SCRIPT_GUARDS = Object.freeze({
+  const FALLBACK_TARGET_SCRIPT_GUARDS = Object.freeze({
     ko: Object.freeze({ pattern: /[\u3131-\uD7A3]/g, minChars: 2 }),
     ja: Object.freeze({ pattern: /[\u3040-\u30FF\u3400-\u9FFF]/g, minChars: 2 }),
     "zh-CN": Object.freeze({ pattern: /[\u3400-\u9FFF]/g, minChars: 2 }),
     "zh-TW": Object.freeze({ pattern: /[\u3400-\u9FFF]/g, minChars: 2 }),
-    ru: Object.freeze({ pattern: /[\u0400-\u04FF]/g, minChars: 3 }),
+    ru: Object.freeze({ pattern: /[\u0400-\u052F]/g, minChars: 3 }),
+    uk: Object.freeze({ pattern: /[\u0400-\u052F]/g, minChars: 3 }),
     hi: Object.freeze({ pattern: /[\u0900-\u097F]/g, minChars: 3 }),
     ar: Object.freeze({ pattern: /[\u0600-\u06FF]/g, minChars: 3 }),
     th: Object.freeze({ pattern: /[\u0E00-\u0E7F]/g, minChars: 3 }),
     bn: Object.freeze({ pattern: /[\u0980-\u09FF]/g, minChars: 3 }),
-    iw: Object.freeze({ pattern: /[\u0590-\u05FF]/g, minChars: 3 })
+    iw: Object.freeze({ pattern: /[\u0590-\u05FF]/g, minChars: 3 }),
+    el: Object.freeze({ pattern: /[\u0370-\u03FF\u1F00-\u1FFF]/g, minChars: 3 })
   });
+  const TARGET_SCRIPT_GUARDS =
+    translationQuality && translationQuality.SCRIPT_GUARDS
+      ? translationQuality.SCRIPT_GUARDS
+      : FALLBACK_TARGET_SCRIPT_GUARDS;
+  const INPUT_SCRIPT_MIN_CHARS = 2;
+  const INPUT_SCRIPT_DOMINANCE_RATIO = 0.4;
+  const NEUTRAL_LATIN_TOKEN_PATTERN =
+    /__AL_[A-Z0-9_]+__|https?:\/\/\S+|www\.\S+|mailto:\S+|\b(?:OpenAI(?:\s+Academy)?|ChatGPT|GPT-?\d*|JSON|API|SDK|LLM|AI)\b/gi;
 
   function countPatternMatches(value, pattern) {
     pattern.lastIndex = 0;
@@ -56,9 +66,26 @@
   }
 
   function containsTargetLanguageScript(value, targetLanguage) {
-    const guard = TARGET_SCRIPT_GUARDS[targetLanguage];
+    const canonical =
+      translationQuality && typeof translationQuality.canonicalTargetLanguage === "function"
+        ? translationQuality.canonicalTargetLanguage(targetLanguage)
+        : targetLanguage;
+    const guard = TARGET_SCRIPT_GUARDS[canonical];
     if (!guard) return false;
-    return countPatternMatches(value, guard.pattern) >= guard.minChars;
+    const targetScriptChars = countPatternMatches(value, guard.pattern);
+    if (targetScriptChars < INPUT_SCRIPT_MIN_CHARS) return false;
+
+    // Output validation only needs a small amount of target-script evidence.
+    // Input filtering has a different job: skip text only when that script
+    // dominates the meaningful copy. Otherwise English lessons containing
+    // symbols, examples, or isolated foreign words would never be translated.
+    const meaningfulLatinChars = (
+      String(value)
+        .replace(NEUTRAL_LATIN_TOKEN_PATTERN, "")
+        .match(/[A-Za-z]/g) || []
+    ).length;
+    if (meaningfulLatinChars === 0) return true;
+    return targetScriptChars / (targetScriptChars + meaningfulLatinChars) >= INPUT_SCRIPT_DOMINANCE_RATIO;
   }
 
   function normalizeLanguageCode(value) {

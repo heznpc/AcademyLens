@@ -151,6 +151,29 @@ test("restoreAllRecords does not overwrite site-updated text", () => {
   );
 });
 
+test("internal write markers identify restore mutations only for the matching final text", () => {
+  withDom(
+    `
+      <main>
+        <p id="lesson">OpenAI Academy lessons explain <strong>ChatGPT</strong> workflows clearly.</p>
+      </main>
+    `,
+    (document) => {
+      const { runtime } = createRuntime(document);
+      const candidate = runtime.collectCandidates()[0];
+      assert.equal(runtime.applyCandidateTranslation(candidate, "번역된 강의 내용입니다."), true);
+      assert.equal(runtime.restoreAllRecords(), 1);
+
+      const target = document.querySelector("#lesson");
+      assert.equal(runtime.isExpectedInternalMutation({ target }), true);
+      target.append(document.createElement("span"));
+      assert.equal(runtime.isExpectedInternalMutation({ target }), false);
+      target.textContent = "Site replaced this lesson after restore.";
+      assert.equal(runtime.isExpectedInternalMutation({ target }), false);
+    }
+  );
+});
+
 test("recordForClickedElement finds translated records and ignores panel clicks", () => {
   withDom(
     `

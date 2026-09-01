@@ -25,6 +25,13 @@
     const updateProviderModeFromBrowserStatus = options.updateProviderModeFromBrowserStatus;
     const setProviderMode = options.setProviderMode;
     const translationLooksSuspicious = options.translationLooksSuspicious;
+    const validateTranslation =
+      typeof options.validateTranslation === "function"
+        ? options.validateTranslation
+        : async (original, translated, targetLanguage) => ({
+            ok: !translationLooksSuspicious(original, translated, targetLanguage),
+            issue: ""
+          });
     const message = options.message;
     const mergeTranslationResponses = options.mergeTranslationResponses;
     const responseTimeoutMs = options.responseTimeoutMs || 12000;
@@ -49,12 +56,14 @@
       const stats = {
         cacheHits: 0,
         cacheMisses: 0,
+        qualityRejectedCacheHits: 0,
         failed: 0,
         requested: requestedTexts.length,
         provider: BrowserTranslator.PROVIDER_ID || "browser-translator",
         cachePersistFailed: false
       };
       if (!requestedTexts.length) return { ok: true, translated: {}, errors: {}, stats };
+      const rejectedCacheKeys = [];
       try {
         throwIfAborted(signal);
         const support = await BrowserTranslator.availability({ sourceLanguage: "en", targetLanguage });
@@ -79,7 +88,12 @@
         const browserTexts = [];
         for (const text of requestedTexts) {
           const key = Cache.cacheKey(targetLanguage, text, scope);
-          if (cacheHasTranslation(cache, key, text, targetLanguage, scope)) {
+          const cachedTranslation = cache[key] && cache[key].translated;
+          const hasCachedTranslation = cacheHasTranslation(cache, key, text, targetLanguage, scope);
+          const cachedQuality = hasCachedTranslation
+            ? await validateTranslation(text, cachedTranslation, targetLanguage)
+            : { ok: false };
+          if (hasCachedTranslation && cachedQuality.ok) {
             translated[text] = cache[key].translated;
             cacheUpdates[key] = {
               original: text,
@@ -90,6 +104,10 @@
             stats.cacheHits += 1;
           } else {
             stats.cacheMisses += 1;
+            if (hasCachedTranslation) {
+              stats.qualityRejectedCacheHits += 1;
+              rejectedCacheKeys.push(key);
+            }
             browserTexts.push(text);
           }
         }
@@ -100,6 +118,7 @@
             targetLanguage,
             allowDownload: Boolean(settings.enableBrowserTranslatorDownloads),
             onDownloadProgress() {
+              if (signal && signal.aborted) return;
               setBrowserTranslatorStatus("downloading");
               setProviderMode("nativeDownloading");
             }
@@ -107,7 +126,8 @@
           throwIfAborted(signal);
           for (const text of browserTexts) {
             const result = browserTranslations ? browserTranslations[text] : "";
-            if (translationLooksSuspicious(text, result, targetLanguage)) {
+            const quality = await validateTranslation(text, result, targetLanguage);
+            if (!quality.ok) {
               stats.failed += 1;
               errors[text] = message("status.failed");
             } else {
@@ -123,10 +143,27 @@
             }
           }
         }
-        const persisted = await persistContentCache(cacheUpdates, expectedEpoch, signal);
-        if (!persisted && Object.keys(cacheUpdates).length) stats.cachePersistFailed = true;
+        const persisted = await persistContentCache(cacheUpdates, expectedEpoch, signal, rejectedCacheKeys);
+        if (!persisted && (Object.keys(cacheUpdates).length || rejectedCacheKeys.length)) {
+          stats.cachePersistFailed = true;
+        }
         return { ok: stats.failed === 0 || Object.keys(translated).length > 0, translated, errors, stats };
       } catch (error) {
+        // Cancellation is a request-lifecycle event, not evidence that the
+        // provider became unavailable. Updating status here lets an older,
+        // aborted request overwrite the provider selected by a newer request.
+        if (signal && signal.aborted) {
+          throwIfAborted(signal);
+          throw error;
+        }
+        if (error && error.name === "AbortError") throw error;
+        if (rejectedCacheKeys.length) {
+          try {
+            await persistContentCache({}, expectedEpoch, signal, rejectedCacheKeys);
+          } catch (cacheError) {
+            console.warn("[AcademyLens] rejected native cache cleanup failed", cacheError);
+          }
+        }
         setBrowserTranslatorStatus("unavailable");
         updateProviderModeFromBrowserStatus("unavailable");
         console.warn("[AcademyLens] browser translator unavailable; device request stopped", error);

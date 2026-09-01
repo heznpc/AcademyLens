@@ -70,3 +70,35 @@ test("content lifecycle ignores a URL-stable history update", async () => {
   controller.stop();
   dom.window.close();
 });
+
+test("content lifecycle stays reachable through a persisted BFCache page transition", () => {
+  const dom = new JSDOM("<!doctype html><body></body>", {
+    url: "https://academy.openai.com/pages/courses"
+  });
+  const originalPushState = dom.window.history.pushState;
+  const transitions = [];
+  const controller = ContentLifecycle.create({
+    window: dom.window,
+    history: dom.window.history,
+    location: dom.window.location,
+    onPageHide: (event) => transitions.push(`hide:${event.persisted}`),
+    onPageShow: (event) => transitions.push(`show:${event.persisted}`)
+  });
+
+  controller.start();
+  const pagehide = new dom.window.Event("pagehide");
+  Object.defineProperty(pagehide, "persisted", { value: true });
+  dom.window.dispatchEvent(pagehide);
+
+  assert.equal(controller.started, true);
+  assert.notEqual(dom.window.history.pushState, originalPushState);
+
+  const pageshow = new dom.window.Event("pageshow");
+  Object.defineProperty(pageshow, "persisted", { value: true });
+  dom.window.dispatchEvent(pageshow);
+
+  assert.deepEqual(transitions, ["hide:true", "show:true"]);
+  assert.equal(controller.started, true);
+  controller.stop();
+  dom.window.close();
+});

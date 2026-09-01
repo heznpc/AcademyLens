@@ -23,7 +23,7 @@ Required notice: Unofficial, not affiliated with OpenAI.
 - Protected-term preservation for all target languages.
 - Clear UI disclosure when a selected language is using final/native-reviewed, community-reviewed, AI-audited beta, AI-drafted beta, or protected-term-only machine translation support.
 - Generation guard for restore/language/route-change races.
-- Playwright E2E coverage for core translation flows, study-room-style DOM, and visual smoke checks.
+- Playwright E2E coverage for core translation flows, study-room-style DOM, and viewport geometry smoke checks.
 
 ## Out Of Scope For MVP
 

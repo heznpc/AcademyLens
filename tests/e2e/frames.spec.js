@@ -143,4 +143,29 @@ test.describe("AcademyLens frames E2E", () => {
       await stopHarness(harness);
     }
   });
+
+  test("ignores a valid but stale frame result after Restore", async () => {
+    const harness = await startHarness({
+      path: "/learn/ai-foundations-juzjs/lessons-late-result",
+      delayMs: 1000
+    });
+    try {
+      await expandPanel(harness.page);
+      const lessonFrame = await waitForFrame(harness.page, /late-result-frame\.html/);
+      await clickPanelButton(harness.page, "[data-translate]");
+      await expect(lessonFrame.locator("body")).toHaveAttribute("data-translate-command-seen", "true");
+
+      await clickPanelButton(harness.page, "[data-restore]");
+      await expect(lessonFrame.locator("#late-result-copy")).toHaveText(
+        "A lesson frame can finish after a restore command."
+      );
+      await harness.page.waitForTimeout(900);
+
+      const status = (await panelSnapshot(harness.page)).status;
+      expect(status).toMatch(/복원/);
+      expect(status).not.toMatch(/99|번역했습니다/);
+    } finally {
+      await stopHarness(harness);
+    }
+  });
 });

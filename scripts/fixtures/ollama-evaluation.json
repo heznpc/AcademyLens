@@ -1,22 +1,106 @@
 [
   {
+    "targetLanguage": "ko",
     "source": "Build reliable AI agents with clear instructions and human oversight.",
     "keywords": [["에이전트"], ["지침", "명확"], ["사람", "인간"]]
   },
   {
+    "targetLanguage": "ko",
     "source": "Use __AL_OPENAI_0__ to create a practical learning plan.",
     "keywords": [["__AL_OPENAI_0__"], ["학습"], ["계획"]]
   },
   {
+    "targetLanguage": "ko",
     "source": "Prompt engineering improves the quality of model responses.",
     "keywords": [["프롬프트"], ["모델"], ["응답"]]
   },
   {
+    "targetLanguage": "ko",
     "source": "Review the output before sharing sensitive information.",
     "keywords": [["검토", "확인"], ["민감"], ["정보"]]
   },
   {
+    "targetLanguage": "ko",
     "source": "The course includes hands-on exercises and a final assessment.",
     "keywords": [["강의", "과정", "코스"], ["실습", "연습"], ["평가"]]
+  },
+  {
+    "targetLanguage": "ja",
+    "source": "Build reliable AI agents with clear instructions and human oversight.",
+    "keywords": [["エージェント"], ["指示", "明確"], ["人間", "監督"]]
+  },
+  {
+    "targetLanguage": "ja",
+    "source": "Use __AL_OPENAI_0__ to create a practical learning plan.",
+    "keywords": [["__AL_OPENAI_0__"], ["学習"], ["計画"]]
+  },
+  {
+    "targetLanguage": "ja",
+    "source": "Prompt engineering improves the quality of model responses.",
+    "keywords": [["プロンプト"], ["モデル"], ["応答", "回答"]]
+  },
+  {
+    "targetLanguage": "ja",
+    "source": "Review the output before sharing sensitive information.",
+    "keywords": [["確認", "レビュー"], ["機密", "機微"], ["情報"]]
+  },
+  {
+    "targetLanguage": "ja",
+    "source": "The course includes hands-on exercises and a final assessment.",
+    "keywords": [["コース", "講座"], ["演習", "実践"], ["評価"]]
+  },
+  {
+    "targetLanguage": "es",
+    "source": "Build reliable AI agents with clear instructions and human oversight.",
+    "keywords": [["agentes"], ["instrucciones"], ["supervisión", "humana"]]
+  },
+  {
+    "targetLanguage": "es",
+    "source": "Use __AL_OPENAI_0__ to create a practical learning plan.",
+    "keywords": [["__AL_OPENAI_0__"], ["aprendizaje"], ["plan"]]
+  },
+  {
+    "targetLanguage": "es",
+    "source": "Prompt engineering improves the quality of model responses.",
+    "keywords": [["ingeniería de prompts", "prompt"], ["modelo"], ["respuestas"]]
+  },
+  {
+    "targetLanguage": "es",
+    "source": "Review the output before sharing sensitive information.",
+    "keywords": [["revisa", "revise", "verifica"], ["sensible", "confidencial"], ["información"]]
+  },
+  {
+    "targetLanguage": "es",
+    "source": "The course includes hands-on exercises and a final assessment.",
+    "keywords": [["curso"], ["ejercicios", "prácticas"], ["evaluación"]]
+  },
+  {
+    "targetLanguage": "zh-CN",
+    "source": "Build reliable AI agents with clear instructions and human oversight.",
+    "keywords": [
+      ["智能体", "代理"],
+      ["指令", "说明"],
+      ["人工", "人类"]
+    ]
+  },
+  {
+    "targetLanguage": "zh-CN",
+    "source": "Use __AL_OPENAI_0__ to create a practical learning plan.",
+    "keywords": [["__AL_OPENAI_0__"], ["学习"], ["计划"]]
+  },
+  {
+    "targetLanguage": "zh-CN",
+    "source": "Prompt engineering improves the quality of model responses.",
+    "keywords": [["提示词"], ["模型"], ["回应", "响应", "回答"]]
+  },
+  {
+    "targetLanguage": "zh-CN",
+    "source": "Review the output before sharing sensitive information.",
+    "keywords": [["检查", "审查"], ["敏感"], ["信息"]]
+  },
+  {
+    "targetLanguage": "zh-CN",
+    "source": "The course includes hands-on exercises and a final assessment.",
+    "keywords": [["课程"], ["实践", "练习"], ["评估", "测验"]]
   }
 ]

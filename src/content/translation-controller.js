@@ -29,7 +29,7 @@
       timer: 0,
       active: false,
       pending: null,
-      resolvers: []
+      settlers: []
     };
 
     function resolveGenerationWaiters() {
@@ -93,12 +93,12 @@
     }
 
     function enqueue(request = {}, delay = 0) {
-      return new Promise((resolve) => {
+      return new Promise((resolve, reject) => {
         queue.pending = {
           ...(queue.pending || {}),
           ...(request || {})
         };
-        queue.resolvers.push(resolve);
+        queue.settlers.push({ resolve, reject });
         view.clearTimeout(queue.timer);
         queue.timer = view.setTimeout(runQueue, Math.max(0, delay || 0));
       });
@@ -108,24 +108,25 @@
       view.clearTimeout(queue.timer);
       queue.timer = 0;
       queue.pending = null;
-      const resolvers = queue.resolvers.splice(0);
-      for (const resolve of resolvers) resolve(undefined);
+      const settlers = queue.settlers.splice(0);
+      for (const { resolve } of settlers) resolve(undefined);
     }
 
     async function runQueue() {
       queue.timer = 0;
       if (queue.active || !queue.pending) return;
       const request = queue.pending;
-      const resolvers = queue.resolvers.splice(0);
+      const settlers = queue.settlers.splice(0);
       queue.pending = null;
       queue.active = true;
 
-      let result;
       try {
-        result = await runTranslation(request);
+        const result = await runTranslation(request);
+        for (const { resolve } of settlers) resolve(result);
+      } catch (error) {
+        for (const { reject } of settlers) reject(error);
       } finally {
         queue.active = false;
-        for (const resolve of resolvers) resolve(result);
         if (queue.pending) queue.timer = view.setTimeout(runQueue, 0);
       }
     }

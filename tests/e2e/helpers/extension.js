@@ -62,7 +62,17 @@ function patchBrowserTranslatorStub(extensionPath, mode) {
       const translated = {};
       for (const text of texts || []) {
         if (mode === "partial" && /fallback/i.test(text)) continue;
-        translated[text] = mode === "copy" ? text : "[native] " + text;
+        const placeholders = String(text).match(/__AL_[A-Z0-9_]+__/g) || [];
+        const targetSamples = {
+          ko: "네이티브 번역 문장",
+          ja: "ネイティブ翻訳文",
+          "zh-CN": "原生翻译句子",
+          "zh-TW": "原生翻譯句子"
+        };
+        const valid = [targetSamples[options.targetLanguage] || "Native translated course sentence", ...placeholders]
+          .join(" ")
+          .trim();
+        translated[text] = mode === "copy" ? text : mode === "wrong-language" ? "Unrelated English answer" : valid;
       }
       return translated;
     }
@@ -99,6 +109,7 @@ async function launchExtension(options = {}) {
     channel,
     headless: false,
     locale,
+    ignoreDefaultArgs: options.enableBackForwardCache ? ["--disable-back-forward-cache"] : undefined,
     args: [
       `--disable-extensions-except=${extensionPath}`,
       `--load-extension=${extensionPath}`,
@@ -138,6 +149,56 @@ async function launchExtension(options = {}) {
   };
 }
 
+async function waitForExtensionServiceWorker(state, timeout = 5000) {
+  const prefix = `chrome-extension://${state.extensionId}/`;
+  for (const current of state.context.serviceWorkers().filter((worker) => worker.url().startsWith(prefix))) {
+    try {
+      await current.evaluate(() => chrome.runtime.id);
+      state.serviceWorker = current;
+      return current;
+    } catch {
+      // Playwright can retain a closed Worker handle briefly after MV3 suspension.
+    }
+  }
+  const worker = await state.context.waitForEvent("serviceworker", {
+    predicate: (candidate) => candidate.url().startsWith(prefix),
+    timeout
+  });
+  state.serviceWorker = worker;
+  return worker;
+}
+
+async function stopExtensionServiceWorker(state) {
+  await waitForExtensionServiceWorker(state);
+  const browser = state.context.browser();
+  if (!browser) throw new Error("Chromium browser connection is unavailable");
+
+  const session = await browser.newBrowserCDPSession();
+  try {
+    const { targetInfos } = await session.send("Target.getTargets");
+    const target = targetInfos.find(
+      (candidate) =>
+        candidate.type === "service_worker" && candidate.url.startsWith(`chrome-extension://${state.extensionId}/`)
+    );
+    if (!target) throw new Error("AcademyLens service worker target was not found");
+
+    await session.send("Target.closeTarget", { targetId: target.targetId });
+    const deadline = Date.now() + 5000;
+    while (Date.now() < deadline) {
+      const current = await session.send("Target.getTargets");
+      if (!current.targetInfos.some((candidate) => candidate.targetId === target.targetId)) break;
+      await new Promise((resolve) => setTimeout(resolve, 50));
+    }
+    const remaining = await session.send("Target.getTargets");
+    if (remaining.targetInfos.some((candidate) => candidate.targetId === target.targetId)) {
+      throw new Error("AcademyLens service worker did not stop");
+    }
+    state.serviceWorker = null;
+  } finally {
+    await session.detach();
+  }
+}
+
 async function closeExtension(state) {
   try {
     await state.context.close();
@@ -150,5 +211,7 @@ async function closeExtension(state) {
 
 module.exports = {
   closeExtension,
-  launchExtension
+  launchExtension,
+  stopExtensionServiceWorker,
+  waitForExtensionServiceWorker
 };

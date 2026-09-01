@@ -15,6 +15,24 @@ async function flush() {
   await new Promise((resolve) => setTimeout(resolve, 0));
 }
 
+function deferred() {
+  let resolve;
+  let reject;
+  const promise = new Promise((resolvePromise, rejectPromise) => {
+    resolve = resolvePromise;
+    reject = rejectPromise;
+  });
+  return { promise, reject, resolve };
+}
+
+async function waitUntil(predicate) {
+  for (let attempt = 0; attempt < 50; attempt += 1) {
+    if (predicate()) return;
+    await flush();
+  }
+  assert.fail("Timed out waiting for popup state");
+}
+
 async function loadPopup(options = {}) {
   const dom = new JSDOM(popupHtml, { runScripts: "outside-only", url: "chrome-extension://test/src/popup/popup.html" });
   const { window } = dom;
@@ -38,6 +56,7 @@ async function loadPopup(options = {}) {
       },
       async sendMessage(message) {
         runtimeMessages.push(message);
+        if (typeof options.ollamaHealth === "function") return options.ollamaHealth(message);
         return (
           options.ollamaHealth || {
             ok: true,
@@ -59,11 +78,13 @@ async function loadPopup(options = {}) {
       }
     },
     permissions: {
-      async contains() {
+      async contains(details) {
+        if (typeof options.permissionContains === "function") return options.permissionContains(details);
         return false;
       },
       async request(details) {
         permissionRequests.push(details);
+        if (typeof options.permissionRequest === "function") return options.permissionRequest(details);
         return options.permissionGranted !== false;
       }
     }
@@ -169,4 +190,105 @@ test("popup fails closed when localhost permission is declined", async () => {
   assert.equal(engine.value, "device");
   assert.equal(stored[Constants.STORAGE_KEYS.SETTINGS].translationEngine, "device");
   assert.match(window.document.getElementById("engineNote").textContent, /권한이 거부/);
+});
+
+test("popup fails closed when Chrome rejects the optional permission request", async () => {
+  const { stored, window } = await loadPopup({
+    permissionRequest() {
+      throw new Error("permission prompt unavailable");
+    }
+  });
+  const engine = window.document.getElementById("translationEngine");
+
+  engine.value = "remote";
+  engine.dispatchEvent(new window.Event("change"));
+  await flush();
+
+  assert.equal(engine.value, "device");
+  assert.equal(stored[Constants.STORAGE_KEYS.SETTINGS].translationEngine, "device");
+  assert.match(window.document.getElementById("engineNote").textContent, /권한이 거부/);
+});
+
+test("popup ignores a stale permission lookup after the learner returns to device", async () => {
+  const lookup = deferred();
+  let containsCalls = 0;
+  const { permissionRequests, stored, window } = await loadPopup({
+    permissionContains(details) {
+      containsCalls += 1;
+      if (details.origins[0] === Constants.REMOTE_TRANSLATION_ORIGIN) return lookup.promise;
+      return false;
+    }
+  });
+  const engine = window.document.getElementById("translationEngine");
+
+  engine.value = "remote";
+  engine.dispatchEvent(new window.Event("change"));
+  await waitUntil(() => containsCalls === 1);
+
+  engine.value = "device";
+  engine.dispatchEvent(new window.Event("change"));
+  await flush();
+  lookup.resolve(false);
+  await flush();
+
+  assert.equal(engine.value, "device");
+  assert.equal(stored[Constants.STORAGE_KEYS.SETTINGS].translationEngine, "device");
+  assert.equal(permissionRequests.length, 0);
+});
+
+test("popup ignores a stale granted permission after the learner returns to device", async () => {
+  const request = deferred();
+  const { permissionRequests, stored, window } = await loadPopup({
+    permissionRequest() {
+      return request.promise;
+    }
+  });
+  const engine = window.document.getElementById("translationEngine");
+
+  engine.value = "remote";
+  engine.dispatchEvent(new window.Event("change"));
+  await waitUntil(() => permissionRequests.length === 1);
+
+  engine.value = "device";
+  engine.dispatchEvent(new window.Event("change"));
+  await flush();
+  request.resolve(true);
+  await flush();
+
+  assert.equal(engine.value, "device");
+  assert.equal(stored[Constants.STORAGE_KEYS.SETTINGS].translationEngine, "device");
+  assert.match(window.document.getElementById("engineNote").textContent, /기기 안에서 번역/);
+});
+
+test("popup ignores an older Ollama health result after the model changes", async () => {
+  const firstModelHealth = deferred();
+  const secondModelHealth = deferred();
+  const { runtimeMessages, stored, window } = await loadPopup({
+    settings: { ...Constants.DEFAULT_SETTINGS, targetLanguage: "ko", translationEngine: "ollama" },
+    ollamaHealth(message) {
+      if (message.ollamaModel === "gemma3:4b") return firstModelHealth.promise;
+      if (message.ollamaModel === "gemma4:12b") return secondModelHealth.promise;
+      return { ok: true, status: "ready", model: message.ollamaModel, models: [message.ollamaModel] };
+    }
+  });
+  const model = window.document.getElementById("ollamaModel");
+  const status = window.document.getElementById("ollamaStatus");
+
+  model.value = "gemma3:4b";
+  model.dispatchEvent(new window.Event("change"));
+  await waitUntil(() => runtimeMessages.some((message) => message.ollamaModel === "gemma3:4b"));
+
+  model.value = "gemma4:12b";
+  model.dispatchEvent(new window.Event("change"));
+  await waitUntil(() => runtimeMessages.some((message) => message.ollamaModel === "gemma4:12b"));
+
+  secondModelHealth.resolve({ ok: true, status: "ready", model: "gemma4:12b", models: ["gemma4:12b"] });
+  await flush();
+  firstModelHealth.resolve({ ok: false, status: "offline", model: "gemma3:4b", models: [] });
+  await flush();
+
+  assert.equal(stored[Constants.STORAGE_KEYS.SETTINGS].ollamaModel, "gemma4:12b");
+  assert.match(status.textContent, /gemma4:12b/);
+  assert.doesNotMatch(status.textContent, /응답하지 않습니다/);
+  assert.equal(window.document.getElementById("ollamaRetry").disabled, false);
 });

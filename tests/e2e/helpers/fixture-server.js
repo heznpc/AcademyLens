@@ -220,6 +220,43 @@ const PAGES = {
         </script>
       </body>
     </html>`,
+  "/learn/ai-foundations-juzjs/lessons-late-result": `<!doctype html>
+    <html>
+      <head><meta charset="utf-8"><title>AcademyLens Late Frame Result Fixture</title></head>
+      <body>
+        <main>
+          <iframe id="late-result-frame" title="Late result lesson" src="/late-result-frame.html"></iframe>
+        </main>
+      </body>
+    </html>`,
+  "/late-result-frame.html": `<!doctype html>
+    <html>
+      <head><meta charset="utf-8"><title>Late Result Frame</title></head>
+      <body>
+        <p id="late-result-copy">A lesson frame can finish after a restore command.</p>
+        <script>
+          window.addEventListener("message", (event) => {
+            const data = event.data || {};
+            if (data.source !== "AcademyLens" || data.action !== "translate") return;
+            document.body.dataset.translateCommandSeen = "true";
+            setTimeout(() => {
+              window.top.postMessage(
+                {
+                  source: "AcademyLens",
+                  action: "frameResult",
+                  messageId: data.messageId,
+                  frameToken: data.frameToken,
+                  kind: "translate",
+                  applied: 99,
+                  failed: 0
+                },
+                location.origin
+              );
+            }, 600);
+          });
+        </script>
+      </body>
+    </html>`,
   "/api/courses/ai-foundations-juzjs/scorm-proxy/courses/oaiacademy/demo/scormdriver/indexAPI.html": `<!doctype html>
     <html>
       <head><meta charset="utf-8"><title>SCORM Driver</title></head>

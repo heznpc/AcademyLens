@@ -6,6 +6,7 @@
   const BrowserTranslator = globalThis.AcademyLensBrowserTranslator;
   const ContentHelpers = globalThis.AcademyLensContentHelpers;
   const ContentBackgroundClient = globalThis.AcademyLensContentBackgroundClient;
+  const TranslationQuality = globalThis.AcademyLensTranslationQuality;
   const Glossary = globalThis.AcademyLensGlossary;
   const ContentLifecycle = globalThis.AcademyLensContentLifecycle;
   const ContentDomObserver = globalThis.AcademyLensContentDomObserver;
@@ -107,6 +108,7 @@
     updateProviderModeFromBrowserStatus,
     setProviderMode,
     translationLooksSuspicious,
+    validateTranslation: validateTranslationResult,
     message,
     mergeTranslationResponses,
     responseTimeoutMs: BACKGROUND_RESPONSE_TIMEOUT_MS,
@@ -159,7 +161,8 @@
     onRouteChange: handleRouteTransition,
     onResize: () => schedulePanelPlacement(),
     onScroll: () => schedulePanelPlacement(120),
-    onPageHide: teardownContent
+    onPageHide: teardownContent,
+    onPageShow: resumeContent
   });
   domObserverController = ContentDomObserver.create({
     document,
@@ -167,6 +170,7 @@
     MutationObserver: window.MutationObserver,
     mutationElement,
     shouldIgnore: isPanelMutation,
+    shouldIgnoreSuppressedMutation: (mutation) => domTranslation.isExpectedInternalMutation(mutation),
     inspectNode: (node) => ({
       sawFrameMutation: node.tagName === "IFRAME" || Boolean(node.querySelector?.("iframe")),
       sawTranslatableMutation: elementMayContainTranslatableText(node)
@@ -185,6 +189,20 @@
 
   function throwIfAborted(signal) {
     if (signal && signal.aborted) throw abortError();
+  }
+
+  function validateTranslationResult(original, translated, targetLanguage) {
+    if (TranslationQuality && typeof TranslationQuality.validateAsync === "function") {
+      const detectLanguage =
+        chrome.i18n && typeof chrome.i18n.detectLanguage === "function"
+          ? (text) => chrome.i18n.detectLanguage(text)
+          : null;
+      return TranslationQuality.validateAsync(original, translated, targetLanguage, detectLanguage);
+    }
+    return Promise.resolve({
+      ok: !translationLooksSuspicious(original, translated, targetLanguage),
+      issue: ""
+    });
   }
 
   function currentAbortSignal(generation) {
@@ -377,13 +395,14 @@
     return new Promise((resolve) => window.setTimeout(resolve, ms));
   }
 
-  async function persistContentCacheLocally(cacheUpdates, expectedEpoch = state.cacheEpoch) {
-    if (!Cache || !Object.keys(cacheUpdates).length) return false;
+  async function persistContentCacheLocally(cacheUpdates, expectedEpoch = state.cacheEpoch, cacheDeleteKeys = []) {
+    if (!Cache || (!Object.keys(cacheUpdates).length && !cacheDeleteKeys.length)) return false;
     try {
       const stored = await getLocal([C.STORAGE_KEYS.CACHE, C.STORAGE_KEYS.CACHE_EPOCH]);
       const currentEpoch = cacheEpochValue(stored[C.STORAGE_KEYS.CACHE_EPOCH]);
       if (cacheEpochValue(expectedEpoch) !== currentEpoch) return true;
       const cache = stored[C.STORAGE_KEYS.CACHE] || {};
+      for (const key of new Set(cacheDeleteKeys)) delete cache[key];
       for (const [key, update] of Object.entries(cacheUpdates)) {
         cache[key] = {
           ...(cache[key] || {}),
@@ -398,13 +417,14 @@
     }
   }
 
-  async function persistContentCache(cacheUpdates, expectedEpoch = state.cacheEpoch, signal) {
-    if (!Cache || !Object.keys(cacheUpdates).length) return false;
+  async function persistContentCache(cacheUpdates, expectedEpoch = state.cacheEpoch, signal, cacheDeleteKeys = []) {
+    if (!Cache || (!Object.keys(cacheUpdates).length && !cacheDeleteKeys.length)) return false;
     try {
       const response = await backgroundClient.send(
         {
           type: C.MESSAGE_TYPES.PERSIST_CACHE_UPDATES,
           cacheUpdates,
+          cacheDeleteKeys,
           expectedCacheEpoch: expectedEpoch
         },
         BACKGROUND_RESPONSE_TIMEOUT_MS,
@@ -414,7 +434,7 @@
     } catch (error) {
       if (error && error.name === "AbortError") return false;
       console.warn("[AcademyLens] background cache persistence unavailable; trying local persistence", error);
-      return persistContentCacheLocally(cacheUpdates, expectedEpoch);
+      return persistContentCacheLocally(cacheUpdates, expectedEpoch, cacheDeleteKeys);
     }
   }
 
@@ -1066,7 +1086,14 @@
   }
 
   function translatePage(options = {}) {
-    return translationController.enqueue(options, options.delay || 0);
+    return translationController.enqueue(options, options.delay || 0).catch((error) => {
+      if (error && error.name === "AbortError") return undefined;
+      console.warn("[AcademyLens] unexpected translation failure", error);
+      setBusy(false);
+      setProgress(0);
+      setStatus(message("status.failed"), "error");
+      return { applied: 0, failed: 1, childFrameCount: 0, capped: false };
+    });
   }
 
   async function performTranslatePage(options = {}) {
@@ -1083,7 +1110,8 @@
     try {
       glossary = await ensureGlossary(targetLanguage);
     } catch (error) {
-      setStatus(error.message || message("status.glossaryLoading"), "error");
+      console.warn("[AcademyLens] glossary load failed", error);
+      setStatus(message("status.glossaryLoading"), "error");
       return;
     }
 
@@ -1096,7 +1124,7 @@
     let applied = 0;
     let failed = 0;
     let capped = false;
-    let firstError = "";
+    let loggedFailure = false;
     const diagnostics = {
       cacheHits: 0,
       cacheMisses: 0,
@@ -1124,8 +1152,9 @@
       applied += result.applied || 0;
       failed += result.failed || 0;
       mergeDiagnostics(diagnostics, result.diagnostics);
-      if (!firstError && result.error) {
-        firstError = result.error.message || String(result.error);
+      if (!loggedFailure && result.error) {
+        loggedFailure = true;
+        console.warn("[AcademyLens] translation pass failed", result.error);
       }
 
       if (!result.hadCandidates || result.failed > 0 || result.applied === 0 || !result.reachedLimit) {
@@ -1153,9 +1182,7 @@
       frameMessenger.updateAggregatePage(frameDispatch.payload && frameDispatch.payload.messageId, { applied, failed });
       schedulePanelPlacement();
       setStatus(
-        applied > 0
-          ? message("status.translatedPartial", { count: applied, failed })
-          : firstError || message("status.failed"),
+        applied > 0 ? message("status.translatedPartial", { count: applied, failed }) : message("status.failed"),
         "error"
       );
       return { applied, failed, childFrameCount, capped };
@@ -1352,7 +1379,8 @@
         await ensureGlossary(state.settings.targetLanguage);
         setStatus(message("status.targetLanguage", { language: languageLabel(state.settings.targetLanguage) }));
       } catch (error) {
-        setStatus(error.message || message("status.failed"), "error");
+        console.warn("[AcademyLens] glossary load failed after settings change", error);
+        setStatus(message("status.failed"), "error");
         return;
       }
     } else if (providerChanged) {
@@ -1378,7 +1406,21 @@
     }
   }
 
+  const settingsHandlers = {
+    onCacheEpoch: (value) => {
+      state.cacheEpoch = value;
+    },
+    onSettings: (settings) => applySettings(settings)
+  };
+  let contentPaused = false;
+
+  function startContentControllers() {
+    domObserverController.start();
+    settingsController.start(settingsHandlers);
+  }
+
   function teardownContent() {
+    contentPaused = true;
     settingsController.stop();
     translationController.stop();
     domObserverController.stop();
@@ -1393,6 +1435,28 @@
     for (const timer of state.placementSettleTimers) {
       window.clearTimeout(timer);
     }
+    state.placementSettleTimers = [];
+  }
+
+  async function resumeContent() {
+    if (!contentPaused) return;
+    contentPaused = false;
+    startContentControllers();
+    frameMessenger.watchMessages();
+
+    try {
+      const [nextSettings] = await Promise.all([settingsController.load(), loadCacheEpoch()]);
+      await applySettings(nextSettings, { skipAutoTranslate: true });
+    } catch (error) {
+      console.warn("[AcademyLens] BFCache resume state refresh failed", error);
+    }
+
+    lifecycleController.checkRouteChange();
+    frameMessenger.postReady();
+    settlePanelPlacement();
+    if (state.settings.autoTranslate && state.settings.targetLanguage !== "en") {
+      scheduleAutoTranslate(250);
+    }
   }
 
   try {
@@ -1406,13 +1470,7 @@
     }
     frameMessenger.watchMessages();
     lifecycleController.start();
-    domObserverController.start();
-    settingsController.start({
-      onCacheEpoch: (value) => {
-        state.cacheEpoch = value;
-      },
-      onSettings: (settings) => applySettings(settings)
-    });
+    startContentControllers();
     document.addEventListener("click", handleCorrectionClick, true);
     frameMessenger.postReady();
     if (state.settings.autoTranslate) {

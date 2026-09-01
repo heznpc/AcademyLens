@@ -182,8 +182,50 @@
       throw lastError || new Error("Google Translate request failed");
     }
 
+    function subscribeToTranslation(entry, signal) {
+      try {
+        throwIfAborted(signal);
+      } catch (error) {
+        return Promise.reject(error);
+      }
+
+      entry.subscribers += 1;
+      return new Promise((resolve, reject) => {
+        let finished = false;
+
+        const finish = () => {
+          if (finished) return false;
+          finished = true;
+          if (signal) signal.removeEventListener("abort", abort);
+          entry.subscribers = Math.max(0, entry.subscribers - 1);
+          if (!entry.settled && entry.subscribers === 0) {
+            if (inFlightTranslations.get(entry.key) === entry) inFlightTranslations.delete(entry.key);
+            entry.controller.abort();
+          }
+          return true;
+        };
+        const abort = () => {
+          if (!finish()) return;
+          reject(createAbortError());
+        };
+
+        if (signal) signal.addEventListener("abort", abort, { once: true });
+        entry.promise.then(
+          (value) => {
+            if (!finish()) return;
+            resolve(value);
+          },
+          (error) => {
+            if (!finish()) return;
+            reject(error);
+          }
+        );
+      });
+    }
+
     function translateText(text, targetLanguage, scope, signal) {
       assertReady();
+      if (signal && signal.aborted) return Promise.reject(createAbortError());
       // In-flight de-duplication is intentionally keyed by scope so it matches the
       // cache's storage granularity (the same key the background caller uses). The
       // raw Google payload only depends on text + targetLanguage, so sharing across
@@ -191,17 +233,27 @@
       // is covered by the "dedupes requests by cache scope" test. Do not drop scope.
       const key = Cache.cacheKey(targetLanguage, text, scope);
       const existing = inFlightTranslations.get(key);
-      if (existing) return existing;
+      if (existing) return subscribeToTranslation(existing, signal);
 
+      const controller = new AbortController();
       const promise = runWithFetchLimit(async () => {
-        const response = await fetchWithRetry(text, targetLanguage, signal);
+        const response = await fetchWithRetry(text, targetLanguage, controller.signal);
         return GoogleTranslate.parseGoogleTranslatePayload(await response.json());
-      }, signal).finally(() => {
-        inFlightTranslations.delete(key);
-      });
+      }, controller.signal);
+      const entry = { key, controller, promise, subscribers: 0, settled: false };
+      promise.then(
+        () => {
+          entry.settled = true;
+          if (inFlightTranslations.get(key) === entry) inFlightTranslations.delete(key);
+        },
+        () => {
+          entry.settled = true;
+          if (inFlightTranslations.get(key) === entry) inFlightTranslations.delete(key);
+        }
+      );
 
-      inFlightTranslations.set(key, promise);
-      return promise;
+      inFlightTranslations.set(key, entry);
+      return subscribeToTranslation(entry, signal);
     }
 
     return Object.freeze({

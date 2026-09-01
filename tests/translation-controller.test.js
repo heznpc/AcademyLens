@@ -78,3 +78,23 @@ test("translation controller resolves canceled queued callers without running th
   assert.equal(await pending, undefined);
   assert.equal(runs, 0);
 });
+
+test("translation controller rejects failed callers and continues with the next queued work", async () => {
+  let runs = 0;
+  const controller = TranslationController.create({
+    window: globalThis,
+    runTranslation: async (request) => {
+      runs += 1;
+      if (request.reason === "broken") throw new Error("synthetic translation failure");
+      return request.reason;
+    }
+  });
+
+  const failed = controller.enqueue({ reason: "broken" });
+  await assert.rejects(failed, /synthetic translation failure/);
+  assert.equal(controller.active, false);
+
+  const recovered = await controller.enqueue({ reason: "recovered" });
+  assert.equal(recovered, "recovered");
+  assert.equal(runs, 2);
+});

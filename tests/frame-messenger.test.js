@@ -214,9 +214,10 @@ test("frame aggregate diagnostics ignore duplicate results from the same source"
     }
   });
 
-  messenger.startAggregate({ messageId: "m-1" }, 1, "translate");
-  messenger.updateAggregatePage("m-1", { applied: 1, failed: 0 });
-  assert.equal(messenger.setAggregateStatus("m-1"), true);
+  const command = messenger.postToChildFrames("translate").payload;
+  messenger.startAggregate(command, 1, "translate");
+  messenger.updateAggregatePage(command.messageId, { applied: 1, failed: 0 });
+  assert.equal(messenger.setAggregateStatus(command.messageId), true);
   assert.equal(messenger.setAggregateStatus("missing"), false);
   statusEvents.length = 0;
 
@@ -226,7 +227,7 @@ test("frame aggregate diagnostics ignore duplicate results from the same source"
     data: {
       source: FrameMessenger.FRAME_MESSAGE_SOURCE,
       action: "frameResult",
-      messageId: "m-1",
+      messageId: command.messageId,
       frameToken: "top-token",
       kind: "translate",
       applied: 2,
@@ -244,4 +245,104 @@ test("frame aggregate diagnostics ignore duplicate results from the same source"
     params: { count: 1, frameCount: 2 },
     tone: "error"
   });
+});
+
+test("late translate frame results cannot overwrite a newer restore status", async () => {
+  const view = createFakeWindow();
+  const frameSource = createPostableWindow();
+  const document = createFakeDocument([{ contentWindow: frameSource }]);
+  const statusEvents = [];
+  const messenger = FrameMessenger.create({
+    document,
+    window: view,
+    location: view.location,
+    isTopFrame: true,
+    frameSessionToken: "top-token",
+    getGeneration: () => 4,
+    setStatusMessage(key, params, tone) {
+      statusEvents.push({ key, params, tone });
+    }
+  });
+
+  const translate = messenger.postToChildFrames("translate").payload;
+  const restore = messenger.postToChildFrames("restore").payload;
+
+  await messenger.handleMessageEvent({
+    origin: ORIGIN,
+    source: frameSource,
+    data: {
+      source: FrameMessenger.FRAME_MESSAGE_SOURCE,
+      action: "frameResult",
+      messageId: translate.messageId,
+      frameToken: "top-token",
+      kind: "translate",
+      applied: 2,
+      failed: 0
+    }
+  });
+  assert.deepEqual(statusEvents, []);
+
+  await messenger.handleMessageEvent({
+    origin: ORIGIN,
+    source: frameSource,
+    data: {
+      source: FrameMessenger.FRAME_MESSAGE_SOURCE,
+      action: "frameResult",
+      messageId: restore.messageId,
+      frameToken: "top-token",
+      kind: "restore",
+      applied: 0,
+      failed: 0
+    }
+  });
+  assert.deepEqual(statusEvents, [{ key: "status.frameRestored", params: {}, tone: "ok" }]);
+});
+
+test("a child reports concurrent command results with the command that produced each result", async () => {
+  const view = createFakeWindow();
+  const document = createFakeDocument();
+  let resolveTranslation;
+  const translationResult = new Promise((resolve) => {
+    resolveTranslation = resolve;
+  });
+  const messenger = FrameMessenger.create({
+    document,
+    window: view,
+    location: view.location,
+    isTopFrame: false,
+    translatePage: () => translationResult,
+    restorePage: () => ({ restored: 1 })
+  });
+
+  const translating = messenger.handleMessageEvent({
+    origin: ORIGIN,
+    source: view.parent,
+    data: {
+      source: FrameMessenger.FRAME_MESSAGE_SOURCE,
+      action: "translate",
+      messageId: "translate-1",
+      frameToken: "parent-token",
+      targetLanguage: "ko",
+      generation: 3
+    }
+  });
+  await messenger.handleMessageEvent({
+    origin: ORIGIN,
+    source: view.parent,
+    data: {
+      source: FrameMessenger.FRAME_MESSAGE_SOURCE,
+      action: "restore",
+      messageId: "restore-1",
+      frameToken: "parent-token",
+      targetLanguage: "ko",
+      generation: 4
+    }
+  });
+  resolveTranslation({ applied: 2, failed: 0 });
+  await translating;
+
+  const restoreResult = view.top.messages.find((entry) => entry.data.kind === "restore").data;
+  const translateResult = view.top.messages.find((entry) => entry.data.kind === "translate").data;
+  assert.equal(restoreResult.messageId, "restore-1");
+  assert.equal(translateResult.messageId, "translate-1");
 });

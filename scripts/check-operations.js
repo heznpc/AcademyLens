@@ -6,6 +6,8 @@ const ROOT = join(__dirname, "..");
 const REQUIRED_PACKAGE_SCRIPTS = [
   "release:preflight",
   "qa:live",
+  "qa:live-extension",
+  "qa:optional-permission",
   "glossary:scoreboard",
   "check:glossary-status",
   "check:operations"
@@ -101,6 +103,16 @@ assertContains(
 assertContains("PRIVACY_POLICY.md", /translate\.googleapis\.com/, "Privacy policy must name Google Translate endpoint");
 assertContains("PRIVACY_POLICY.md", /local translation cache/i, "Privacy policy must describe local cache");
 assertContains("docs/OPERATIONS.md", /npm run release:preflight/, "Operations doc must document release preflight");
+assertContains(
+  "docs/OPERATIONS.md",
+  /npm run qa:optional-permission/,
+  "Operations doc must document attended optional-permission QA"
+);
+assertContains(
+  "docs/RELEASE_CHECKLIST.md",
+  /npm run qa:optional-permission/,
+  "Release checklist must require optional-permission QA"
+);
 assertContains("docs/OPERATIONS.md", /LIVE_QA_MANIFEST\.json/, "Operations doc must reference live QA manifest");
 assertContains("docs/OPERATIONS.md", /TRUST_EVIDENCE\.md/, "Operations doc must reference trust evidence");
 assertContains("docs/OPERATIONS.md", /CodeQL/, "Operations doc must reference CodeQL");
@@ -153,7 +165,8 @@ for (const job of ["validate", "unit", "build", "e2e"]) {
   assert(new RegExp(`\\n  ${job}:`).test(ciWorkflow), `CI must define an independent ${job} job`);
 }
 assert(/npm run check:operations/.test(ciWorkflow), "CI validate job must enforce operational contracts");
-assert(/npm test/.test(ciWorkflow), "CI unit job must run unit tests");
+assert(/npm run test:coverage/.test(ciWorkflow), "CI unit job must run measured unit coverage");
+assert(/npm run test:contracts/.test(ciWorkflow), "CI validate job must run architecture and policy contracts");
 assert(/npm run build:zip && npm run check:files/.test(ciWorkflow), "CI build job must verify the release archive");
 assert(/npm run test:e2e/.test(ciWorkflow), "CI e2e job must run browser tests");
 assert(

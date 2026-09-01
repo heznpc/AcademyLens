@@ -32,6 +32,8 @@ const REQUIRED_PACKAGE_SCRIPTS = [
   "build:zip",
   "check:full",
   "qa:live",
+  "qa:live-extension",
+  "qa:optional-permission",
   "release:preflight"
 ];
 const REQUIRED_PROTECTED_TERMS = [

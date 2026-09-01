@@ -36,7 +36,7 @@ test.describe("AcademyLens providers E2E", () => {
       await expandPanel(harness.page);
       await clickPanelButton(harness.page, "[data-translate]");
 
-      await expect(harness.page.locator("#native-only")).toHaveText("[native] Native provider unique sentence");
+      await expect(harness.page.locator("#native-only")).toHaveText("네이티브 번역 문장");
       expect(harness.calls.some((call) => call.text.includes("Native provider unique sentence"))).toBe(false);
       await expect.poll(async () => (await panelSnapshot(harness.page)).providerMode).toBe("native");
     } finally {
@@ -50,10 +50,8 @@ test.describe("AcademyLens providers E2E", () => {
       await expandPanel(harness.page);
       await clickPanelButton(harness.page, "[data-translate]");
 
-      await expect(harness.page.locator("#protected")).toHaveText(
-        "[native] OpenAI Academy courses use ChatGPT and GPT-5."
-      );
-      await expect(harness.page.locator("#inline")).toHaveText("[native] Use ChatGPT safely.");
+      await expect(harness.page.locator("#protected")).toHaveText("네이티브 번역 문장 OpenAI Academy ChatGPT GPT-5");
+      await expect(harness.page.locator("#inline")).toHaveText("네이티브 번역 문장 ChatGPT");
       await expect(harness.page.locator("#inline strong")).toHaveText("ChatGPT");
       expect(harness.calls).toEqual([]);
       await expect.poll(async () => (await panelSnapshot(harness.page)).providerMode).toBe("native");
@@ -74,7 +72,7 @@ test.describe("AcademyLens providers E2E", () => {
       await expandPanel(harness.page);
       await clickPanelButton(harness.page, "[data-translate]");
 
-      await expect(harness.page.locator("#native-hit")).toHaveText("[native] Native provider keeps this sentence");
+      await expect(harness.page.locator("#native-hit")).toHaveText("네이티브 번역 문장");
       await expect(harness.page.locator("#native-miss")).toHaveText("Native fallback miss sentence");
       expect(harness.calls).toEqual([]);
     } finally {
@@ -92,6 +90,23 @@ test.describe("AcademyLens providers E2E", () => {
       await clickPanelButton(harness.page, "[data-translate]");
 
       await expect(harness.page.locator("#native-copy")).toHaveText("Native copy fallback sentence");
+      expect(harness.calls).toEqual([]);
+    } finally {
+      await stopHarness(harness);
+    }
+  });
+
+  test("rejects native output in the wrong target language without calling Google", async () => {
+    const harness = await startHarness({ browserTranslatorStub: "wrong-language", translationEngine: "device" });
+    try {
+      await harness.page.evaluate(() => {
+        document.querySelector("#lesson-main").innerHTML =
+          `<p id="native-wrong-language">Translate this course sentence</p>`;
+      });
+      await expandPanel(harness.page);
+      await clickPanelButton(harness.page, "[data-translate]");
+
+      await expect(harness.page.locator("#native-wrong-language")).toHaveText("Translate this course sentence");
       expect(harness.calls).toEqual([]);
     } finally {
       await stopHarness(harness);
@@ -121,9 +136,7 @@ test.describe("AcademyLens providers E2E", () => {
       await expect.poll(async () => (await panelSnapshot(harness.page)).providerMode).toBe("nativeDownloading");
       await clickPanelButton(harness.page, "[data-translate]");
 
-      await expect(harness.page.locator("#downloadable-native")).toHaveText(
-        "[native] Downloadable native second sentence"
-      );
+      await expect(harness.page.locator("#downloadable-native")).toHaveText("네이티브 번역 문장");
       expect(harness.calls).toEqual([]);
     } finally {
       await stopHarness(harness);

@@ -137,14 +137,25 @@ function ollamaTranslateBatch(texts, targetLanguage, model, signal) {
   return ollamaTranslator.translateTexts(texts, targetLanguage, model, signal);
 }
 
+async function validateTranslation(original, translated, targetLanguage) {
+  if (!TranslationQuality) return { ok: true, issue: "" };
+  const detectLanguage =
+    chrome.i18n && typeof chrome.i18n.detectLanguage === "function" ? (text) => chrome.i18n.detectLanguage(text) : null;
+  if (typeof TranslationQuality.validateAsync === "function") {
+    return TranslationQuality.validateAsync(original, translated, targetLanguage, detectLanguage);
+  }
+  return TranslationQuality.validate(original, translated, targetLanguage);
+}
+
 function withCacheWriteLock(task) {
   const nextWrite = cacheWriteChain.then(task, task);
   cacheWriteChain = nextWrite.catch(() => {});
   return nextWrite;
 }
 
-async function mergeCacheUpdates(cacheUpdates, expectedEpoch) {
-  if (!Object.keys(cacheUpdates).length) return { persisted: true };
+async function mergeCacheUpdates(cacheUpdates, expectedEpoch, cacheDeleteKeys = []) {
+  const deleteKeys = [...new Set(cacheDeleteKeys || [])];
+  if (!Object.keys(cacheUpdates).length && deleteKeys.length === 0) return { persisted: true };
 
   try {
     await withCacheWriteLock(async () => {
@@ -154,6 +165,7 @@ async function mergeCacheUpdates(cacheUpdates, expectedEpoch) {
         return;
       }
       const cache = stored[STORAGE_KEYS.CACHE] || {};
+      for (const key of deleteKeys) delete cache[key];
       for (const [key, update] of Object.entries(cacheUpdates)) {
         const existing = cache[key];
         if (update.translated) {
@@ -222,9 +234,11 @@ async function translateBatch(message, signal) {
   const translated = {};
   const errors = {};
   const cacheUpdates = {};
+  const cacheDeleteKeys = [];
   const stats = {
     cacheHits: 0,
     cacheMisses: 0,
+    qualityRejectedCacheHits: 0,
     failed: 0,
     requested: texts.length,
     truncated: Math.max(0, allTexts.length - texts.length),
@@ -248,6 +262,13 @@ async function translateBatch(message, signal) {
   for (const text of texts) {
     const key = Cache.cacheKey(targetLanguage, text, cacheScope);
     if (Cache.entryMatches(cache[key], text, targetLanguage, cacheScope)) {
+      if (!(await validateTranslation(text, cache[key].translated, targetLanguage)).ok) {
+        stats.cacheMisses += 1;
+        stats.qualityRejectedCacheHits += 1;
+        cacheDeleteKeys.push(key);
+        cacheMisses.push(text);
+        continue;
+      }
       translated[text] = cache[key].translated;
       cacheUpdates[key] = {
         original: text,
@@ -269,11 +290,11 @@ async function translateBatch(message, signal) {
       for (let index = 0; index < cacheMisses.length; index += 1) {
         const text = cacheMisses[index];
         let result = results[index];
-        let quality = TranslationQuality.validate(text, result, targetLanguage);
+        let quality = await validateTranslation(text, result, targetLanguage);
         if (!quality.ok) {
           try {
             [result] = await ollamaTranslateBatch([text], targetLanguage, ollamaModel, signal);
-            quality = TranslationQuality.validate(text, result, targetLanguage);
+            quality = await validateTranslation(text, result, targetLanguage);
           } catch (error) {
             if (error && error.name === "AbortError") throw error;
             quality = { ok: false, issue: error.message || String(error) };
@@ -297,7 +318,13 @@ async function translateBatch(message, signal) {
       cacheMisses.map(async (text) => {
         try {
           const result = await remoteTranslate(text, targetLanguage, cacheScope, signal);
-          recordTranslation(text, result);
+          const quality = await validateTranslation(text, result, targetLanguage);
+          if (quality.ok) {
+            recordTranslation(text, result);
+          } else {
+            stats.failed += 1;
+            errors[text] = `Google translation quality check failed: ${quality.issue}`;
+          }
         } catch (error) {
           stats.failed += 1;
           errors[text] = error.message || String(error);
@@ -306,7 +333,7 @@ async function translateBatch(message, signal) {
     );
   }
 
-  const cacheResult = await mergeCacheUpdates(cacheUpdates, expectedCacheEpoch);
+  const cacheResult = await mergeCacheUpdates(cacheUpdates, expectedCacheEpoch, cacheDeleteKeys);
   if (!cacheResult.persisted) {
     stats.cachePersistFailed = true;
   }
@@ -359,7 +386,7 @@ async function checkOllama(message) {
 }
 
 async function persistCacheUpdates(message) {
-  return mergeCacheUpdates(message.cacheUpdates || {}, message.expectedCacheEpoch);
+  return mergeCacheUpdates(message.cacheUpdates || {}, message.expectedCacheEpoch, message.cacheDeleteKeys || []);
 }
 
 async function clearTranslationCache() {

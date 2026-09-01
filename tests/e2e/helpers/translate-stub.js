@@ -129,8 +129,45 @@ const JA = new Map([
   ["__AL_TERM_0__ __AL_TERM_1__ examples stay readable.", "__AL_TERM_0__ __AL_TERM_1__ の例は読みやすいままです。"]
 ]);
 
+const TARGET_LANGUAGE_SAMPLES = Object.freeze({
+  en: "Translated course sentence",
+  ko: "번역된 강의 문장",
+  ja: "翻訳された講座の文",
+  "zh-CN": "翻译后的课程句子",
+  "zh-TW": "翻譯後的課程句子",
+  es: "Frase traducida del curso",
+  fr: "Phrase de cours traduite",
+  it: "Frase tradotta del corso",
+  de: "Übersetzter Kurssatz",
+  "pt-BR": "Frase traduzida do curso",
+  ru: "Переведённое предложение курса",
+  vi: "Câu khóa học đã dịch",
+  pt: "Frase traduzida do curso",
+  nl: "Vertaalde cursuszin",
+  pl: "Przetłumaczone zdanie kursu",
+  uk: "Перекладене речення курсу",
+  cs: "Přeložená věta kurzu",
+  sv: "Översatt kursmening",
+  da: "Oversat kursussætning",
+  fi: "Käännetty kurssilause",
+  no: "Oversatt kurssetning",
+  tr: "Çevrilmiş kurs cümlesi",
+  ar: "جملة دورة مترجمة",
+  hi: "अनुवादित पाठ्यक्रम वाक्य",
+  th: "ประโยคหลักสูตรที่แปลแล้ว",
+  id: "Kalimat kursus terjemahan",
+  ms: "Ayat kursus yang diterjemahkan",
+  tl: "Isinaling pangungusap ng kurso",
+  bn: "অনূদিত কোর্সের বাক্য",
+  iw: "משפט קורס מתורגם",
+  ro: "Propoziție de curs tradusă",
+  hu: "Lefordított kurzusmondat",
+  el: "Μεταφρασμένη πρόταση μαθήματος"
+});
+
 function fallback(text, targetLanguage) {
-  return `[${targetLanguage}] ${text}`;
+  const preserved = String(text).match(/__AL_[A-Z0-9_]+__|\d+(?:[.,]\d+)*/g) || [];
+  return [TARGET_LANGUAGE_SAMPLES[targetLanguage] || TARGET_LANGUAGE_SAMPLES.en, ...preserved].join(" ");
 }
 
 function translate(text, targetLanguage) {

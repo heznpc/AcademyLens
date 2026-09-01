@@ -41,6 +41,7 @@ AcademyLens is not ready for Chrome Web Store submission just because the build 
 - Confirm the default engine is `device` and that a fresh profile performs zero network translation requests before any permission grant.
 - Confirm `translate.googleapis.com` is in `optional_host_permissions` and absent from `host_permissions`.
 - Confirm `localhost:11434` is optional, declining its prompt reverts to `device`, and an Ollama failure does not send text to Google Translate.
+- Run `npm run qa:optional-permission`, approve Chrome's real Google-host prompt, and confirm the harness passes.
 - Start Ollama with the documented extension origin and run `npm run test:ollama` across all six selectable models.
 - Confirm declining the permission prompt reverts the engine selection to `device`.
 - Confirm privacy copy names each engine and states exactly what leaves the device for each.

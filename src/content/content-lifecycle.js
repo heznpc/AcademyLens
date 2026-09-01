@@ -16,6 +16,7 @@
     const onResize = typeof options.onResize === "function" ? options.onResize : () => {};
     const onScroll = typeof options.onScroll === "function" ? options.onScroll : () => {};
     const onPageHide = typeof options.onPageHide === "function" ? options.onPageHide : () => {};
+    const onPageShow = typeof options.onPageShow === "function" ? options.onPageShow : () => {};
 
     if (!view || !historyRef || !locationRef) {
       throw new Error("AcademyLensContentLifecycle requires window, history, and location");
@@ -38,9 +39,17 @@
       return true;
     }
 
-    function handlePageHide() {
-      onPageHide();
-      stop();
+    function handlePageHide(event) {
+      onPageHide(event);
+      // A persisted pagehide means the document is entering BFCache. Keep the
+      // lightweight lifecycle hooks alive so pageshow can reactivate the
+      // controllers that content.js pauses while the page is cached.
+      if (!event || !event.persisted) stop();
+    }
+
+    function handlePageShow(event) {
+      if (!event || !event.persisted) return;
+      onPageShow(event);
     }
 
     function start() {
@@ -68,6 +77,7 @@
       view.addEventListener("resize", onResize);
       view.addEventListener("scroll", onScroll, { passive: true });
       view.addEventListener("pagehide", handlePageHide);
+      view.addEventListener("pageshow", handlePageShow);
       started = true;
       return true;
     }
@@ -79,6 +89,7 @@
       view.removeEventListener("resize", onResize);
       view.removeEventListener("scroll", onScroll);
       view.removeEventListener("pagehide", handlePageHide);
+      view.removeEventListener("pageshow", handlePageShow);
       if (ownsHistoryWrappers && historyRef.pushState.__academylensWrapped) {
         historyRef.pushState = originalPushState;
       }
