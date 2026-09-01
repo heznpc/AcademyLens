@@ -100,14 +100,23 @@ function makePatchedExtension(options = {}) {
 async function launchExtension(options = {}) {
   const freshInstall = options.freshInstall === true;
   const locale = options.locale || "ko-KR";
+  const channel = process.env.E2E_BROWSER_CHANNEL || "chromium";
+  const headless = resolveHeadless(options);
+
+  if (headless && channel !== "chromium") {
+    throw new Error(
+      `Headless extension tests require Playwright's bundled Chromium channel; received ${channel}. ` +
+        "Set E2E_HEADED=1 only for interactive debugging."
+    );
+  }
+
   const extensionPath = makePatchedExtension({ preserveOptionalProviderPermissions: freshInstall });
   patchBrowserTranslatorStub(extensionPath, options.browserTranslatorStub);
   const userDataDir = fs.mkdtempSync(path.join(os.tmpdir(), "academylens-e2e-profile-"));
-  const channel = process.env.E2E_BROWSER_CHANNEL || "chromium";
 
   const context = await chromium.launchPersistentContext(userDataDir, {
     channel,
-    headless: false,
+    headless,
     locale,
     ignoreDefaultArgs: options.enableBackForwardCache ? ["--disable-back-forward-cache"] : undefined,
     args: [
@@ -147,6 +156,11 @@ async function launchExtension(options = {}) {
     serviceWorker,
     userDataDir
   };
+}
+
+function resolveHeadless(options = {}, environment = process.env) {
+  if (typeof options.headless === "boolean") return options.headless;
+  return environment.E2E_HEADED !== "1";
 }
 
 async function waitForExtensionServiceWorker(state, timeout = 5000) {
@@ -212,6 +226,7 @@ async function closeExtension(state) {
 module.exports = {
   closeExtension,
   launchExtension,
+  resolveHeadless,
   stopExtensionServiceWorker,
   waitForExtensionServiceWorker
 };

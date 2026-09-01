@@ -33,7 +33,7 @@ async function waitForGrant(worker) {
 }
 
 async function main() {
-  const ext = await launchExtension({ freshInstall: true, locale: "en-US" });
+  const ext = await launchExtension({ freshInstall: true, headless: false, locale: "en-US" });
   try {
     const initial = await readState(ext.serviceWorker);
     assert.equal(initial.granted, false, "fresh install must start without the Google host permission");

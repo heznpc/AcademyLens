@@ -100,7 +100,7 @@ jobs:
         run: npx playwright install --with-deps chromium
 
       - name: Run browser E2E
-        run: xvfb-run -a npm run test:e2e
+        run: npm run test:e2e
 
       - name: Upload browser failure artifacts
         if: failure()

@@ -17,6 +17,7 @@
     "test:contracts": "node --test \"tests/contracts/*.test.js\"",
     "test:coverage": "node --experimental-test-coverage --test-coverage-include='src/**/*.js' --test-coverage-lines=90 --test-coverage-branches=65 --test-coverage-functions=80 --test \"tests/*.test.js\"",
     "test:e2e": "playwright test",
+    "test:e2e:headed": "E2E_HEADED=1 playwright test",
     "test:ollama": "node scripts/test-ollama-models.js",
     "e2e:install": "playwright install chromium",
     "capture:academy": "node scripts/capture-academy-dom.js",

@@ -267,6 +267,7 @@ test("CI separates validation, unit, build, and browser failure diagnostics", ()
   assert.match(ci, /npm run test:contracts/);
   assert.match(ci, /npm run build:zip && npm run check:files/);
   assert.match(ci, /npm run test:e2e/);
+  assert.doesNotMatch(ci, /xvfb-run/);
   assert.match(ci, /if: failure\(\)[\s\S]*actions\/upload-artifact@[0-9a-f]{40}/);
   assert.match(ci, /actions\/checkout@[0-9a-f]{40}[\s\S]*persist-credentials:\s*false/);
   assert.doesNotMatch(ci, /uses:\s*[^\s]+@v\d+/);
@@ -275,6 +276,7 @@ test("CI separates validation, unit, build, and browser failure diagnostics", ()
   assert.match(playwrightConfig, /trace: "retain-on-failure"/);
   assert.match(playwrightConfig, /screenshot: "only-on-failure"/);
   assert.match(pkg.scripts["check:all"], /check:glossary-quality/);
+  assert.match(pkg.scripts["test:e2e:headed"], /E2E_HEADED=1 playwright test/);
 });
 
 test("GitHub security workflow runs CodeQL with least privilege", () => {

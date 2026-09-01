@@ -18,6 +18,7 @@ npm run check:glossary-status
 npm run check:files
 npm run check:operations
 npm run test:e2e
+npm run test:e2e:headed
 npm run qa:optional-permission
 npm run build:zip
 npm run check:full
@@ -31,6 +32,11 @@ unit tests. `test:coverage` reports only loaded files under `src/` and enforces 
 branch, and function thresholds for that measured module set. Browser entrypoints loaded
 through extension, VM, or page contexts are verified by E2E and are not represented as a
 repository-wide coverage percentage.
+
+Extension E2E uses Playwright's bundled Chromium in headless mode by default, so the suite does
+not open or focus browser windows during local work. Use `npm run test:e2e:headed` only for
+interactive visual debugging. Attended permission and live-Academy QA commands remain headed
+because their native browser prompts require a person.
 
 ## Current Automated Coverage
 
