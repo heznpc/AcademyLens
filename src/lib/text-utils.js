@@ -102,6 +102,17 @@
     return source === target || source.split("-")[0] === target.split("-")[0];
   }
 
+  function explicitContentLanguage(element) {
+    if (!element || typeof element.closest !== "function") return "";
+    const owner = element.closest("[lang]");
+    if (!owner) return "";
+    const doc = element.ownerDocument;
+    // Localized Academy routes set lang on <html> while course copy can still
+    // be English. The document locale describes the shell, not every text node.
+    if (doc && (owner === doc.documentElement || owner === doc.body)) return "";
+    return owner.getAttribute("lang") || "";
+  }
+
   function isMostlyPunctuation(value) {
     const text = normalizeWhitespace(value);
     return !text || /^[\d\s()[\]{}.,:;!?'"`~@#$%^&*+=/\\|<>_-]+$/.test(text);
@@ -177,7 +188,7 @@
     const limit = maxLength || 1200;
 
     if (targetLanguage === "en") return false;
-    if (element && languageMatchesTarget(element.closest("[lang]")?.getAttribute("lang"), targetLanguage)) return false;
+    if (element && languageMatchesTarget(explicitContentLanguage(element), targetLanguage)) return false;
     if (containsTargetLanguageScript(text, targetLanguage)) return false;
     if (text.length < 2 || text.length > limit) return false;
     if (!hasLatinLetters(text)) return false;
@@ -303,6 +314,7 @@
     normalizeWhitespace,
     hasLatinLetters,
     languageMatchesTarget,
+    explicitContentLanguage,
     containsTargetLanguageScript,
     isMostlyPunctuation,
     isUrlLike,

@@ -39,6 +39,7 @@
 
     let latestFrameCommand = null;
     const frameAggregates = new Map();
+    const readyFrameSources = new WeakSet();
     let handledFrameMessages = new Set();
     const frameSessionToken = options.frameSessionToken || idFactory();
     let parentFrameToken = "";
@@ -93,28 +94,30 @@
 
     function postToChildFrames(action, extra = {}) {
       let sent = 0;
+      let attempted = 0;
       const payload = framePayload(action, extra);
       if (extra.remember !== false) rememberCommand(payload);
 
       for (const frame of doc.querySelectorAll("iframe")) {
         if (postPayloadToFrame(frame, payload)) {
-          sent += 1;
+          attempted += 1;
+          if (readyFrameSources.has(frame.contentWindow)) sent += 1;
         }
       }
 
-      return { payload, sent };
+      return { payload, sent, attempted };
     }
 
     function dispatchPendingCommand(targetWindow) {
       if (!latestFrameCommand) return 0;
       if (!isPendingCommandCurrent(latestFrameCommand)) return 0;
       if (targetWindow) {
-        return postPayloadToWindow(targetWindow, latestFrameCommand) ? 1 : 0;
+        return postPayloadToWindow(targetWindow, latestFrameCommand) && readyFrameSources.has(targetWindow) ? 1 : 0;
       }
 
       let sent = 0;
       for (const frame of doc.querySelectorAll("iframe")) {
-        if (postPayloadToFrame(frame, latestFrameCommand)) sent += 1;
+        if (postPayloadToFrame(frame, latestFrameCommand) && readyFrameSources.has(frame.contentWindow)) sent += 1;
       }
       return sent;
     }
@@ -192,6 +195,11 @@
     function handleFrameResult(event, data) {
       if (!isTopFrame || !data || data.action !== "frameResult") return;
       if (data.frameToken !== frameSessionToken) return;
+      // Nested SCORM frames report directly to window.top, so their source is
+      // not necessarily one of this document's immediate iframe windows. The
+      // per-session token authenticates descendants; readiness accounting is
+      // deliberately limited to immediate children.
+      if (isKnownChildFrameSource(event && event.source)) readyFrameSources.add(event.source);
       const expectedAction = data.kind === "translate" ? "translate" : data.kind === "restore" ? "restore" : "";
       if (
         !expectedAction ||
@@ -215,9 +223,11 @@
         return;
       }
       if (data.kind === "translate" && data.applied > 0) {
+        onFrameTranslationResult({ applied: data.applied || 0, failed: data.failed || 0 });
         setStatusMessage("status.frameTranslated", { count: data.applied }, data.failed > 0 ? "error" : "ok");
       }
       if (data.kind === "translate" && data.applied === 0 && data.failed > 0) {
+        onFrameTranslationResult({ applied: 0, failed: data.failed || 0 });
         setStatusMessage("status.frameFailed", { failed: data.failed }, "error");
       }
       if (data.kind === "restore") {
@@ -293,6 +303,7 @@
       if (data.source !== FRAME_MESSAGE_SOURCE) return;
       if (data.action === "frameReady") {
         if (!isKnownChildFrameSource(event.source)) return;
+        readyFrameSources.add(event.source);
         dispatchPendingCommand(event.source);
         return;
       }

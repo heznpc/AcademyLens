@@ -78,10 +78,11 @@ test("pending frame commands are scoped to the current route before redispatch",
 
   const dispatch = messenger.postToChildFrames("translate", { targetLanguage: "ko" });
 
-  assert.equal(dispatch.sent, 1);
+  assert.equal(dispatch.sent, 0);
+  assert.equal(dispatch.attempted, 1);
   assert.equal(dispatch.payload.pageUrl, pageUrl);
   assert.equal(dispatch.payload.routeVersion, 1);
-  assert.equal(messenger.dispatchPendingCommand(lateChild), 1);
+  assert.equal(messenger.dispatchPendingCommand(lateChild), 0);
   assert.equal(lateChild.messages.length, 1);
 
   pageUrl = `${ORIGIN}/courses/two`;
@@ -89,6 +90,35 @@ test("pending frame commands are scoped to the current route before redispatch",
 
   assert.equal(messenger.dispatchPendingCommand(lateChild), 0);
   assert.equal(lateChild.messages.length, 1);
+});
+
+test("frame dispatch counts only children that completed the ready handshake", async () => {
+  const view = createFakeWindow();
+  const readyChild = createPostableWindow();
+  const unreadyChild = createPostableWindow();
+  const document = createFakeDocument([{ contentWindow: readyChild }, { contentWindow: unreadyChild }]);
+  const messenger = FrameMessenger.create({
+    document,
+    window: view,
+    location: view.location,
+    isTopFrame: true,
+    idFactory: createIdFactory(),
+    getTargetLanguage: () => "ko",
+    getPageUrl: () => view.location.href,
+    getRouteVersion: () => 1
+  });
+
+  await messenger.handleMessageEvent({
+    origin: ORIGIN,
+    source: readyChild,
+    data: { source: FrameMessenger.FRAME_MESSAGE_SOURCE, action: "frameReady" }
+  });
+  const dispatch = messenger.postToChildFrames("translate");
+
+  assert.equal(dispatch.attempted, 2);
+  assert.equal(dispatch.sent, 1);
+  assert.equal(readyChild.messages.length, 1);
+  assert.equal(unreadyChild.messages.length, 1);
 });
 
 test("frameReady only redispatches pending commands to known child frame sources", async () => {
@@ -245,6 +275,41 @@ test("frame aggregate diagnostics ignore duplicate results from the same source"
     params: { count: 1, frameCount: 2 },
     tone: "error"
   });
+});
+
+test("top frame accepts authenticated results sent directly by nested descendants", async () => {
+  const view = createFakeWindow();
+  const directChild = createPostableWindow();
+  const nestedDescendant = createPostableWindow();
+  const document = createFakeDocument([{ contentWindow: directChild }]);
+  const diagnostics = [];
+  const messenger = FrameMessenger.create({
+    document,
+    window: view,
+    location: view.location,
+    isTopFrame: true,
+    frameSessionToken: "top-token",
+    onFrameTranslationResult(result) {
+      diagnostics.push(result);
+    }
+  });
+
+  const command = messenger.postToChildFrames("translate").payload;
+  await messenger.handleMessageEvent({
+    origin: ORIGIN,
+    source: nestedDescendant,
+    data: {
+      source: FrameMessenger.FRAME_MESSAGE_SOURCE,
+      action: "frameResult",
+      messageId: command.messageId,
+      frameToken: "top-token",
+      kind: "translate",
+      applied: 0,
+      failed: 2
+    }
+  });
+
+  assert.deepEqual(diagnostics, [{ applied: 0, failed: 2 }]);
 });
 
 test("late translate frame results cannot overwrite a newer restore status", async () => {

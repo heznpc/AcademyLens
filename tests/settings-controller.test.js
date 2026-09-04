@@ -58,6 +58,16 @@ test("settings controller migrates a stored auto engine to device-only", async (
   assert.equal(storage[Constants.STORAGE_KEYS.SETTINGS].ollamaModel, "gemma3:4b");
 });
 
+test("settings controller normalizes aliases and replaces unsupported target languages", async () => {
+  const aliased = harness({ targetLanguage: "he", translationEngine: "device" });
+  assert.equal((await aliased.controller.load()).targetLanguage, "iw");
+  assert.equal(aliased.storage[Constants.STORAGE_KEYS.SETTINGS].targetLanguage, "iw");
+
+  const unsupported = harness({ targetLanguage: "xx-invalid", translationEngine: "device" });
+  assert.equal((await unsupported.controller.load()).targetLanguage, "ko");
+  assert.equal(unsupported.storage[Constants.STORAGE_KEYS.SETTINGS].targetLanguage, "ko");
+});
+
 test("settings controller owns storage listener lifecycle and normalizes changes", () => {
   const { controller, listeners } = harness();
   let nextSettings;

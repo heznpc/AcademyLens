@@ -105,7 +105,11 @@
       if (!target || !target.isConnected || !isCurrentRecordStillOwned(record)) return false;
       suppressMutationReactions();
       if (record.kind === "element") {
-        target.innerHTML = record.original;
+        if (Array.isArray(record.originalNodes)) {
+          target.replaceChildren(...record.originalNodes);
+        } else {
+          target.innerHTML = record.original;
+        }
       } else {
         target.textContent = record.original;
       }
@@ -205,6 +209,7 @@
           kind: "element",
           target: element,
           original: element.innerHTML,
+          originalNodes: Array.from(element.childNodes),
           originalText: element.textContent,
           normalized: Text.normalizeWhitespace(element.textContent)
         };
@@ -328,9 +333,7 @@
         appendTextPart(fragment, translated.slice(cursor, match.index));
         const placeholder = tokens.get(match[0]);
         if (placeholder && placeholder.child) {
-          const clone = placeholder.child.cloneNode(false);
-          clone.textContent = placeholder.value;
-          fragment.append(clone);
+          fragment.append(placeholder.child);
           preserved += 1;
         } else {
           appendTextPart(fragment, match[0]);
@@ -355,9 +358,7 @@
         if (index === -1) continue;
 
         appendTextPart(fragment, translated.slice(cursor, index));
-        const clone = child.cloneNode(false);
-        clone.textContent = translated.slice(index, index + childText.length);
-        fragment.append(clone);
+        fragment.append(child);
         cursor = index + childText.length;
         preserved += 1;
       }
@@ -388,6 +389,7 @@
         target: candidate.target,
         node: candidate.node || null,
         original: candidate.original,
+        originalNodes: candidate.originalNodes || null,
         originalText: candidate.originalText || candidate.original,
         normalized: candidate.normalized,
         translated,
@@ -400,6 +402,7 @@
       suppressMutationReactions();
       if (candidate.kind === "element") {
         applyTranslatedElement(candidate.target, translated, inlinePlaceholders);
+        record.translated = candidate.target.textContent;
       } else {
         Text.applyTranslatedText(candidate.target, translated);
       }
@@ -431,6 +434,7 @@
       suppressMutationReactions();
       if (record.kind === "element") {
         applyTranslatedElement(target, translated, record.inlinePlaceholders);
+        record.translated = target.textContent;
       } else {
         target.textContent = translated;
       }

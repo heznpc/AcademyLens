@@ -83,6 +83,11 @@ test("inline placeholders preserve safe child elements during replacement", () =
     `,
     (document) => {
       const { runtime, suppressions } = createRuntime(document);
+      const originalStrong = document.querySelector("#lesson strong");
+      let clicks = 0;
+      originalStrong.addEventListener("click", () => {
+        clicks += 1;
+      });
       const candidate = runtime.collectCandidates()[0];
       const prepared = runtime.prepareInlinePlaceholders(candidate, {
         text: candidate.normalized,
@@ -98,9 +103,16 @@ test("inline placeholders preserve safe child elements during replacement", () =
         ),
         true
       );
-      assert.equal(document.querySelector("#lesson strong").textContent, "ChatGPT");
+      assert.equal(document.querySelector("#lesson strong"), originalStrong);
+      originalStrong.click();
+      assert.equal(clicks, 1);
+      assert.equal(originalStrong.textContent, "ChatGPT");
       assert.match(document.querySelector("#lesson").innerHTML, /<strong>ChatGPT<\/strong>/);
       assert.equal(suppressions(), 1);
+      assert.equal(runtime.restoreAllRecords(), 1);
+      assert.equal(document.querySelector("#lesson strong"), originalStrong);
+      originalStrong.click();
+      assert.equal(clicks, 2);
     }
   );
 });

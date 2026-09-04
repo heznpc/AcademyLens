@@ -15,6 +15,12 @@
     /https?:\/\/\S+|www\.\S+|mailto:\S+|\b(?:OpenAI(?:\s+Academy)?|ChatGPT|GPT-?\d*|JSON|API|SDK|LLM|Python)\b/gi;
   const MIN_DETECTION_LETTERS = 20;
   const MIN_DETECTION_PERCENTAGE = 80;
+  const SIMPLIFIED_CHINESE_EVIDENCE = new Set(
+    "这为个们来时会说对发国学东车门见长开关问间里后过还进从无与业书体汉语译简边变数现点应实认让给经线结统历万两并内写达选区级将种样机权动当产头面条气总"
+  );
+  const TRADITIONAL_CHINESE_EVIDENCE = new Set(
+    "這為個們來時會說對發國學東車門見長開關問間裡後過還進從無與業書體漢語譯簡邊變數現點應實認讓給經線結統歷萬兩並內寫達選區級將種樣機權動當產頭面條氣總"
+  );
 
   // Every supported target is classified, but only scripts that can actually
   // distinguish the target from English get a script guard. Latin-script
@@ -147,6 +153,23 @@
     return (String(value || "").match(pattern) || []).length;
   }
 
+  function countCharacterEvidence(value, evidence) {
+    return Array.from(String(value || "")).filter((character) => evidence.has(character)).length;
+  }
+
+  function chineseVariantIssue(value, targetLanguage) {
+    if (targetLanguage !== "zh-CN" && targetLanguage !== "zh-TW") return "";
+    const simplified = countCharacterEvidence(value, SIMPLIFIED_CHINESE_EVIDENCE);
+    const traditional = countCharacterEvidence(value, TRADITIONAL_CHINESE_EVIDENCE);
+    if (targetLanguage === "zh-TW" && simplified >= 2 && traditional === 0) {
+      return "wrong-target-variant:zh-CN";
+    }
+    if (targetLanguage === "zh-CN" && traditional >= 2 && simplified === 0) {
+      return "wrong-target-variant:zh-TW";
+    }
+    return "";
+  }
+
   function stripNonLanguageContent(value) {
     return normalize(value).replace(PLACEHOLDER_PATTERN, " ").replace(DETECTION_NEUTRAL_PATTERN, " ");
   }
@@ -254,6 +277,8 @@
     if (!result) return "empty-translation";
     if (!sameTokens(placeholderTokens(source), placeholderTokens(result))) return "placeholder-drift";
     if (profile.targetLanguage !== "en" && source === result && /[A-Za-z]/.test(source)) return "source-copy";
+    const variantIssue = chineseVariantIssue(result, profile.targetLanguage);
+    if (variantIssue) return variantIssue;
 
     const sourceHasEnglishWords = /[A-Za-z]{4}/.test(stripNonLanguageContent(source));
     const guard = SCRIPT_GUARDS[profile.targetLanguage];
@@ -318,6 +343,7 @@
     SCRIPT_GROUP_GUARDS,
     SCRIPT_GUARDS,
     canonicalTargetLanguage,
+    chineseVariantIssue,
     detectionIssue,
     englishLanguageEvidence,
     languageDetectionText,

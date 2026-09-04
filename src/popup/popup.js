@@ -65,6 +65,7 @@
     ...C.DEFAULT_SETTINGS,
     ...storedSettings
   };
+  settings.targetLanguage = C.matchSupportedLanguage(settings.targetLanguage);
 
   // First run: suggest a target language from the browser instead of assuming one.
   if (!settings.targetLanguage) {

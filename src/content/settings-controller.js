@@ -19,6 +19,7 @@
 
     function normalize(settings = {}) {
       const normalized = { ...constants.DEFAULT_SETTINGS, ...settings };
+      normalized.targetLanguage = constants.matchSupportedLanguage(normalized.targetLanguage);
       if (!normalized.targetLanguage) {
         normalized.targetLanguage = constants.resolveDefaultTargetLanguage(
           Array.isArray(navigatorRef.languages) && navigatorRef.languages.length

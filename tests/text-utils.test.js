@@ -110,6 +110,26 @@ test("skips text inside elements already marked as the target language", () => {
   assert.equal(Text.shouldTranslateText("OpenAI Academy courses for teams", "fr", 1200, element), true);
 });
 
+test("does not treat a localized document shell as proof that English course copy is translated", () => {
+  const documentElement = {
+    getAttribute() {
+      return "ko";
+    }
+  };
+  const element = {
+    ownerDocument: { documentElement, body: {} },
+    closest() {
+      return documentElement;
+    }
+  };
+
+  assert.equal(Text.explicitContentLanguage(element), "");
+  assert.equal(
+    Text.shouldTranslateText("Learn the basics of AI, large language models, and ChatGPT.", "ko", 1200, element),
+    true
+  );
+});
+
 test("skips Gradual platform control phrases", () => {
   assert.equal(Text.shouldTranslateText("Lesson 2 of 5", "ko"), false);
   assert.equal(Text.shouldTranslateText("2/5 Lessons Completed", "ko"), false);

@@ -18,6 +18,7 @@ const {
   REMOTE_TRANSLATION_ORIGIN,
   OLLAMA_ORIGIN,
   TRANSLATION_ENGINES,
+  isSupportedLanguage,
   normalizeTranslationEngine,
   normalizeOllamaModel
 } = self.AcademyLensConstants || {
@@ -37,6 +38,7 @@ const {
   REMOTE_TRANSLATION_ORIGIN: "https://translate.googleapis.com/*",
   OLLAMA_ORIGIN: "http://localhost:11434/*",
   TRANSLATION_ENGINES: { REMOTE: "remote", OLLAMA: "ollama" },
+  isSupportedLanguage: () => false,
   normalizeTranslationEngine: (value) => (value === "remote" || value === "ollama" ? value : "device"),
   normalizeOllamaModel: (value) => value || "qwen3.5:4b"
 };
@@ -194,9 +196,9 @@ async function mergeCacheUpdates(cacheUpdates, expectedEpoch, cacheDeleteKeys = 
 }
 
 async function translateBatch(message, signal) {
-  const targetLanguage = message.targetLanguage;
-  if (!targetLanguage) {
-    return { ok: false, translated: {}, errors: {}, error: "No target language selected" };
+  const targetLanguage = String(message.targetLanguage || "").trim();
+  if (!isSupportedLanguage(targetLanguage) || targetLanguage === "en") {
+    return { ok: false, translated: {}, errors: {}, error: "Unsupported target language" };
   }
   const engine = message.translationEngine;
   if (engine !== TRANSLATION_ENGINES.REMOTE && engine !== TRANSLATION_ENGINES.OLLAMA) {
@@ -208,6 +210,9 @@ async function translateBatch(message, signal) {
   const selectedEngine = normalizeTranslationEngine(selectedSettings.translationEngine);
   if (selectedEngine !== engine) {
     return { ok: false, translated: {}, errors: {}, error: "Request does not match the selected translation engine" };
+  }
+  if (selectedSettings.targetLanguage !== targetLanguage) {
+    return { ok: false, translated: {}, errors: {}, error: "Request does not match the selected target language" };
   }
   const ollamaModel = normalizeOllamaModel(message.ollamaModel);
   if (usesOllama && normalizeOllamaModel(selectedSettings.ollamaModel) !== ollamaModel) {

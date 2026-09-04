@@ -61,6 +61,18 @@ test("translation quality accepts target-script output with exact placeholders",
   assert.deepEqual(result, { ok: true, issue: "" });
 });
 
+test("translation quality rejects the opposite Chinese writing variant", () => {
+  const source = "Build reliable systems with clear review instructions.";
+  assert.deepEqual(Quality.validate(source, "这是一个完全使用简体中文书写的翻译结果。", "zh-TW"), {
+    ok: false,
+    issue: "wrong-target-variant:zh-CN"
+  });
+  assert.deepEqual(Quality.validate(source, "這是一個完全使用繁體中文書寫的翻譯結果。", "zh-CN"), {
+    ok: false,
+    issue: "wrong-target-variant:zh-TW"
+  });
+});
+
 test("translation quality rejects placeholder drift and source copies", () => {
   assert.equal(Quality.qualityIssue("Use __AL_TERM_0__ safely.", "안전하게 사용하세요.", "ko"), "placeholder-drift");
   assert.equal(Quality.qualityIssue("Build reliable agents.", "Build reliable agents.", "ko"), "source-copy");

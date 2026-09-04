@@ -32,7 +32,7 @@ function loadBackground(fetchImpl, options = {}) {
   const listeners = [];
   const storage = {
     "academylens.settings": {
-      targetLanguage: "ko",
+      targetLanguage: options.selectedTargetLanguage || "ko",
       translationEngine: options.selectedTranslationEngine || "remote",
       ollamaModel: options.selectedOllamaModel || "qwen3.5:4b"
     }
@@ -102,6 +102,14 @@ function loadBackground(fetchImpl, options = {}) {
 
   async function send(message) {
     assert.equal(listeners.length, 1);
+    if (
+      options.syncTargetLanguage !== false &&
+      message &&
+      message.type === "ACADEMYLENS_TRANSLATE_BATCH" &&
+      message.targetLanguage
+    ) {
+      storage["academylens.settings"].targetLanguage = message.targetLanguage;
+    }
     return new Promise((resolveResponse) => {
       listeners[0](message, {}, resolveResponse);
     });
@@ -653,8 +661,35 @@ test("background translation rejects a batch with no target language instead of 
     texts: ["Good text"]
   });
   assert.equal(result.ok, false);
-  assert.match(result.error, /no target language/i);
+  assert.match(result.error, /unsupported target language/i);
   assert.equal(fetchCalls, 0);
+});
+
+test("background rejects unsupported and stale target languages before provider access", async (t) => {
+  for (const item of [
+    { name: "unsupported target", selected: "ko", requested: "xx-invalid", error: /unsupported target language/i },
+    { name: "stale target", selected: "ko", requested: "ja", error: /selected target language/i }
+  ]) {
+    await t.test(item.name, async () => {
+      let fetchCalls = 0;
+      const { send } = loadBackground(
+        async () => {
+          fetchCalls += 1;
+          return response(200, "should not happen");
+        },
+        { selectedTargetLanguage: item.selected, syncTargetLanguage: false }
+      );
+      const result = await send({
+        type: "ACADEMYLENS_TRANSLATE_BATCH",
+        translationEngine: "remote",
+        targetLanguage: item.requested,
+        texts: ["Good course text"]
+      });
+      assert.equal(result.ok, false);
+      assert.match(result.error, item.error);
+      assert.equal(fetchCalls, 0);
+    });
+  }
 });
 
 test("background routes the Ollama engine through the selected local model", async () => {
