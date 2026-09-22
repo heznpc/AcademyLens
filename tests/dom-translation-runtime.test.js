@@ -41,7 +41,7 @@ function createRuntime(document, options = {}) {
     document,
     window: document.defaultView,
     Text,
-    limits: LIMITS,
+    limits: options.limits || LIMITS,
     getTargetLanguage: () => options.targetLanguage || "ko",
     getPanelElement: () => options.panel || null,
     suppressMutationReactions() {
@@ -72,6 +72,57 @@ test("collectCandidates merges safe inline lesson copy into one element candidat
       assert.equal(candidates[0].normalized, "OpenAI Academy lessons teach ChatGPT workflows clearly.");
     }
   );
+});
+
+test("candidate trimming snapshots only retained inline elements and preserves tied ordering", () => {
+  const paragraphs = Array.from(
+    { length: 6 },
+    (_, index) => `<p id="lesson-${index}">Lesson ${index} explains <strong>ChatGPT</strong> workflows clearly.</p>`
+  );
+  withDom(`<main>${paragraphs.join("")}</main>`, (document) => {
+    const view = document.defaultView;
+    view.innerHeight = 800;
+    const innerHTML = Object.getOwnPropertyDescriptor(view.Element.prototype, "innerHTML");
+    const snapshotReads = Array(6).fill(0);
+    const originalNodes = new Map();
+    for (let index = 0; index < paragraphs.length; index += 1) {
+      const element = document.querySelector(`#lesson-${index}`);
+      originalNodes.set(element, Array.from(element.childNodes));
+      Object.defineProperty(element, "innerHTML", {
+        configurable: true,
+        get() {
+          snapshotReads[index] += 1;
+          return innerHTML.get.call(this);
+        }
+      });
+      const top = index === 2 || index === 3 ? 100 : 5000 + index * 100;
+      for (const node of [element, ...element.querySelectorAll("*")]) {
+        node.getBoundingClientRect = () => ({ top, bottom: top + 40, left: 0, right: 100, width: 100, height: 40 });
+      }
+    }
+
+    const { runtime } = createRuntime(document, {
+      limits: { ...LIMITS, maxCandidateScanNodes: 2, maxTextNodesPerPass: 2 }
+    });
+    const candidates = runtime.collectCandidates();
+
+    assert.deepEqual(
+      candidates.map((candidate) => [candidate.kind, candidate.target.id]),
+      [
+        ["element", "lesson-2"],
+        ["element", "lesson-3"]
+      ]
+    );
+    assert.deepEqual(snapshotReads, [0, 0, 1, 1, 0, 0]);
+    for (const candidate of candidates) {
+      assert.match(candidate.original, /<strong>ChatGPT<\/strong>/);
+      assert.equal(candidate.originalText, candidate.target.textContent);
+      assert.equal(candidate.normalized, Text.normalizeWhitespace(candidate.originalText));
+      const nodes = originalNodes.get(candidate.target);
+      assert.equal(candidate.originalNodes.length, nodes.length);
+      candidate.originalNodes.forEach((node, index) => assert.equal(node, nodes[index]));
+    }
+  });
 });
 
 test("inline placeholders preserve safe child elements during replacement", () => {

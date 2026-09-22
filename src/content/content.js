@@ -969,6 +969,7 @@
       frameFailed: 0,
       provider: ""
     };
+    let prepareText;
     for (const candidate of candidates) {
       const correction = correctionFor(corrections, targetLanguage, candidate.normalized);
       if (correction) {
@@ -976,7 +977,8 @@
         diagnostics.corrections += 1;
         continue;
       }
-      const prepared = Glossary.prepareForTranslation(candidate.normalized, glossary, targetLanguage);
+      prepareText ||= Glossary.createTranslationPreparer(glossary, targetLanguage);
+      const prepared = prepareText(candidate.normalized);
       const inlinePrepared = domTranslation.prepareInlinePlaceholders(candidate, prepared);
       preparedByCandidate.set(candidate, inlinePrepared);
       const direct = domTranslation.directGlossaryTranslation(inlinePrepared);

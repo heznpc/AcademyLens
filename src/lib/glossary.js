@@ -36,12 +36,17 @@
   }
 
   function maskTermValues(text, entries, existingPlaceholders) {
+    return maskEntries(text, entries, existingPlaceholders, false);
+  }
+
+  function maskEntries(text, entries, existingPlaceholders, compiled) {
     let maskedText = String(text);
     const placeholders = existingPlaceholders ? existingPlaceholders.slice() : [];
 
     for (const entry of entries || []) {
       if (!entry || !entry.source || !entry.value) continue;
-      const regex = termRegex(entry.source, "gi");
+      const regex = compiled ? entry.regex : termRegex(entry.source, "gi");
+      regex.lastIndex = 0;
       maskedText = maskedText.replace(regex, (match, prefix, value) => {
         const token = `${PLACEHOLDER_PREFIX}${placeholders.length}${PLACEHOLDER_SUFFIX}`;
         placeholders.push({ token, value: typeof entry.value === "function" ? entry.value(value) : entry.value });
@@ -77,24 +82,28 @@
     };
   }
 
-  function prepareForTranslation(text, glossary, targetLanguage) {
+  function createTranslationPreparer(glossary, targetLanguage) {
     const normalized = normalizeGlossary(glossary || {});
+    const entries =
+      targetLanguage === normalized.locale
+        ? normalized.terms
+            .sort((a, b) => b.source.length - a.source.length || a.source.localeCompare(b.source))
+            .map((entry) => ({ source: entry.source, value: entry.target }))
+        : [];
 
-    if (targetLanguage !== normalized.locale || normalized.terms.length === 0) {
-      return maskProtectedTerms(text, normalized.protectedTerms);
+    for (const term of sortTermsForMasking(normalized.protectedTerms)) {
+      entries.push({ source: term, value: term });
+    }
+    for (const entry of entries) {
+      entry.regex = termRegex(entry.source, "gi");
     }
 
-    const termEntries = normalized.terms
-      .slice()
-      .sort((a, b) => b.source.length - a.source.length || a.source.localeCompare(b.source))
-      .map((entry) => ({ source: entry.source, value: entry.target }));
+    // Keep compiled expressions within this pass; each call gets fresh placeholders.
+    return (text) => maskEntries(text, entries, undefined, true);
+  }
 
-    const termResult = maskTermValues(text, termEntries);
-    return maskTermValues(
-      termResult.text,
-      sortTermsForMasking(normalized.protectedTerms).map((term) => ({ source: term, value: term })),
-      termResult.placeholders
-    );
+  function prepareForTranslation(text, glossary, targetLanguage) {
+    return createTranslationPreparer(glossary, targetLanguage)(text);
   }
 
   return Object.freeze({
@@ -103,6 +112,7 @@
     sortTermsForMasking,
     maskProtectedTerms,
     maskTermValues,
+    createTranslationPreparer,
     prepareForTranslation,
     restoreProtectedTerms,
     normalizeGlossary

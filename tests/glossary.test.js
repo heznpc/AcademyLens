@@ -142,3 +142,106 @@ test("does not apply locale-specific glossary terms to other target languages", 
   assert.equal(prepared.text, original);
   assert.deepEqual(prepared.placeholders, []);
 });
+
+test("reuses a preparer without sharing tokens or changing masking precedence and boundaries", () => {
+  const prepare = Glossary.createTranslationPreparer(
+    {
+      locale: "ko",
+      protectedTerms: ["OpenAI", "OpenAI Academy", "agent", "OpenAI", "", "   "],
+      terms: [
+        { source: "agent", target: "에이전트" },
+        { source: "AI agent", target: "AI 에이전트" },
+        { source: "C++", target: "시플러스플러스" },
+        { source: "", target: "unused" },
+        { source: "skip", target: "" },
+        null
+      ]
+    },
+    "ko"
+  );
+  const original = "An AI AGENT uses AGENT at OpenAI Academy with C++. agent-based xagent agent's agent’s agent_2.";
+  const expected = {
+    text: "An __AL_TERM_0__ uses __AL_TERM_1__ at __AL_TERM_3__ with __AL_TERM_2__. agent-based xagent agent's agent’s agent_2.",
+    placeholders: [
+      { token: "__AL_TERM_0__", value: "AI 에이전트" },
+      { token: "__AL_TERM_1__", value: "에이전트" },
+      { token: "__AL_TERM_2__", value: "시플러스플러스" },
+      { token: "__AL_TERM_3__", value: "OpenAI Academy" }
+    ]
+  };
+
+  const first = prepare(original);
+  assert.deepEqual(first, expected);
+  assert.deepEqual(prepare("No matching words or skip."), { text: "No matching words or skip.", placeholders: [] });
+  assert.deepEqual(prepare(original), expected);
+  first.placeholders[0].value = "changed by caller";
+  first.placeholders.push({ token: "extra", value: "extra" });
+  assert.deepEqual(prepare(original), expected);
+});
+
+test("snapshots each preparer while one-shot preparation picks up glossary edits", () => {
+  const pack = {
+    locale: "ko",
+    protectedTerms: ["OpenAI"],
+    terms: [{ source: "agent", target: "에이전트" }]
+  };
+  const prepare = Glossary.createTranslationPreparer(pack, "ko");
+  pack.terms[0].source = "model";
+  pack.terms[0].target = "모델";
+  pack.protectedTerms[0] = "ChatGPT";
+
+  const original = "agent OpenAI model ChatGPT";
+  assert.deepEqual(prepare(original), {
+    text: "__AL_TERM_0__ __AL_TERM_1__ model ChatGPT",
+    placeholders: [
+      { token: "__AL_TERM_0__", value: "에이전트" },
+      { token: "__AL_TERM_1__", value: "OpenAI" }
+    ]
+  });
+  assert.deepEqual(Glossary.prepareForTranslation(original, pack, "ko"), {
+    text: "agent OpenAI __AL_TERM_0__ __AL_TERM_1__",
+    placeholders: [
+      { token: "__AL_TERM_0__", value: "모델" },
+      { token: "__AL_TERM_1__", value: "ChatGPT" }
+    ]
+  });
+});
+
+test("preparers retain protected terms for mismatched locales and empty glossary entries", () => {
+  for (const pack of [
+    { locale: "ko", protectedTerms: ["OpenAI"], terms: [{ source: "agent", target: "에이전트" }] },
+    { locale: "ja", protectedTerms: ["OpenAI"], terms: [null, { source: "agent", target: "" }] }
+  ]) {
+    const prepare = Glossary.createTranslationPreparer(pack, "ja");
+    assert.deepEqual(prepare("OPENAI agent"), {
+      text: "__AL_TERM_0__ agent",
+      placeholders: [{ token: "__AL_TERM_0__", value: "OpenAI" }]
+    });
+  }
+
+  assert.deepEqual(Glossary.createTranslationPreparer(null, "ko")(42), { text: "42", placeholders: [] });
+});
+
+test("maskTermValues retains callbacks and existing placeholder numbering", () => {
+  const existing = [{ token: "__AL_TERM_0__", value: "kept" }];
+  const masked = Glossary.maskTermValues(
+    "TERM term skip",
+    [
+      null,
+      { source: "", value: "unused" },
+      { source: "skip", value: "" },
+      { source: "term", value: (value) => value.toLowerCase() }
+    ],
+    existing
+  );
+
+  assert.deepEqual(masked, {
+    text: "__AL_TERM_1__ __AL_TERM_2__ skip",
+    placeholders: [
+      { token: "__AL_TERM_0__", value: "kept" },
+      { token: "__AL_TERM_1__", value: "term" },
+      { token: "__AL_TERM_2__", value: "term" }
+    ]
+  });
+  assert.deepEqual(existing, [{ token: "__AL_TERM_0__", value: "kept" }]);
+});

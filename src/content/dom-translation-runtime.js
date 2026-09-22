@@ -205,15 +205,7 @@
       let index = 0;
       for (const element of doc.body.querySelectorAll(INLINE_MERGE_SELECTOR)) {
         if (!shouldMergeInlineElement(element)) continue;
-        const candidate = {
-          kind: "element",
-          target: element,
-          original: element.innerHTML,
-          originalNodes: Array.from(element.childNodes),
-          originalText: element.textContent,
-          normalized: Text.normalizeWhitespace(element.textContent)
-        };
-        retained.push({ candidate, index, score: candidateViewportScore(candidate) });
+        retained.push({ element, index, score: candidateViewportScore({ target: element }) });
         index += 1;
         if (retained.length > maxCandidates * 2) {
           retained.sort((a, b) => a.score - b.score || a.index - b.index);
@@ -223,7 +215,18 @@
       return retained
         .sort((a, b) => a.score - b.score || a.index - b.index)
         .slice(0, maxCandidates)
-        .map((item) => item.candidate);
+        .map(({ element }) => {
+          // Only retained candidates need the original DOM for later restoration.
+          const originalText = element.textContent;
+          return {
+            kind: "element",
+            target: element,
+            original: element.innerHTML,
+            originalNodes: Array.from(element.childNodes),
+            originalText,
+            normalized: Text.normalizeWhitespace(originalText)
+          };
+        });
     }
 
     function collectCandidates() {

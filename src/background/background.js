@@ -228,6 +228,7 @@ async function translateBatch(message, signal) {
     };
   }
   const cacheScope = usesOllama ? ollamaCacheScope(message, ollamaModel) : googleCacheScope(message);
+  const cacheMeta = Cache.normalizeScope(cacheScope);
   const allTexts = Array.isArray(message.texts)
     ? [...new Set(message.texts.map((text) => String(text)).filter(Boolean))]
     : [];
@@ -258,7 +259,7 @@ async function translateBatch(message, signal) {
       original: text,
       translated: result,
       targetLanguage,
-      ...Cache.normalizeScope(cacheScope),
+      ...cacheMeta,
       createdAt: Date.now(),
       accessedAt: Date.now()
     };
@@ -278,7 +279,7 @@ async function translateBatch(message, signal) {
       cacheUpdates[key] = {
         original: text,
         targetLanguage,
-        ...Cache.normalizeScope(cacheScope),
+        ...cacheMeta,
         accessedAt: Date.now()
       };
       stats.cacheHits += 1;

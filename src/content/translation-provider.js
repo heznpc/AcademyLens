@@ -85,6 +85,7 @@
         const translated = {};
         const errors = {};
         const cacheUpdates = {};
+        const cacheMeta = cacheUpdateMeta(scope);
         const browserTexts = [];
         for (const text of requestedTexts) {
           const key = Cache.cacheKey(targetLanguage, text, scope);
@@ -98,7 +99,7 @@
             cacheUpdates[key] = {
               original: text,
               targetLanguage,
-              ...cacheUpdateMeta(scope),
+              ...cacheMeta,
               accessedAt: Date.now()
             };
             stats.cacheHits += 1;
@@ -136,7 +137,7 @@
                 original: text,
                 translated: result,
                 targetLanguage,
-                ...cacheUpdateMeta(scope),
+                ...cacheMeta,
                 createdAt: Date.now(),
                 accessedAt: Date.now()
               };
