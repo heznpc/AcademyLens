@@ -30,16 +30,23 @@ function ollamaResponse(status, translated) {
 
 function loadBackground(fetchImpl, options = {}) {
   const listeners = [];
+  const storageListeners = [];
+  const sessionStorage = { "academylens.providerSecrets": options.providerSecrets || {} };
   const storage = {
     "academylens.settings": {
       targetLanguage: options.selectedTargetLanguage || "ko",
       translationEngine: options.selectedTranslationEngine || "remote",
-      ollamaModel: options.selectedOllamaModel || "qwen3.5:4b"
+      ollamaModel: options.selectedOllamaModel || "qwen3.5:4b",
+      apiEndpoint: options.apiEndpoint || "",
+      apiModel: options.apiModel || "",
+      puterModel: options.puterModel || "",
+      providerRevision: options.providerRevision || 0
     }
   };
   let storageSetCalls = 0;
   const context = {
     AbortController,
+    DOMException,
     URL,
     clearTimeout,
     console,
@@ -47,6 +54,13 @@ function loadBackground(fetchImpl, options = {}) {
     setTimeout,
     chrome: {
       storage: {
+        onChanged: {
+          addListener(listener) { storageListeners.push(listener); }
+        },
+        session: {
+          async setAccessLevel() {},
+          async get(key) { return { [key]: sessionStorage[key] }; }
+        },
         local: {
           async get(keys) {
             if (Array.isArray(keys)) {
@@ -115,7 +129,14 @@ function loadBackground(fetchImpl, options = {}) {
     });
   }
 
-  return { send, storage };
+  function changeSecrets(secrets) {
+    const key = "academylens.providerSecrets";
+    const oldValue = sessionStorage[key];
+    sessionStorage[key] = secrets;
+    for (const listener of storageListeners) listener({ [key]: { oldValue, newValue: secrets } }, "session");
+  }
+
+  return { send, storage, changeSecrets };
 }
 
 test("background translation retries transient failures", async () => {
@@ -1109,7 +1130,7 @@ test("background cancellation aborts the active Ollama fetch", async () => {
   assert.equal(cancelled.cancelled, true);
   assert.equal(fetchAborted, true);
   assert.equal(result.ok, false);
-  assert.equal(result.stats.failed, 1);
+  assert.match(result.error, /cancelled/i);
 });
 
 test("background refuses Ollama requests without localhost permission", async () => {
@@ -1136,4 +1157,61 @@ test("background refuses Ollama requests without localhost permission", async ()
   assert.equal(result.ok, false);
   assert.match(result.error, /localhost permission not granted/i);
   assert.equal(fetchCalls, 0);
+});
+
+test("background binds an API key to its configured endpoint", async () => {
+  let calls = 0;
+  const endpoint = "https://example.com/v1/chat/completions";
+  const { send } = loadBackground(async () => { calls += 1; }, {
+    selectedTranslationEngine: "api", apiEndpoint: endpoint, apiModel: "chosen-model",
+    providerSecrets: { apiKey: "test-only", apiEndpoint: "https://different.example/v1/chat/completions" }
+  });
+  const result = await send({
+    type: "ACADEMYLENS_TRANSLATE_BATCH", translationEngine: "api", targetLanguage: "ko",
+    apiEndpoint: endpoint, apiModel: "chosen-model", texts: ["Course text"]
+  });
+  assert.equal(result.ok, false);
+  assert.match(result.error, /Reconnect the API key/);
+  assert.equal(calls, 0);
+});
+
+test("background rejects stale cloud credential revisions before sending text", async () => {
+  let calls = 0;
+  const { send } = loadBackground(async () => { calls += 1; }, {
+    selectedTranslationEngine: "puter", puterModel: "chosen-model", providerRevision: 2,
+    providerSecrets: { puterToken: "test-only" }
+  });
+  const result = await send({
+    type: "ACADEMYLENS_TRANSLATE_BATCH", translationEngine: "puter", targetLanguage: "ko",
+    puterModel: "chosen-model", providerRevision: 1, texts: ["Course text"]
+  });
+  assert.equal(result.ok, false);
+  assert.match(result.error, /configuration changed/);
+  assert.equal(calls, 0);
+});
+
+test("clearing cloud credentials aborts a pending explanation", async () => {
+  let notifyStarted;
+  const started = new Promise((resolveStarted) => { notifyStarted = resolveStarted; });
+  let aborted = false;
+  const { send, changeSecrets } = loadBackground((_url, options) => new Promise((_resolve, reject) => {
+    options.signal.addEventListener("abort", () => {
+      aborted = true;
+      reject(new DOMException("Cancelled", "AbortError"));
+    }, { once: true });
+    notifyStarted();
+  }), {
+    selectedTranslationEngine: "puter", selectedTargetLanguage: "en", puterModel: "chosen-model",
+    providerSecrets: { puterToken: "test-only" }
+  });
+  const pending = send({
+    type: "ACADEMYLENS_EXPLAIN_TEXT", operationId: "cloud-explanation",
+    translationEngine: "puter", targetLanguage: "en", puterModel: "chosen-model",
+    original: "A model processes tokens."
+  });
+  await started;
+  changeSecrets({});
+  const result = await pending;
+  assert.equal(aborted, true);
+  assert.equal(result.ok, false);
 });

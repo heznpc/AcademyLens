@@ -124,3 +124,44 @@ select:focus {
   height: 16px;
   margin: 0;
 }
+
+#cloudConnection {
+  display: grid;
+  gap: 10px;
+  border-block: 1px solid #e2e8f0;
+  padding-block: 12px;
+}
+
+[hidden], #cloudConnection[hidden] {
+  display: none !important;
+}
+
+#cloudConnection input, #cloudConnection button {
+  min-height: 34px;
+  min-width: 0;
+  border: 1px solid #cbd5e1;
+  border-radius: 6px;
+  background: white;
+  color: #111827;
+  padding: 6px;
+  font: inherit;
+}
+
+#cloudConnection .hint {
+  margin: 0;
+}
+
+.connection-actions {
+  display: flex;
+  gap: 8px;
+}
+
+#cloudConnection a {
+  color: #1d4ed8;
+  font-size: 12px;
+}
+
+:focus-visible {
+  outline: 2px solid #2563eb;
+  outline-offset: 2px;
+}

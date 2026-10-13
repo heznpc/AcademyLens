@@ -1,72 +1,43 @@
 # Privacy Policy
 
-AcademyLens translates visible OpenAI Academy course content in the browser.
+AcademyLens translates visible OpenAI Academy course content in the browser and provides requested reading explanations.
 
 **Unofficial, not affiliated with OpenAI.**
 
-## Data Collection
+## Data collection
 
-AcademyLens does not collect, sell, rent, or transfer personal data to the extension developer.
+AcademyLens does not collect, sell, or transfer personal data to the extension developer and operates no backend server.
 
-## Data Processed By The Extension
+## Provider choice
 
-### You choose the translation engine
+| Engine | Processing and network access |
+| --- | --- |
+| On-device (default) | Chrome Translator and, for requested explanations, Chrome LanguageModel. Course text stays on the device. Browser model downloads require explicit opt-in. |
+| Google Translate | Selected text is sent to Google Translate with optional permission. Explanations are limited to translating matching bundled definitions. |
+| Local Ollama | Selected text and bounded lesson context are sent to the selected model on localhost, requiring optional localhost permission and a separately running server. |
+| Puter | Selected text and bounded lesson context are sent to Puter's AI endpoint using the selected model and user-supplied token, requiring optional Puter permission. |
+| AI API | Selected text and bounded lesson context are sent to the user's configured HTTPS chat-completions endpoint using their model and API key, requiring optional permission for that origin. |
 
-AcademyLens ships with three independently selected engines and defaults to the one that sends nothing off your device.
+No engine failure automatically switches to another provider. The worker checks provider selection and permission before requests. Auto-translate can process newly rendered visible lesson text using the selected provider. Explanations are requested individually.
 
-| Engine                          | What happens to course text                                                                                                 | Network access                                                                                 |
-| ------------------------------- | --------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------- |
-| **On-device only** (default)    | Chrome's built-in Translator API translates on your device. No course text leaves your computer.                            | None                                                                                           |
-| **Google Translate** (`remote`) | Extension-selected visible lesson text is sent to Google Translate.                                                         | Requires your explicit permission grant                                                        |
-| **Local Ollama** (`ollama`)     | Extension-selected visible lesson text is sent to the Ollama server on `localhost` and processed by the model you selected. | Requires your explicit localhost permission grant and a separately running local Ollama server |
+The manifest declares optional Google, localhost, Puter, and HTTPS origin access. The general HTTPS declaration enables user-configured API endpoints; it does not grant every origin at installation. The connection form requests only the selected origin.
 
-The Google Translate host `translate.googleapis.com` and local Ollama host `localhost:11434` are declared as **optional** host permissions. A default installation has neither. AcademyLens asks only for the permission required by the engine you pick, and the extension's service worker re-checks both the stored engine/model selection and the permission grant before every request. An engine failure is reported without sending the text to another provider. Ollama text is sent to the server on your own computer; AcademyLens does not configure any remote Ollama host.
+The extension filters platform controls, forms, account content, progress, certificates, and assessment controls out of its course-text processing. Site markup changes can affect those filters.
 
-When you translate page text, the extension processes extension-selected visible lesson text from `academy.openai.com`. Browser-managed translator downloads are disabled unless you explicitly turn them on. If auto-translate is enabled, newly rendered visible lesson text can be translated automatically after page changes, using whichever engine you selected. The DOM filtering logic is designed to avoid platform chrome such as enrollment, progress, certificate, account, form, navigation, and credential UI. Because OpenAI Academy and Gradual page markup can change, avoid translating pages that contain sensitive personal content.
+## Local storage
 
-## Data Stored Locally
+Chrome extension local storage holds language and provider preferences, endpoint/model names, glossary state, correction overrides, and translation cache entries. Cache entries can contain original/translated text, provider/context identifiers, and timestamps. Diagnostics contain counts and provider paths.
 
-AcademyLens stores settings, optional local correction overrides, and a local translation cache in Chrome extension storage:
+API keys and Puter tokens are kept in Chrome extension session storage, restricted to trusted extension contexts, and cleared when the browser session ends or the user clears the connection. API keys are bound to the saved endpoint. Keys and tokens are not stored in ordinary settings, translation caches, or content-page DOM.
 
-- target language
-- selected translation engine
-- selected Ollama model
-- auto-translate preference
-- browser-native translator download preference
-- locally corrected original visible text
-- locally corrected translated text
-- target language, creation time, and last-access time for correction entries
-- cached original visible text
-- cached translated text
-- provider, glossary state, target language, creation time, and last-access time for cache entries
+Original-text records and a bounded explanation cache remain in page memory. Bundled terminology and definition files are packaged with the extension. Opening their reference links navigates to those external sites.
 
-The panel may show local diagnostics such as provider path, cache hit/miss counts, correction count, context grouping count, and embedded-frame applied/failed counts. These diagnostics are displayed locally and do not include the translated page text.
+## Third parties
 
-Bundled glossary files are stored inside the extension package. They do not require a network request to AcademyLens or any AcademyLens server.
+Google mode uses the public translate.googleapis.com web endpoint, not authenticated Google Cloud Translation. Puter mode uses a packaged HTTP adapter to api.puter.com; it does not download or execute Puter.js. API mode uses a provider supplied by the learner. Those providers' own processing and retention terms apply. Ollama is separately operated by the learner on localhost.
 
-## What AcademyLens Does Not Do
+A paid chat subscription does not necessarily include API access or credits. The default on-device path needs no account or API key. Chrome capability and model availability vary by device, language, browser, and page context.
 
-- It does not read or change your OpenAI Academy enrollment.
-- It does not read or change your course progress.
-- It does not access certificates.
-- It does not request your OpenAI or ChatGPT credentials.
-- It does not run a backend server.
-- It does not require an API key.
-- It does not load remote AI scripts.
-- It does not send local correction lists or diagnostics to AcademyLens.
-- It does not run GPT/Puter-based review in the current runtime. The included AI review bridge is disabled and cannot send review text.
-- It does not connect to X/Twitter. Public X translation checks are a manual glossary QA process outside the extension runtime.
+## Scope
 
-## Third Parties
-
-AcademyLens currently uses:
-
-- Browser-native Translator API when available or explicitly download-enabled. This runs on your device.
-- Google Translate, only when you select an engine that uses it and grant the optional host permission.
-- Your separately installed local Ollama server, only when you select Local Ollama and grant the optional localhost permission.
-
-The Google Translate path uses the public `translate.googleapis.com` web endpoint. This is not the official authenticated Google Cloud Translation API, so it carries no service agreement covering your text. That is why it is opt-in rather than the default.
-
-Review those services and browser features before using translation with sensitive content. The current runtime does not use Google Cloud Translation credentials, an AcademyLens server, or an OpenAI API key. AcademyLens calls Ollama's OpenAI-compatible local endpoint without an API key; the selected model is installed and operated separately by you.
-
-An optional AI tutor is planned and will ship off by default. When you turn on its cloud engine, your question and the relevant lesson text for that request are sent through a locally bundled Puter.js bridge to a remote model, and a free Puter sign-in is required. Its on-device engine (Chrome Gemini Nano) needs no account and keeps everything on your device. By default, and for the translation features described above, no text is sent to any AI tutor service, and learners who use neither engine keep the full no-account baseline.
+AcademyLens does not change enrollment, course progress, certificates, accounts, or Academy settings. It does not request Academy login credentials, load remote AI scripts, or upload local correction lists to the developer. The older terminology-review bridge remains disabled; requested reading explanations use the explicit provider paths described above.

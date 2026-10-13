@@ -78,3 +78,12 @@ test("settings controller owns storage listener lifecycle and normalizes changes
   controller.stop();
   assert.equal(listeners.size, 0);
 });
+
+test("credential revisions persist as safe nonnegative integers", async () => {
+  const valid = harness({ providerRevision: "8" });
+  assert.equal((await valid.controller.load()).providerRevision, 8);
+  assert.equal(valid.storage[Constants.STORAGE_KEYS.SETTINGS].providerRevision, 8);
+  for (const providerRevision of [-1, 1.5, Infinity, "invalid"]) {
+    assert.equal(harness().controller.normalize({ providerRevision }).providerRevision, 0);
+  }
+});

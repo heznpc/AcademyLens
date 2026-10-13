@@ -117,6 +117,7 @@
           const browserTranslations = await BrowserTranslator.translateBatch(browserTexts, {
             sourceLanguage: "en",
             targetLanguage,
+            signal,
             allowDownload: Boolean(settings.enableBrowserTranslatorDownloads),
             onDownloadProgress() {
               if (signal && signal.aborted) return;
@@ -188,7 +189,9 @@
     async function sendBackgroundTranslationBatch(payload, timeoutMs, signal) {
       throwIfAborted(signal);
       const usesOllama = C.engineUsesOllama(payload.translationEngine);
-      setProviderMode(usesOllama ? "ollama" : "background", usesOllama ? payload.ollamaModel : "");
+      const cloud = payload.translationEngine === "api" || payload.translationEngine === "puter";
+      setProviderMode(usesOllama ? "ollama" : cloud ? payload.translationEngine : "background",
+        usesOllama ? payload.ollamaModel : payload.apiModel || payload.puterModel || "");
       const requestedTimeout = Number(timeoutMs) || responseTimeoutMs;
       const backgroundTimeout = Math.max(responseTimeoutMs, Math.min(requestedTimeout, maxResponseTimeoutMs));
       try {
@@ -207,6 +210,13 @@
       const requestedTexts = payload.texts || [];
       const settings = getSettings();
       const engine = C.normalizeTranslationEngine(settings.translationEngine);
+      if (engine === "api" || engine === "puter") {
+        return sendBackgroundTranslationBatch({
+          ...payload, translationEngine: engine,
+          apiEndpoint: settings.apiEndpoint, apiModel: settings.apiModel, puterModel: settings.puterModel,
+          providerRevision: settings.providerRevision
+        }, Math.max(Number(timeoutMs) || 0, 240000), signal);
+      }
       if (C.engineUsesOllama(engine)) {
         return sendBackgroundTranslationBatch(
           { ...payload, translationEngine: engine, ollamaModel: C.normalizeOllamaModel(settings.ollamaModel) },
@@ -237,7 +247,30 @@
         : emptyTranslationResponse(requestedTexts);
     }
 
-    return Object.freeze({ sendTranslationBatch });
+    async function explain({ original, targetLanguage, context = "", signal } = {}) {
+      throwIfAborted(signal);
+      const settings = getSettings();
+      const engine = C.normalizeTranslationEngine(settings.translationEngine);
+      if (C.enginePrefersDevice(engine)) {
+        const reader = /** @type {any} */ (globalThis).AcademyLensReadingProvider;
+        if (!reader?.explainOnDevice) return { ok: false, error: "On-device explanations are unavailable" };
+        return reader.explainOnDevice({ original, targetLanguage, context, signal,
+          allowDownload: Boolean(settings.enableBrowserTranslatorDownloads) });
+      }
+      if (!["api", "puter", "ollama", "remote"].includes(engine)) {
+        return { ok: false, error: "This translation engine has no explanation model. Choose an AI engine in settings." };
+      }
+      return backgroundClient.send({
+        type: C.MESSAGE_TYPES.EXPLAIN_TEXT,
+        operationId: `explain-${crypto.randomUUID()}`,
+        original, targetLanguage, context, translationEngine: engine,
+        apiEndpoint: settings.apiEndpoint, apiModel: settings.apiModel, puterModel: settings.puterModel,
+        providerRevision: settings.providerRevision,
+        ollamaModel: C.normalizeOllamaModel(settings.ollamaModel)
+      }, 150000, signal);
+    }
+
+    return Object.freeze({ sendTranslationBatch, explain });
   }
 
   return Object.freeze({ create });

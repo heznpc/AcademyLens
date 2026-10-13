@@ -23,7 +23,8 @@ Unlike a generic page translator, AcademyLens keeps AI terminology intact and le
 Features:
 
 - Translate OpenAI Academy course pages.
-- Choose your translation engine: on-device only (the default), Google Translate, or one of six models on your local Ollama server. Each engine is selected explicitly, and network or localhost permission is requested only when needed. A provider failure never sends text to a different provider.
+- Choose your translation engine: on-device (the default), Google Translate, local Ollama, Puter, or your own HTTPS AI API. Each engine is selected explicitly and requests its own permission. A provider failure never sends text to a different provider.
+- Inspect stored original text immediately beside the translation, and request an explanation in your selected language. Reference definitions and AI-generated explanations are labeled separately.
 - Preserve terms such as OpenAI, ChatGPT, GPT, LLM, API, Responses API, Agents SDK, JSON, and Gradual.
 - Apply installed premium glossary packs based on OpenAI Academy course language and OpenAI documentation terminology.
 - Show whether the selected language has final/native-reviewed, community-reviewed, AI-audited beta, AI-drafted beta, or protected-term machine translation support.
@@ -44,9 +45,11 @@ This extension is unofficial and not affiliated with OpenAI.
 
 Page text selected for translation follows the engine chosen by the learner. The default browser-native Translator API keeps text on the device. Browser-managed translator downloads stay off unless the user explicitly enables them. Google Translate requires an optional permission before text is sent to `translate.googleapis.com`. Local Ollama requires a separately running server and optional access to `localhost:11434`; text stays on that computer and is processed by the selected local model. The engines are independent, so a failure never sends the text to another provider. If auto-translate is enabled, newly rendered visible lesson text can be translated automatically after page changes. Original visible text, translated text, language, provider/model/glossary state, and cache timestamps may be stored locally in Chrome extension storage. The extension does not run an AcademyLens server, does not load remote AI scripts in v1, and does not collect personal data for the developer.
 
-## Planned Later
+Puter and API connections send the selected passage and bounded lesson context to the chosen service. User-supplied API keys and Puter tokens stay in trusted extension session storage, not ordinary settings or translation caches. API keys are bound to the configured endpoint. General HTTPS access is declared as optional to support custom endpoints; the popup requests only the chosen origin. Paid chat subscriptions may not include API access or credits. Puter currently uses a token connection rather than interactive sign-in.
 
-AI-assisted terminology review may be added later only if it can be implemented without remote hosted code risk and with explicit opt-in privacy disclosure.
+## Verification Status
+
+The new provider connections and reading panel are statically implemented and runtime-unverified. This draft is not a claim that those features have passed store or live user acceptance checks.
 
 ## Store Asset Status
 

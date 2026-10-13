@@ -10,7 +10,7 @@
   "homepage_url": "https://github.com/heznpc/AcademyLens",
   "permissions": ["storage"],
   "host_permissions": ["https://academy.openai.com/*"],
-  "optional_host_permissions": ["https://translate.googleapis.com/*", "http://localhost:11434/*"],
+  "optional_host_permissions": ["https://translate.googleapis.com/*", "http://localhost:11434/*", "https://api.puter.com/*", "https://*/*"],
   "content_security_policy": {
     "extension_pages": "script-src 'self'; object-src 'self';"
   },
@@ -33,6 +33,8 @@
         "src/lib/cache.js",
         "src/lib/translation-quality.js",
         "src/lib/browser-translator.js",
+        "src/lib/term-notes.js",
+        "src/lib/reading-provider.js",
         "src/lib/glossary.js",
         "src/lib/text-utils.js",
         "src/content/content-helpers.js",
@@ -45,6 +47,7 @@
         "src/content/dom-translation-runtime.js",
         "src/content/frame-messenger.js",
         "src/content/panel-view.js",
+        "src/content/reading-assistant.js",
         "src/content/content.js"
       ],
       "css": ["src/content/content.css"],

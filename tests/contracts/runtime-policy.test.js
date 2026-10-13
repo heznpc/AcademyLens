@@ -319,7 +319,9 @@ test("extension manifest keeps a narrow permission, host, CSP, and WER surface",
   assert.deepEqual(manifest.host_permissions, ["https://academy.openai.com/*"]);
   assert.deepEqual(manifest.optional_host_permissions, [
     "https://translate.googleapis.com/*",
-    "http://localhost:11434/*"
+    "http://localhost:11434/*",
+    "https://api.puter.com/*",
+    "https://*/*"
   ]);
   assert.equal(manifest.content_security_policy.extension_pages, "script-src 'self'; object-src 'self';");
 
@@ -360,19 +362,16 @@ test("privacy policy describes local cache contents and auto-translate behavior"
   const policy = read("PRIVACY_POLICY.md");
   const storeListing = read("store-assets/STORE_LISTING.md");
 
-  assert.match(policy, /auto-translate is enabled/i);
+  assert.match(policy, /Auto-translate can process/i);
   assert.match(policy, /newly rendered visible lesson text/i);
-  assert.match(policy, /browser-native Translator API/i);
-  assert.match(policy, /translator downloads are disabled unless you explicitly turn them on/i);
-  assert.match(policy, /local correction overrides/i);
-  assert.match(policy, /locally corrected original visible text/i);
-  assert.match(policy, /cached original visible text/i);
-  assert.match(policy, /cached translated text/i);
-  assert.match(policy, /extension-selected visible lesson text/i);
-  assert.match(policy, /provider, glossary state/i);
-  assert.match(policy, /diagnostics are displayed locally/i);
-  assert.match(policy, /do not include the translated page text/i);
-  assert.match(policy, /target language, creation time, and last-access time/i);
+  assert.match(policy, /Chrome Translator/i);
+  assert.match(policy, /model downloads require explicit opt-in/i);
+  assert.match(policy, /correction overrides/i);
+  assert.match(policy, /original\/translated text/i);
+  assert.match(policy, /provider\/context identifiers, and timestamps/i);
+  assert.match(policy, /Diagnostics contain counts and provider paths/i);
+  assert.match(policy, /session storage, restricted to trusted extension contexts/i);
+  assert.match(policy, /API keys are bound to the saved endpoint/i);
   assert.match(storeListing, /browser-native Translator API/i);
   assert.match(storeListing, /translate\.googleapis\.com/i);
   assert.match(storeListing, /Browser-managed translator downloads stay off unless the user explicitly enables them/i);

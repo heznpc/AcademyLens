@@ -16,6 +16,7 @@
   const DomTranslationRuntime = globalThis.AcademyLensDomTranslationRuntime;
   const FrameMessenger = globalThis.AcademyLensFrameMessenger;
   const PanelView = globalThis.AcademyLensPanelView;
+  const ReadingAssistant = globalThis.AcademyLensReadingAssistant;
   const Text = globalThis.AcademyLensTextUtils;
   const uiLocale = C && C.getUiLocale ? C.getUiLocale(navigator.language) : "en";
   const BACKGROUND_RESPONSE_TIMEOUT_MS = 12000;
@@ -37,6 +38,7 @@
     !FrameMessenger ||
     !Glossary ||
     !PanelView ||
+    !ReadingAssistant ||
     !Text ||
     !C.isAcademyUrl(location.href)
   )
@@ -131,6 +133,16 @@
     getTargetLanguage: () => state.settings.targetLanguage,
     getPanelElement: () => state.panel,
     suppressMutationReactions
+  });
+  const readingAssistant = ReadingAssistant.create({
+    document,
+    window,
+    domTranslation,
+    uiLocale,
+    getSettings: () => state.settings,
+    getGlossary: () => state.glossaries.get(state.settings.targetLanguage),
+    getContext: (record) => JSON.stringify(lessonContext(domTranslation.recordTarget(record))),
+    explain: (request) => translationProvider.explain(request)
   });
   const frameMessenger = FrameMessenger.create({
     document,
@@ -317,7 +329,9 @@
         nativeUnavailable: "provider.nativeUnavailable",
         background: "provider.background",
         local: "provider.local",
-        ollama: "provider.ollama"
+        ollama: "provider.ollama",
+        api: "provider.api",
+        puter: "provider.puter"
       }[mode] || "provider.checking"
     );
   }
@@ -357,6 +371,11 @@
 
   async function refreshBrowserTranslatorStatus() {
     const engine = C.normalizeTranslationEngine(state.settings.translationEngine);
+    if (engine === "api" || engine === "puter") {
+      setBrowserTranslatorStatus("not-selected");
+      setProviderMode(engine, engine === "api" ? state.settings.apiModel : state.settings.puterModel);
+      return;
+    }
     if (C.engineUsesOllama(engine)) {
       setBrowserTranslatorStatus("local");
       setProviderMode("ollama", C.normalizeOllamaModel(state.settings.ollamaModel));
@@ -943,6 +962,17 @@
     return H.diagnosticsFromResponse(response, requestedCount, state.providerMode);
   }
 
+  function lessonContext(target) {
+    const element = target && (target.nodeType === Node.TEXT_NODE ? target.parentElement : target);
+    const scope = element && element.closest("section, article, [role='main'], main");
+    const heading = scope && scope.querySelector("h1, h2, h3");
+    const headingRecord = heading && domTranslation.recordForClickedElement(heading);
+    return {
+      title: String(document.title || "").slice(0, 240),
+      heading: String(headingRecord?.originalText || heading?.textContent || "").slice(0, 240)
+    };
+  }
+
   async function translateCandidatePass({ generation, targetLanguage, pageUrl, glossary, childFrameCount = 0 }) {
     const signal = currentAbortSignal(generation);
     throwIfAborted(signal);
@@ -1006,6 +1036,11 @@
     let response = { ok: true, translated: {}, errors: {}, stats: { failed: 0 } };
     if (seenTexts.size > 0) {
       const texts = orderedContextTexts(contextGroups);
+      const headingsByText = new Map();
+      for (const [candidate, prepared] of preparedByCandidate) {
+        if (!headingsByText.has(prepared.text)) headingsByText.set(prepared.text, new Set());
+        headingsByText.get(prepared.text).add(lessonContext(candidate.target).heading);
+      }
       const textChunks = chunks(texts, C.LIMITS.maxBatchSize || 40);
       setStatus(message("status.translating", { count: texts.length }));
       setProgress(15);
@@ -1013,12 +1048,19 @@
       try {
         for (let index = 0; index < textChunks.length; index += 1) {
           if (!isCurrentGeneration(generation, targetLanguage, pageUrl)) return;
+          const headings = new Set(textChunks[index].flatMap((text) => [...(headingsByText.get(text) || [])]));
+          const context = {
+            title: String(document.title || "").slice(0, 240),
+            // Do not assign one section's heading to an unrelated section.
+            heading: headings.size === 1 ? [...headings][0] : ""
+          };
           const chunkResponse = await raceCurrentGeneration(
             translationProvider.sendTranslationBatch(
               {
                 type: C.MESSAGE_TYPES.TRANSLATE_BATCH,
                 targetLanguage,
                 texts: textChunks[index],
+                context,
                 cacheScope: baseScope,
                 cacheEpoch: state.cacheEpoch,
                 operationId: `${frameMessenger.getFrameSessionToken()}:${generation}`
@@ -1215,6 +1257,7 @@
   }
 
   function restorePage(options = {}) {
+    readingAssistant.reset();
     if (options.bump !== false) bumpGeneration();
     window.clearTimeout(state.debounceTimer);
     cancelQueuedTranslation();
@@ -1257,7 +1300,7 @@
 
   function isPanelMutation(node) {
     const element = mutationElement(node);
-    return Boolean(element && state.panel && (element === state.panel || state.panel.contains(element)));
+    return Boolean(element && (element.closest("[data-academylens-skip]") || (state.panel && (element === state.panel || state.panel.contains(element)))));
   }
 
   function textNodeMayNeedTranslation(node) {
@@ -1353,6 +1396,7 @@
     const previousNativeDownloads = state.settings.enableBrowserTranslatorDownloads;
     const previousEngine = state.settings.translationEngine;
     const previousOllamaModel = state.settings.ollamaModel;
+    const previousProviderConfig = JSON.stringify([state.settings.apiEndpoint, state.settings.apiModel, state.settings.puterModel, state.settings.providerRevision]);
     state.settings = {
       ...C.DEFAULT_SETTINGS,
       ...state.settings,
@@ -1361,7 +1405,8 @@
     state.settings.translationEngine = C.normalizeTranslationEngine(state.settings.translationEngine);
     state.settings.ollamaModel = C.normalizeOllamaModel(state.settings.ollamaModel);
     const providerChanged =
-      previousEngine !== state.settings.translationEngine || previousOllamaModel !== state.settings.ollamaModel;
+      previousEngine !== state.settings.translationEngine || previousOllamaModel !== state.settings.ollamaModel ||
+      previousProviderConfig !== JSON.stringify([state.settings.apiEndpoint, state.settings.apiModel, state.settings.puterModel, state.settings.providerRevision]);
 
     if (state.shadow) {
       const language = state.shadow.querySelector("[data-language]");
@@ -1419,10 +1464,12 @@
   function startContentControllers() {
     domObserverController.start();
     settingsController.start(settingsHandlers);
+    readingAssistant.start();
   }
 
   function teardownContent() {
     contentPaused = true;
+    readingAssistant.stop();
     settingsController.stop();
     translationController.stop();
     domObserverController.stop();

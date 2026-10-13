@@ -122,13 +122,14 @@ Current runtime behavior:
 - A provider failure never sends the same text to a different provider.
 - Translation cache entries are scoped by provider and glossary state; local corrections bypass cached provider text.
 - Correction management and runtime diagnostics are local-only browser storage/UI features.
-- GPT/Puter/OpenAI review is disabled.
+- The legacy terminology-review bridge is disabled. Requested reading explanations use the selected native, Google reference-note, Ollama, Puter, or user-configured API path.
+- API keys and Puter tokens stay in trusted extension session storage. API keys are endpoint-bound and connection changes cancel active requests.
 - No AcademyLens server is used.
 
 Before public release:
 
 1. Run `npm run qa:optional-permission` and approve the real Chrome host prompt for any build that exposes Google Translate.
-2. Confirm `PRIVACY_POLICY.md` describes browser-native Translator, Google Translate, and local Ollama as independently selected engines with no cross-provider fallback.
+2. Confirm `PRIVACY_POLICY.md` describes all five engines and their translation/explanation data flows with no cross-provider fallback.
 3. Confirm store copy does not describe the endpoint as Google Cloud Translation API.
 4. Confirm runtime files do not load remote hosted SDK scripts.
 5. Confirm browser-native translator downloads remain explicit opt-in.

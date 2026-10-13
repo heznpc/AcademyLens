@@ -39,6 +39,7 @@ async function loadPopup(options = {}) {
   const stored = options.settings ? { [Constants.STORAGE_KEYS.SETTINGS]: options.settings } : {};
   const permissionRequests = [];
   const runtimeMessages = [];
+  const session = options.session || {};
 
   Object.defineProperty(window.navigator, "language", { value: "ko-KR", configurable: true });
   Object.defineProperty(window.navigator, "languages", { value: ["ko-KR", "en-US"], configurable: true });
@@ -68,6 +69,10 @@ async function loadPopup(options = {}) {
       }
     },
     storage: {
+      session: {
+        async get() { return { ...session }; },
+        async set(values) { Object.assign(session, values); }
+      },
       local: {
         async get() {
           return { ...stored };
@@ -92,7 +97,7 @@ async function loadPopup(options = {}) {
 
   window.eval(popupSource);
   await flush();
-  return { dom, permissionRequests, runtimeMessages, stored, window };
+  return { dom, permissionRequests, runtimeMessages, stored, session, window };
 }
 
 test("popup exposes every allowlisted Ollama model and persists the selection", async () => {
@@ -131,7 +136,7 @@ test("popup removes auto without requesting permission and migrates stored auto 
 
   assert.deepEqual(
     Array.from(engine.options, (option) => option.value),
-    ["device", "remote", "ollama"]
+    ["device", "remote", "ollama", "puter", "api"]
   );
   assert.equal(engine.value, "device");
   assert.equal(stored[Constants.STORAGE_KEYS.SETTINGS].translationEngine, "device");
@@ -291,4 +296,49 @@ test("popup ignores an older Ollama health result after the model changes", asyn
   assert.match(status.textContent, /gemma4:12b/);
   assert.doesNotMatch(status.textContent, /응답하지 않습니다/);
   assert.equal(window.document.getElementById("ollamaRetry").disabled, false);
+});
+
+test("API connection requests only its origin and stores endpoint-bound credentials in session", async () => {
+  const { permissionRequests, runtimeMessages, stored, session, window } = await loadPopup({
+    settings: { ...Constants.DEFAULT_SETTINGS, targetLanguage: "ja", translationEngine: "api" }
+  });
+  window.document.getElementById("apiEndpoint").value = "https://provider.example/v1/chat/completions";
+  window.document.getElementById("cloudModel").value = "test-model";
+  window.document.getElementById("cloudSecret").value = "test-only-key";
+  window.document.getElementById("saveConnection").click();
+  await flush();
+  assert.deepEqual(Array.from(permissionRequests[0].origins), ["https://provider.example/*"]);
+  assert.equal(session[Constants.PROVIDER_SECRETS_KEY].apiKey, "test-only-key");
+  assert.equal(session[Constants.PROVIDER_SECRETS_KEY].apiEndpoint, "https://provider.example/v1/chat/completions");
+  const saved = stored[Constants.STORAGE_KEYS.SETTINGS];
+  assert.equal(saved.apiModel, "test-model");
+  assert.ok(saved.providerRevision > 0);
+  assert.doesNotMatch(JSON.stringify(stored), /test-only-key/);
+  assert.equal(window.document.getElementById("cloudSecret").value, "");
+  assert.equal(runtimeMessages.length, 0);
+});
+
+test("denied cloud permission does not save a secret", async () => {
+  const { stored, session, window } = await loadPopup({
+    settings: { ...Constants.DEFAULT_SETTINGS, targetLanguage: "fr", translationEngine: "puter" },
+    permissionGranted: false
+  });
+  window.document.getElementById("cloudModel").value = "test-model";
+  window.document.getElementById("cloudSecret").value = "test-only-token";
+  window.document.getElementById("saveConnection").click();
+  await flush();
+  assert.equal(session[Constants.PROVIDER_SECRETS_KEY], undefined);
+  assert.equal(stored[Constants.STORAGE_KEYS.SETTINGS].puterModel, "");
+});
+
+test("forgetting a connection clears only that credential and advances the request revision", async () => {
+  const { stored, session, window } = await loadPopup({
+    settings: { ...Constants.DEFAULT_SETTINGS, targetLanguage: "de", translationEngine: "puter", providerRevision: 1 },
+    session: { [Constants.PROVIDER_SECRETS_KEY]: { puterToken: "test-token", apiKey: "test-key" } }
+  });
+  window.document.getElementById("clearConnection").click();
+  await flush();
+  assert.equal(session[Constants.PROVIDER_SECRETS_KEY].puterToken, undefined);
+  assert.equal(session[Constants.PROVIDER_SECRETS_KEY].apiKey, "test-key");
+  assert.ok(stored[Constants.STORAGE_KEYS.SETTINGS].providerRevision > 1);
 });

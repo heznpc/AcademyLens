@@ -24,7 +24,7 @@ Store name: **AcademyLens — AI Course Translator (Unofficial)**. The name deli
 
 ---
 
-> **Beta status:** local install only, unofficial, on-device translation by default with an opt-in Google Translate engine, and not Chrome Web Store-ready until live logged-in Academy QA, glossary review evidence, provider/privacy review, and release assets are closed.
+> **Beta status:** local install only, unofficial, on-device by default. New provider connections and reading notes are statically implemented but have not been run or debugged. Store release still requires live Academy QA and provider/privacy review.
 
 ## Translation Engines
 
@@ -35,8 +35,10 @@ You pick the engine. The default sends nothing off your device.
 | On-device only (default) | Translated by Chrome on your device. Never leaves your computer.       | No               |
 | Google Translate         | Sent to Google Translate. Covers older Chrome and more language pairs. | Yes              |
 | Local Ollama             | Sent only to the selected Ollama model on your computer.               | Yes, localhost   |
+| Puter AI                 | Sent to Puter using your selected model and session token.             | Yes, Puter       |
+| AI API                   | Sent to your configured HTTPS chat-completions endpoint.               | Yes, endpoint origin |
 
-`translate.googleapis.com` and `localhost:11434` are **optional** host permissions, so a fresh install cannot reach either one. AcademyLens requests only the permission for the engine you explicitly select, and the service worker re-checks both the stored engine/model selection and the permission grant before every request. Declining reverts you to the on-device engine. If a selected engine fails, AcademyLens reports the failure instead of sending the text to a different provider.
+External provider permissions are **optional**. AcademyLens requests the origin for the connection you choose, and the service worker re-checks the stored provider configuration and permission before requests. A failure never sends text to another provider. API keys and Puter tokens stay in extension session storage and must be re-entered after the browser session ends. A paid chat subscription does not by itself provide API access or API credits.
 
 ## Table of Contents
 
@@ -46,7 +48,7 @@ You pick the engine. The default sends nothing off your device.
 - [Technical Shape](#technical-shape)
 - [Built For Academy Pages](#built-for-academy-pages)
 - [Quality And Release Readiness](#quality-and-release-readiness)
-- [Planned v1.1](#planned-v11)
+- [Reading Assistance](#reading-assistance)
 - [Development](#development)
 - [Glossary Contributions](#glossary-contributions)
 - [Operations](#operations)
@@ -62,7 +64,9 @@ You pick the engine. The default sends nothing off your device.
 - Applies installed premium glossaries built from OpenAI Academy course language and OpenAI documentation terminology before machine translation.
 - Uses native language names in the language picker.
 - Shows whether the selected language has a final/native-reviewed, community-reviewed, AI-audited beta, AI-drafted beta, or protected-term machine translation status.
-- Keeps browser-native Translator, Google Translate, and local Ollama as independently selected engines; browser language-pack downloads require explicit opt-in.
+- Keeps browser-native AI, Google Translate, local Ollama, Puter, and a user-configured AI API independently selectable; browser model downloads require explicit opt-in.
+- Opens the stored original immediately beside its translation, without a network request.
+- Provides requested explanations in the selected language, separating bundled reference definitions from AI-generated notes.
 - Stores optional local correction overrides so a learner can fix repeated awkward translations on their own device.
 - Keeps translation cache entries scoped by provider and glossary state; local corrections bypass cached provider text and are applied directly.
 - Includes local-only correction management and diagnostics for provider, cache, context grouping, and embedded-frame applied/failed counts.
@@ -100,12 +104,12 @@ AcademyLens is a separate project because OpenAI Academy has a different product
 
 - Chrome Manifest V3
 - Frontend-only extension
-- No API key
+- No API key required for the default engine; optional user-owned API connection
 - No AcademyLens server; optional local Ollama integration
 - Content script for OpenAI Academy DOM translation
 - Background service worker for translation requests and cache
 
-The current build lets the learner explicitly choose browser-native Translator, Google Translate, or a local Ollama model. The engines are independent: a failure never sends course text to another provider. Ollama uses `http://localhost:11434/v1/chat/completions` and requires an explicit localhost permission. Chrome Web Store submission is blocked until the final provider/privacy posture is reviewed. Browser-native Translator APIs are not treated as universally available because support depends on browser, version, language availability, and page context. See [docs/TECH_STACK_REVIEW.md](docs/TECH_STACK_REVIEW.md).
+The provider facade offers translation and explanation while the existing DOM controller owns translation and restoration. A separate Shadow DOM reading panel consumes those stored records. Puter uses a packaged HTTP adapter to its AI driver endpoint; the extension does not load Puter.js remotely. API connections require an HTTPS OpenAI-compatible chat-completions endpoint. Chrome's Translator and LanguageModel capabilities depend on device, language, browser, and page context. Apple Foundation Models are not directly integrated. See [docs/TECH_STACK_REVIEW.md](docs/TECH_STACK_REVIEW.md).
 
 OpenAI Academy is hosted through Gradual for course enrollment, progress tracking, and course-completion certificates. AcademyLens intentionally stays outside those flows and works only with visible page text.
 
@@ -117,14 +121,13 @@ AcademyLens is designed around OpenAI Academy course-page patterns and tested ag
 
 AcademyLens is an open-source beta. It should not be treated as Chrome Web Store-ready until live Academy DOM QA, glossary review evidence, provider/privacy review, and release assets are all closed. See [docs/QUALITY_ROADMAP.md](docs/QUALITY_ROADMAP.md), [docs/TRUST_EVIDENCE.md](docs/TRUST_EVIDENCE.md), [docs/TECH_STACK_REVIEW.md](docs/TECH_STACK_REVIEW.md), and [docs/RELEASE_CHECKLIST.md](docs/RELEASE_CHECKLIST.md).
 
-## Planned v1.1
+## Reading Assistance
 
-An optional AI tutor, **off by default**, with two interchangeable engines and no change to the core:
+Open the reading panel or click translated course text to inspect the original and translation. Previous/next controls are keyboard accessible. Original text comes directly from the existing DOM translation record.
 
-- **Cloud engine** — a locally bundled Puter.js bridge (no remotely-hosted code) that runs a stronger remote model. Requires a free Puter sign-in and sends your question plus the relevant lesson text for that request.
-- **On-device engine** — Chrome's built-in Gemini Nano (Prompt API), which needs no account and keeps everything on the device, where hardware and region allow.
+Request a note when a concept needs explanation. On-device mode first uses bundled definitions with reference links; otherwise Chrome LanguageModel generates a short explanation, which Chrome Translator renders in the chosen language. Google mode translates matching bundled definitions. Ollama, Puter, and API mode use the selected model. Missing capabilities produce an explicit error without switching providers. Generated explanations are labeled as AI output; glossary editorial instructions are never presented as definitions.
 
-The tutor is additive. Translation, protected AI terminology, local corrections, and glossary term reference keep working with no account and no AI engine, so learners who can run neither engine still get the full baseline. Tutor answers are grounded in the curated glossary and the current lesson, and never surface quiz answers.
+Notes are requested individually, cancelled when context changes, and cached only in a bounded in-memory collection. Structural translation checks, glossary protection, and retries catch specific output defects; they do not prove semantic accuracy. Native-speaker evaluation remains necessary.
 
 ## Development
 

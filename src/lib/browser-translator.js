@@ -17,7 +17,16 @@
 
   function normalizeLanguage(code) {
     if (code === "iw") return "he";
+    if (code === "zh-CN") return "zh";
+    if (code === "zh-TW") return "zh-Hant";
     return String(code || "").trim();
+  }
+
+  function throwIfAborted(signal) {
+    if (!signal || !signal.aborted) return;
+    const error = new Error("Browser translation aborted");
+    error.name = "AbortError";
+    throw error;
   }
 
   function supportStatus(scope) {
@@ -71,36 +80,19 @@
   }
 
   async function translateText(text, options = {}) {
-    const scope = options.scope || globalThis;
-    const sourceLanguage = normalizeLanguage(options.sourceLanguage || DEFAULT_SOURCE_LANGUAGE);
-    const targetLanguage = normalizeLanguage(options.targetLanguage);
-    const current = await availability({ scope, sourceLanguage, targetLanguage });
-
-    if (!["available", "downloadable", "downloading"].includes(current.status)) {
-      throw new Error(`Browser translator unavailable: ${current.status}`);
-    }
-
-    const translator = await translatorObject(scope).create({
-      sourceLanguage,
-      targetLanguage,
-      monitor(monitor) {
-        if (!options.onDownloadProgress || !monitor || typeof monitor.addEventListener !== "function") return;
-        monitor.addEventListener("downloadprogress", options.onDownloadProgress);
-      }
-    });
-
-    try {
-      return await translator.translate(String(text || ""));
-    } finally {
-      if (translator && typeof translator.destroy === "function") translator.destroy();
-    }
+    const value = String(text || "");
+    const translated = await translateBatch([value], options);
+    return translated[value];
   }
 
   async function translateBatch(texts, options = {}) {
+    const signal = options.signal;
+    throwIfAborted(signal);
     const scope = options.scope || globalThis;
     const sourceLanguage = normalizeLanguage(options.sourceLanguage || DEFAULT_SOURCE_LANGUAGE);
     const targetLanguage = normalizeLanguage(options.targetLanguage);
     const current = await availability({ scope, sourceLanguage, targetLanguage });
+    throwIfAborted(signal);
     const allowedStatuses = options.allowDownload ? ["available", "downloadable", "downloading"] : ["available"];
 
     if (!allowedStatuses.includes(current.status)) {
@@ -110,20 +102,33 @@
     const translator = await translatorObject(scope).create({
       sourceLanguage,
       targetLanguage,
+      ...(signal ? { signal } : {}),
       monitor(monitor) {
         if (!options.onDownloadProgress || !monitor || typeof monitor.addEventListener !== "function") return;
         monitor.addEventListener("downloadprogress", options.onDownloadProgress);
       }
     });
 
+    let destroyed = false;
+    const destroy = () => {
+      if (destroyed) return;
+      destroyed = true;
+      if (translator && typeof translator.destroy === "function") translator.destroy();
+    };
+    if (signal) signal.addEventListener("abort", destroy, { once: true });
+
     try {
+      throwIfAborted(signal);
       const translated = {};
       for (const text of texts || []) {
-        translated[text] = await translator.translate(String(text || ""));
+        throwIfAborted(signal);
+        translated[text] = await translator.translate(String(text || ""), signal ? { signal } : {});
+        throwIfAborted(signal);
       }
       return translated;
     } finally {
-      if (translator && typeof translator.destroy === "function") translator.destroy();
+      if (signal) signal.removeEventListener("abort", destroy);
+      destroy();
     }
   }
 

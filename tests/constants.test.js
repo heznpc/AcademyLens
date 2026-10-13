@@ -4,6 +4,13 @@ const { join } = require("node:path");
 const test = require("node:test");
 
 const Constants = require("../src/lib/constants.js");
+
+test("localized Academy lesson direct-entry routes are supported", () => {
+  for (const path of ["/ko/learn/course/lessons", "/fr/home/courses/course", "/home/courses/course"]) {
+    assert.equal(Constants.isAcademyUrl(`https://academy.openai.com${path}`), true);
+  }
+  assert.equal(Constants.isAcademyUrl("https://example.com/ko/learn/course/lessons"), false);
+});
 const glossaryIndex = JSON.parse(readFileSync(join(__dirname, "../src/data/glossary.index.json"), "utf8"));
 
 test("language labels use native names regardless of UI locale", () => {
@@ -73,7 +80,10 @@ test("language support messages distinguish glossary-backed languages", () => {
 });
 
 test("translation engine helpers gate the remote path", () => {
-  assert.deepEqual(Constants.TRANSLATION_ENGINE_VALUES, ["device", "remote", "ollama"]);
+  assert.deepEqual(Constants.TRANSLATION_ENGINE_VALUES, ["device", "remote", "ollama", "puter", "api"]);
+  assert.equal(Constants.engineUsesCloud("api"), true);
+  assert.equal(Constants.engineUsesCloud("puter"), true);
+  assert.equal(Constants.engineUsesCloud("device"), false);
   assert.equal(Constants.TRANSLATION_ENGINES.AUTO, undefined);
   assert.equal(Constants.DEFAULT_SETTINGS.translationEngine, "device");
 

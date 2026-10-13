@@ -75,6 +75,8 @@ test("normalizes glossary entries", () => {
   const normalized = Glossary.normalizeGlossary(glossary);
 
   assert.equal(normalized.locale, "ko");
+  assert.deepEqual(normalized.sourceCatalog["academy:courses"], glossary.sourceCatalog["academy:courses"]);
+  assert.notEqual(normalized.sourceCatalog, glossary.sourceCatalog);
   assert(normalized.protectedTerms.includes("OpenAI"));
   assert(normalized.protectedTerms.includes("ChatGPT"));
   assert(normalized.protectedTerms.includes("GPT"));

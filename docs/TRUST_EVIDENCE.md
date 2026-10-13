@@ -1,6 +1,6 @@
 # Trust Evidence
 
-Last reviewed: 2026-09-01 KST
+Last revised: 2026-10-13 KST (new provider/reading paths are runtime-unverified)
 
 AcademyLens is an open-source beta for OpenAI Academy learners.
 
@@ -14,7 +14,8 @@ This page collects release evidence that should stay easy to inspect before any 
 - Translates extension-selected visible course or lesson text.
 - Avoids Gradual platform chrome such as enrollment, progress, certificates, quizzes, account controls, forms, navigation, cookie prompts, and status surfaces.
 - Does not change enrollment, course progress, certificates, account state, or OpenAI Academy settings.
-- Does not run an AcademyLens server, require an API key, or load remote AI scripts.
+- Does not run an AcademyLens server or load remote AI scripts. The default engine needs no key; optional API and Puter connections use user-supplied session credentials.
+- Offers immediate original-text inspection and requested notes in a separate reading panel.
 
 ## Provider And Privacy Evidence
 
@@ -22,7 +23,8 @@ This page collects release evidence that should stay easy to inspect before any 
 - Browser-managed translator downloads remain disabled unless the user explicitly enables them.
 - Google Translate through `translate.googleapis.com` is an independently selected engine and requires its optional host permission.
 - Local Ollama is an independently selected engine and requires its optional localhost permission.
-- The service worker rejects stale requests whose engine or Ollama model no longer matches the stored selection before checking permission or sending text.
+- Puter and user-configured HTTPS APIs require the selected origin's permission. Tokens/keys are held in trusted extension session storage; API keys are bound to their endpoint.
+- The service worker rejects stale provider configurations and cancels active requests on credential revision changes.
 - A provider failure is reported without sending the text to a different provider.
 - The six selectable Ollama models are exercised against a protected-placeholder and terminology evaluation corpus through the real OpenAI-compatible endpoint with `npm run test:ollama` when preparing a local-provider build.
 - The latest hardware, runtime, latency, and per-model pass counts are recorded in [OLLAMA_MODEL_EVALUATION.md](OLLAMA_MODEL_EVALUATION.md).
@@ -34,7 +36,7 @@ Before release, confirm:
 
 - `PRIVACY_POLICY.md` and `store-assets/STORE_LISTING.md` describe the same explicit engine choices and no-cross-provider-fallback behavior.
 - Runtime files do not load remote hosted SDK scripts.
-- AI review remains disabled unless a compliant explicit opt-in bridge and updated privacy text exist.
+- The legacy terminology-review bridge stays disabled. Reading explanations use the explicit provider facade and distinguish bundled reference definitions from generated notes.
 
 ## Glossary Evidence
 
@@ -94,6 +96,9 @@ Release artifact evidence:
 
 ## Current Known Gaps
 
+- New API/Puter connections, native explanation support, and reader interactions have not been executed or debugged. Test source was added without running it.
+- Puter currently needs a supplied token; a user-friendly sign-in flow remains outstanding.
+- Structural checks do not establish semantic translation accuracy; multilingual evaluation is still required.
 - Real logged-in Academy DOM needs periodic sanitized recapture before store submission.
 - Most premium glossary packs are AI-audited beta, not final reviewed packs.
 - Final public screenshots still need a manual privacy review pass.

@@ -1,58 +1,46 @@
 # Technical Stack Review
 
-Last reviewed: 2026-09-01 KST
+Design decision: 2026-10-13 KST. Implementation is statically reviewed; no execution, build, tests, or debugging were performed for this change.
 
-AcademyLens should keep the current MV3, frontend-only, no-server architecture for the default runtime, but it should not treat any translation provider path as final Chrome Web Store submission posture until provider/privacy review is closed.
+## Chosen structure
 
-## Decision
+Keep the MV3 content script, background worker, DOM translation records, generation cancellation, glossary masking, local corrections, and provider-scoped cache. Extend the provider facade with translation and explanation, and add a separate reading panel that consumes existing records. Original lookup needs no inference or network.
 
-| Candidate                                            | Decision                                                    | Reason                                                                                                                                                                                                                                                                                              |
-| ---------------------------------------------------- | ----------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Current MV3 content script + background worker       | Keep                                                        | Best fit for DOM filtering, Restore, generation guards, and local cache.                                                                                                                                                                                                                            |
-| Current Google Translate web endpoint                | Keep as an opt-in engine behind an optional host permission | Useful for fast no-key translation and it is the only path that serves pre-Chrome-138 browsers and language pairs the on-device translator lacks. It is not the official authenticated Google Cloud Translation path, so it must never be the default and must never be a required host permission. |
-| Google Cloud Translation API                         | Reject for default runtime                                  | Official path requires project setup plus API key or credentials, which conflicts with no-key/no-server.                                                                                                                                                                                            |
-| Remote Puter.js/GPT script                           | Reject for runtime                                          | Remote hosted code risk is too high for Chrome Web Store review. Keep only disabled bridge skeleton.                                                                                                                                                                                                |
-| OpenAI API from extension                            | Reject for default runtime                                  | It requires user/developer key handling or a server. That conflicts with the no-key, no-server product principle.                                                                                                                                                                                   |
-| Browser-native Translator API                        | Default engine                                              | Use when already available, or when the user explicitly allows browser-managed language downloads. Keep Google Translate available as a separate opt-in engine because browser/version/language support is not universal. It must not be an automatic fallback.                                     |
-| User-operated Ollama on localhost                    | Keep as an opt-in local engine                              | Reuses models already installed outside the extension, needs no API key, and keeps requests on the learner's machine. It requires a separately running Ollama server, an optional localhost permission, and model-specific latency/resource expectations.                                           |
-| Local correction and diagnostics storage             | Keep local-only                                             | Learner corrections, cache scope metadata, and runtime diagnostics improve repeat-use quality without adding an AcademyLens server or remote AI dependency.                                                                                                                                         |
-| Local offline translation model bundled in extension | Reject for now                                              | Bundle size, language coverage, performance, and CWS review complexity are not worth it for this product stage.                                                                                                                                                                                     |
-| Server-side translation proxy                        | Reject for now                                              | Better control, but changes privacy posture and creates an operating cost/backend trust surface.                                                                                                                                                                                                    |
+Three designs were considered by parallel reviewers:
 
-## Source Notes
+| Design | Assessment |
+| --- | --- |
+| Extend provider facade + separate reading panel | Selected: preserves restoration and embedded-frame ownership while adding provider choice and notes. |
+| Replace text processing with a document AST and inline annotations | Deferred: richer paragraph semantics but broad changes to mutation, quiz filtering, and restoration. |
+| Move all translation into a side panel | Rejected for this iteration: simplifies DOM ownership but removes the existing in-place reading experience. |
 
-- Chrome Web Store MV3 policy says extension functionality must be discernible from submitted code, and external resources must not contain logic. It lists remote script tags, remote eval, and remote command interpreters as common violations. Source: `https://developer.chrome.com/docs/webstore/program-policies/mv3-requirements/` (last updated 2024-04-03).
-- Chrome's remote-hosted-code migration guide defines RHC as browser-executed JavaScript/WASM loaded from outside the extension package and says MV3 extensions need to bundle all code they use. Source: `https://developer.chrome.com/docs/extensions/develop/migrate/remote-hosted-code/`.
-- Google Cloud Translation authentication docs describe programmatic access through client libraries, REST, ADC, gcloud credentials, service accounts, and API keys for Basic v2 methods. Source: `https://docs.cloud.google.com/translate/docs/authentication/` (last updated 2026-06-23).
-- Google Cloud Translation setup docs require project/API/authentication setup before use. Source: `https://docs.cloud.google.com/translate/docs/setup/` (last updated 2026-06-18).
-- MDN documents Translator and Language Detector APIs as limited/experimental web APIs that require recent user interaction for object creation. Source: `https://developer.mozilla.org/en-US/docs/Web/API/Translator_and_Language_Detector_APIs/` (last modified 2026-05-18).
-- Microsoft Edge documented Translator/Language Detector APIs for sites and extensions as an on-device direction in June 2026. Source: `https://blogs.windows.com/msedgedev/2026/06/02/expanding-on-device-ai-in-microsoft-edge-new-models-and-apis-for-the-web/`.
-- Chrome built-in Translator API is documented as a browser AI translation path, but it is not a stable universal replacement for AcademyLens because support depends on Chrome/version/language availability and page context. Source: `https://developer.chrome.com/docs/ai/translator-api/`.
+## Provider behavior
 
-## Engine Selection Invariants
+| Choice | Translation | Requested explanation |
+| --- | --- | --- |
+| On-device (default) | Chrome Translator | Bundled reference definitions first; otherwise Chrome LanguageModel, then native translation to the selected language |
+| Google Translate | Existing web endpoint | Translation of matching bundled reference definitions |
+| Local Ollama | Existing local model | Same selected model |
+| Puter | Packaged HTTP adapter to Puter's AI driver | Same selected model |
+| AI API | User's HTTPS OpenAI-compatible chat-completions endpoint | Same selected endpoint/model |
 
-The learner picks the engine; the runtime never silently escalates to the network.
+There is no cross-provider fallback. Unsupported capabilities are reported. Browser downloads need explicit opt-in. Apple Foundation Models would require a separate native integration and are not part of this implementation.
 
-- `DEFAULT_SETTINGS.translationEngine` is `device`. An unknown or missing value normalizes to `device`, never to a remote engine.
-- The only selectable engine values are `device`, `remote`, and `ollama`. The retired `auto` value normalizes to `device`.
-- `translate.googleapis.com` stays in `optional_host_permissions`. `npm run check:files` fails if it appears in `host_permissions`.
-- `localhost:11434` also stays optional. The service worker checks the localhost grant before an Ollama request, and an Ollama failure never falls through to Google Translate.
-- The content script gates the remote path on the selected engine. The service worker independently requires the request engine/model to match the current stored selection, then re-checks `chrome.permissions.contains` before any remote request. A stale selection, failed permission check, or unreadable permission state fails closed.
-- A failure from any engine remains a failure for that engine; the runtime never retries the text with a different provider.
-- Declining the permission prompt reverts the selection to `device` instead of leaving a broken state.
+Puter integration uses the request protocol behind Puter.js, without loading its remotely hosted SDK. Its account token is entered explicitly. This is not a completed sign-in integration; protocol/auth behavior requires live verification before release. Paid chat subscriptions and API billing are separate; an API provider must support the supplied credential and endpoint.
 
-## Accepted Follow-Up
+## Request and storage boundaries
 
-Keep engine selection to the three documented values and preserve privacy copy and E2E coverage for every path. Ollama model names are allowlisted and model identity remains part of the cache provider scope.
+- Google, localhost, Puter, and arbitrary HTTPS provider origins are optional permissions. The broad HTTPS declaration permits user-configured origins; the popup requests only the selected origin.
+- API keys and Puter tokens are stored in Chrome extension session storage, restricted to trusted extension contexts. API keys are bound to the configured endpoint. They are absent from settings and translation caches.
+- The worker checks the current engine, model, endpoint, credential revision, and permission. Connection changes abort active operations. AI requests reject redirects.
+- Selected passage and bounded lesson context are sent only to the selected provider.
+- AI cache identity includes provider configuration and prompt/context identity. Explanations use a bounded memory cache.
+- Restore, navigation, language/provider changes, and frame lifecycle invalidate pending work.
 
-Cache entries should remain scoped by provider, glossary signature, and local correction signature. This keeps one explicitly selected provider from silently reusing another provider's output when the learner changes engines.
+## Quality and resource decisions
 
-## Future Experiment Shape
+Preserve glossary placeholders, local correction precedence, response-count checks, language/variant checks, and per-item quality recovery. AI translation instructions preserve negation, numbers, conditions, and terminology. These checks detect specific defects, not all mistranslations.
 
-If browser-native Translator APIs become broadly available for extension content scripts:
+Bundled definitions are AcademyLens paraphrases with links, not official quotations. Glossary editorial notes are not learner definitions. Generated notes are labeled separately and do not invent reference URLs. On-device model sessions are destroyed on cancellation and after use; generative and translation sessions are not intentionally kept active together.
 
-1. Keep Google Translate as a separate opt-in engine while browser-native coverage and quality are measured across Academy surfaces.
-2. Keep UI for model-download/availability state when required by the browser.
-3. Keep privacy copy for browser-managed language packs and each engine's network behavior.
-4. Keep E2E coverage for explicit provider selection, explicit download opt-in, and fail-closed provider errors.
-5. Keep glossary placeholder masking before every provider.
+Before release: validate authentication, native API availability in extension/embedded contexts, semantic quality across languages, keyboard/screen-reader behavior, and translated course navigation. Runtime verification remains outstanding at the user's instruction.

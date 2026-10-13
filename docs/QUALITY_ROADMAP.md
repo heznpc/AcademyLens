@@ -13,7 +13,8 @@ AcademyLens is usable as an open-source beta, but it should not be treated as Ch
 | Glossary quality      | AI-audited beta | Keep `npm run check:glossary-quality` green; promote packs only after documented community/native review and closed QA signals.     |
 | Privacy/store copy    | Improved draft  | Re-check against actual runtime network behavior before submission.                                                                 |
 | UX polish             | Beta            | Keep panel compact, status-rich, keyboard accessible, and non-official in tone.                                                     |
-| AI review             | Disabled        | Do not enable until there is a Chrome Web Store-compliant, explicit opt-in bridge.                                                  |
+| Reading explanations  | Runtime-unverified | Verify native/API/Puter authentication, language fidelity, provenance labels, cancellation, and keyboard navigation. |
+| Legacy glossary review | Disabled       | Separate from the new requested reading explanations. |
 
 ## Implementation Priorities
 
@@ -33,7 +34,7 @@ AcademyLens is usable as an open-source beta, but it should not be treated as Ch
 3. Preserve Chrome Web Store policy margin.
    - Keep remote hosted scripts out of runtime files.
    - Treat X translation checks as manual evidence only.
-   - Keep GPT/Puter review disabled until an opt-in bridge is reviewed and documented.
+   - Verify the packaged Puter/API adapter and session credential boundaries before release; keep the legacy terminology-review bridge disabled.
 
 4. Improve UX without implying OpenAI affiliation.
    - Show clear status, progress, restore, and glossary state.
@@ -49,6 +50,8 @@ AcademyLens is usable as an open-source beta, but it should not be treated as Ch
 
 ## Current Blockers To "Done"
 
+- The new provider and reading-note implementation has not been executed, built, tested, or debugged at the user's instruction.
+- Puter uses a token connection; interactive sign-in integration remains a follow-up.
 - 12 of 13 premium glossary packs are now `llm-audited`, not final `reviewed` or `native-reviewed`.
 - Korean is `community-reviewed`, not final `reviewed`.
 - Real logged-in Academy DOM still needs periodic sanitized recapture from live Academy pages before a store submission.
@@ -58,6 +61,6 @@ AcademyLens is usable as an open-source beta, but it should not be treated as Ch
 
 ## Non-Goals
 
-- Do not add AI Tutor before translation quality is trusted.
+- Do not expand requested passage explanations into an unrestricted tutor before translation quality is evaluated.
 - Do not add remote hosted SDK scripts.
 - Do not automate enrollment, progress, certificate, quiz, account, or X/Twitter interactions.

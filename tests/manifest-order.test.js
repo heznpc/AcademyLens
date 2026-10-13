@@ -17,6 +17,8 @@ test("content scripts load in dependency order", () => {
     "src/lib/cache.js",
     "src/lib/translation-quality.js",
     "src/lib/browser-translator.js",
+    "src/lib/term-notes.js",
+    "src/lib/reading-provider.js",
     "src/lib/glossary.js",
     "src/lib/text-utils.js",
     "src/content/content-helpers.js",
@@ -29,6 +31,7 @@ test("content scripts load in dependency order", () => {
     "src/content/dom-translation-runtime.js",
     "src/content/frame-messenger.js",
     "src/content/panel-view.js",
+    "src/content/reading-assistant.js",
     "src/content/content.js"
   ]);
 });

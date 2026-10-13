@@ -67,6 +67,11 @@
   function normalizeGlossary(glossary) {
     return {
       locale: glossary && glossary.locale ? glossary.locale : "ko",
+      sourceCatalog: Object.fromEntries(
+        Object.entries((glossary && glossary.sourceCatalog) || {})
+          .filter(([, source]) => source && typeof source.url === "string")
+          .map(([id, source]) => [id, { title: String(source.title || id), url: source.url }])
+      ),
       protectedTerms: uniqueTerms(glossary && glossary.protectedTerms),
       terms: Array.isArray(glossary && glossary.terms)
         ? glossary.terms

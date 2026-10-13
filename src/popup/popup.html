@@ -26,6 +26,27 @@
         <select id="translationEngine"></select>
       </label>
       <p class="hint" id="engineNote"></p>
+      <section id="cloudConnection" hidden aria-label="AI connection">
+        <label id="apiEndpointField">
+          <span data-i18n="connection.endpoint">HTTPS chat completions endpoint</span>
+          <input id="apiEndpoint" type="url" autocomplete="off" spellcheck="false" placeholder="https://provider.example/v1/chat/completions" />
+        </label>
+        <label>
+          <span data-i18n="connection.model">Model ID</span>
+          <input id="cloudModel" type="text" autocomplete="off" spellcheck="false" maxlength="120" />
+        </label>
+        <label>
+          <span data-i18n="connection.secret">API key / Puter auth token</span>
+          <input id="cloudSecret" type="password" autocomplete="off" spellcheck="false" />
+        </label>
+        <p class="hint" data-i18n="connection.note"></p>
+        <a id="puterHelp" href="https://docs.puter.com/Auth/signIn/" target="_blank" rel="noopener noreferrer" data-i18n="connection.puterHelp" hidden>Puter authentication documentation</a>
+        <div class="connection-actions">
+          <button id="saveConnection" type="button" data-i18n="connection.save">Save connection</button>
+          <button id="clearConnection" type="button" data-i18n="connection.clear">Forget credentials</button>
+        </div>
+        <p id="connectionStatus" role="status" aria-live="polite"></p>
+      </section>
       <label id="ollamaModelField" hidden>
         <span data-i18n="field.ollamaModel">Ollama model</span>
         <select id="ollamaModel"></select>
@@ -40,7 +61,7 @@
       </label>
       <label class="toggle">
         <input id="nativeDownloads" type="checkbox" />
-        <span data-i18n="popup.nativeDownloads">Allow built-in translator downloads</span>
+        <span data-i18n="popup.nativeDownloads">Allow built-in translation and explanation model downloads</span>
       </label>
       <p class="notice" data-i18n="notice.unofficial">Unofficial, not affiliated with OpenAI.</p>
     </main>

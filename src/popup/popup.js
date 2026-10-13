@@ -14,6 +14,15 @@
   const autoTranslate = document.getElementById("autoTranslate");
   const nativeDownloads = document.getElementById("nativeDownloads");
   const languageSupport = document.getElementById("languageSupport");
+  const cloudConnection = document.getElementById("cloudConnection");
+  const apiEndpoint = document.getElementById("apiEndpoint");
+  const cloudModel = document.getElementById("cloudModel");
+  const cloudSecret = document.getElementById("cloudSecret");
+  const saveConnection = document.getElementById("saveConnection");
+  const clearConnection = document.getElementById("clearConnection");
+  const connectionStatus = document.getElementById("connectionStatus");
+  let connectionGeneration = 0;
+  let connectionBusy = false;
   let glossaryIndex = null;
   let engineChangeGeneration = 0;
   let ollamaHealthGeneration = 0;
@@ -98,6 +107,32 @@
     const visible = C.engineUsesOllama(engine.value);
     ollamaModelField.hidden = !visible;
     ollamaHealth.hidden = !visible;
+    updateCloudConnection();
+  }
+
+  function connectionMessage(key) {
+    connectionStatus.textContent = C.getMessage(`connection.${key}`, uiLocale);
+  }
+
+  async function updateCloudConnection() {
+    const generation = ++connectionGeneration;
+    const selected = engine.value;
+    cloudConnection.hidden = !C.engineUsesCloud(selected);
+    cloudSecret.value = "";
+    document.getElementById("apiEndpointField").hidden = selected !== "api";
+    document.getElementById("puterHelp").hidden = selected !== "puter";
+    apiEndpoint.value = settings.apiEndpoint || "";
+    cloudModel.value = (selected === "puter" ? settings.puterModel : settings.apiModel) || "";
+    if (!C.engineUsesCloud(selected)) return;
+    try {
+      const stored = await chrome.storage.session.get(C.PROVIDER_SECRETS_KEY);
+      if (generation !== connectionGeneration) return;
+      const secrets = stored[C.PROVIDER_SECRETS_KEY] || {};
+      const present = selected === "puter" ? secrets.puterToken : secrets.apiKey && secrets.apiEndpoint === settings.apiEndpoint;
+      connectionMessage(present ? "present" : "absent");
+    } catch {
+      if (generation === connectionGeneration) connectionMessage("absent");
+    }
   }
 
   async function checkOllamaStatus() {
@@ -194,6 +229,100 @@
     storageWriteChain = pending.catch(() => {});
     return pending;
   }
+
+  saveConnection.addEventListener("click", async () => {
+    const selected = engine.value;
+    if (connectionBusy || !C.engineUsesCloud(selected)) return;
+    const generation = ++connectionGeneration;
+    const model = cloudModel.value.trim();
+    let endpoint = "";
+    let origin = C.PUTER_ORIGIN;
+    try {
+      if (!model || model.length > 120) throw new Error("model");
+      if (selected === "api") {
+        const parsed = new URL(apiEndpoint.value.trim());
+        if (parsed.protocol !== "https:" || parsed.username || parsed.password || parsed.search || parsed.hash) throw new Error("endpoint");
+        endpoint = parsed.href;
+        origin = `${parsed.origin}/*`;
+      }
+    } catch {
+      connectionMessage("invalid");
+      return;
+    }
+    const credential = cloudSecret.value.trim();
+    connectionBusy = true;
+    saveConnection.disabled = true;
+    clearConnection.disabled = true;
+    try {
+      // Request directly from the click, before asynchronous storage operations.
+      const granted = await chrome.permissions.request({ origins: [origin] });
+      if (generation !== connectionGeneration || engine.value !== selected) return;
+      if (!granted) {
+        connectionMessage("denied");
+        return;
+      }
+      const stored = await chrome.storage.session.get(C.PROVIDER_SECRETS_KEY);
+      if (generation !== connectionGeneration || engine.value !== selected) return;
+      const secrets = stored[C.PROVIDER_SECRETS_KEY] || {};
+      if (selected === "api") {
+        if (!credential && (!secrets.apiKey || secrets.apiEndpoint !== endpoint)) {
+          connectionMessage("missing");
+          return;
+        }
+        secrets.apiKey = credential || secrets.apiKey;
+        secrets.apiEndpoint = endpoint;
+      } else {
+        if (!credential && !secrets.puterToken) {
+          connectionMessage("missing");
+          return;
+        }
+        secrets.puterToken = credential || secrets.puterToken;
+      }
+      await chrome.storage.session.set({ [C.PROVIDER_SECRETS_KEY]: secrets });
+      if (generation !== connectionGeneration || engine.value !== selected) return;
+      await persist({
+        ...(selected === "api" ? { apiEndpoint: endpoint, apiModel: model } : { puterModel: model }),
+        providerRevision: Math.max(Date.now(), (Number(settings.providerRevision) || 0) + 1)
+      });
+      cloudSecret.value = "";
+      connectionMessage("saved");
+    } catch {
+      if (generation === connectionGeneration) connectionMessage("denied");
+    } finally {
+      connectionBusy = false;
+      saveConnection.disabled = false;
+      clearConnection.disabled = false;
+    }
+  });
+
+  clearConnection.addEventListener("click", async () => {
+    const selected = engine.value;
+    if (connectionBusy || !C.engineUsesCloud(selected)) return;
+    connectionBusy = true;
+    saveConnection.disabled = true;
+    clearConnection.disabled = true;
+    ++connectionGeneration;
+    try {
+      const stored = await chrome.storage.session.get(C.PROVIDER_SECRETS_KEY);
+      const secrets = stored[C.PROVIDER_SECRETS_KEY] || {};
+      if (selected === "api") {
+        delete secrets.apiKey;
+        delete secrets.apiEndpoint;
+      } else if (selected === "puter") {
+        delete secrets.puterToken;
+      }
+      await chrome.storage.session.set({ [C.PROVIDER_SECRETS_KEY]: secrets });
+      await persist({ providerRevision: Math.max(Date.now(), (Number(settings.providerRevision) || 0) + 1) });
+      cloudSecret.value = "";
+      connectionMessage("cleared");
+    } catch {
+      connectionMessage("denied");
+    } finally {
+      connectionBusy = false;
+      saveConnection.disabled = false;
+      clearConnection.disabled = false;
+    }
+  });
 
   language.addEventListener("change", async () => {
     updateLanguageSupport();

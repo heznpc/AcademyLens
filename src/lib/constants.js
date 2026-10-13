@@ -21,18 +21,26 @@
   const TRANSLATION_ENGINES = Object.freeze({
     DEVICE: "device",
     REMOTE: "remote",
-    OLLAMA: "ollama"
+    OLLAMA: "ollama",
+    PUTER: "puter",
+    API: "api"
   });
 
   const TRANSLATION_ENGINE_VALUES = Object.freeze([
     TRANSLATION_ENGINES.DEVICE,
     TRANSLATION_ENGINES.REMOTE,
-    TRANSLATION_ENGINES.OLLAMA
+    TRANSLATION_ENGINES.OLLAMA,
+    TRANSLATION_ENGINES.PUTER,
+    TRANSLATION_ENGINES.API
   ]);
 
   // Declared as an optional host permission so a default install never grants it.
   const REMOTE_TRANSLATION_ORIGIN = "https://translate.googleapis.com/*";
   const OLLAMA_ORIGIN = "http://localhost:11434/*";
+  const PUTER_ORIGIN = "https://api.puter.com/*";
+  // Session storage is restricted to trusted extension contexts by default.
+  // Credentials must never be placed in SETTINGS or sent to content scripts.
+  const PROVIDER_SECRETS_KEY = "academylens.providerSecrets";
   const OLLAMA_MODELS = Object.freeze([
     "gemma3:4b",
     "qwen3.5:4b",
@@ -45,6 +53,7 @@
 
   const MESSAGE_TYPES = Object.freeze({
     TRANSLATE_BATCH: "ACADEMYLENS_TRANSLATE_BATCH",
+    EXPLAIN_TEXT: "ACADEMYLENS_EXPLAIN_TEXT",
     CANCEL_TRANSLATION: "ACADEMYLENS_CANCEL_TRANSLATION",
     CHECK_OLLAMA: "ACADEMYLENS_CHECK_OLLAMA",
     PERSIST_CACHE_UPDATES: "ACADEMYLENS_PERSIST_CACHE_UPDATES",
@@ -67,7 +76,11 @@
     autoTranslate: false,
     enableBrowserTranslatorDownloads: false,
     translationEngine: TRANSLATION_ENGINES.DEVICE,
-    ollamaModel: DEFAULT_OLLAMA_MODEL
+    ollamaModel: DEFAULT_OLLAMA_MODEL,
+    apiEndpoint: "",
+    apiModel: "",
+    puterModel: "",
+    providerRevision: 0
   });
 
   const SUPPORTED_LANGUAGES = Object.freeze([
@@ -117,11 +130,31 @@
       "field.targetLanguage": "Target language",
       "popup.description": "Translate OpenAI Academy course content in your language.",
       "popup.autoTranslate": "Auto-translate new course text",
-      "popup.nativeDownloads": "Allow built-in translator downloads",
+      "popup.nativeDownloads": "Allow built-in translation and explanation model downloads",
       "field.translationEngine": "Translation engine",
       "engine.device": "On-device only",
       "engine.remote": "Google Translate",
       "engine.ollama": "Local Ollama",
+      "engine.puter": "Puter AI",
+      "engine.api": "AI API (your key)",
+      "engine.notePuter": "Selected course text and context go to Puter using your account. Connect below; usage may incur charges.",
+      "engine.noteApi": "Selected course text and context go to your configured AI provider. API billing may be separate from a chat subscription.",
+      "provider.puter": "Puter AI",
+      "provider.api": "AI API",
+      "connection.endpoint": "HTTPS chat completions endpoint",
+      "connection.model": "Model ID",
+      "connection.secret": "API key / Puter auth token",
+      "connection.save": "Save connection",
+      "connection.clear": "Forget credentials",
+      "connection.note": "Credentials stay in this browser session and are cleared on restart. Leave blank to keep the saved credential. A saved connection has not been tested.",
+      "connection.saved": "Connection saved for this session. No request sent.",
+      "connection.cleared": "Credentials removed.",
+      "connection.invalid": "Enter a model and a valid HTTPS endpoint without credentials, query, or fragment.",
+      "connection.missing": "Enter your credential to connect.",
+      "connection.denied": "Connection permission was not granted.",
+      "connection.present": "A credential is stored for this provider in this session.",
+      "connection.absent": "No credential is stored for this provider.",
+      "connection.puterHelp": "Puter authentication documentation",
       "engine.noteDevice": "Chrome translates on your device. No course text leaves your computer.",
       "engine.noteRemote": "Course text is sent to Google Translate. Works on older Chrome and more language pairs.",
       "engine.noteOllama": "Course text is sent only to Ollama on this computer.",
@@ -202,11 +235,31 @@
       "field.targetLanguage": "번역할 언어",
       "popup.description": "OpenAI Academy 강의 내용을 원하는 언어로 번역합니다.",
       "popup.autoTranslate": "새 강의 텍스트 자동 번역",
-      "popup.nativeDownloads": "내장 번역 다운로드 허용",
+      "popup.nativeDownloads": "내장 번역·설명 모델 다운로드 허용",
       "field.translationEngine": "번역 엔진",
       "engine.device": "기기 내 번역만",
       "engine.remote": "Google 번역",
       "engine.ollama": "로컬 Ollama",
+      "engine.puter": "Puter AI",
+      "engine.api": "AI API (내 키 사용)",
+      "engine.notePuter": "선택한 강의 텍스트와 문맥을 내 계정으로 Puter에 전송합니다. 아래에서 연결하세요. 사용량에 따라 비용이 발생할 수 있습니다.",
+      "engine.noteApi": "선택한 강의 텍스트와 문맥을 설정한 AI 제공자에 전송합니다. API 비용은 채팅 구독과 별도일 수 있습니다.",
+      "provider.puter": "Puter AI",
+      "provider.api": "AI API",
+      "connection.endpoint": "HTTPS chat completions 주소",
+      "connection.model": "모델 ID",
+      "connection.secret": "API 키 / Puter 인증 토큰",
+      "connection.save": "연결 저장",
+      "connection.clear": "인증 정보 삭제",
+      "connection.note": "인증 정보는 현재 브라우저 세션에만 보관하며 재시작하면 지워집니다. 빈칸으로 저장하면 기존 인증을 유지합니다. 저장만으로 연결이 검증되지는 않습니다.",
+      "connection.saved": "현재 세션에 연결을 저장했습니다. 요청은 전송하지 않았습니다.",
+      "connection.cleared": "인증 정보를 삭제했습니다.",
+      "connection.invalid": "모델과 유효한 HTTPS 주소를 입력하세요. 주소에 인증 정보·쿼리·해시를 넣지 마세요.",
+      "connection.missing": "연결할 인증 정보를 입력하세요.",
+      "connection.denied": "연결 권한이 허용되지 않았습니다.",
+      "connection.present": "현재 세션에 이 제공자의 인증 정보가 저장되어 있습니다.",
+      "connection.absent": "이 제공자의 인증 정보가 없습니다.",
+      "connection.puterHelp": "Puter 인증 안내",
       "engine.noteDevice": "Chrome이 기기 안에서 번역합니다. 강의 텍스트가 컴퓨터를 벗어나지 않습니다.",
       "engine.noteRemote": "강의 텍스트를 Google 번역으로 보냅니다. 구형 Chrome과 더 많은 언어쌍에서 동작합니다.",
       "engine.noteOllama": "강의 텍스트를 이 컴퓨터의 Ollama로만 보냅니다.",
@@ -284,7 +337,8 @@
     /^https:\/\/academy\.openai\.com\/(?:[a-z-]+\/)?pages\/courses/i,
     /^https:\/\/academy\.openai\.com\/(?:[a-z-]+\/)?public\/courses\//i,
     /^https:\/\/academy\.openai\.com\/(?:[a-z-]+\/)?courses\//i,
-    /^https:\/\/academy\.openai\.com\/learn\//i,
+    /^https:\/\/academy\.openai\.com\/(?:[a-z-]+\/)?home\/courses(?:\/|$)/i,
+    /^https:\/\/academy\.openai\.com\/(?:[a-z-]+\/)?learn\//i,
     /^https:\/\/academy\.openai\.com\/api\/courses\/[^/]+\/scorm-proxy\//i
   ]);
 
@@ -421,6 +475,10 @@
     return normalizeTranslationEngine(value) === TRANSLATION_ENGINES.OLLAMA;
   }
 
+  function engineUsesCloud(value) {
+    return [TRANSLATION_ENGINES.API, TRANSLATION_ENGINES.PUTER].includes(normalizeTranslationEngine(value));
+  }
+
   function normalizeOllamaModel(value) {
     return OLLAMA_MODELS.includes(value) ? value : DEFAULT_OLLAMA_MODEL;
   }
@@ -489,6 +547,8 @@
     TRANSLATION_ENGINE_VALUES,
     REMOTE_TRANSLATION_ORIGIN,
     OLLAMA_ORIGIN,
+    PUTER_ORIGIN,
+    PROVIDER_SECRETS_KEY,
     OLLAMA_MODELS,
     DEFAULT_OLLAMA_MODEL,
     EXCLUDED_SELECTOR,
@@ -496,6 +556,7 @@
     engineAllowsRemote,
     enginePrefersDevice,
     engineUsesOllama,
+    engineUsesCloud,
     getLanguageLabel,
     getGlossaryRecord,
     getLanguageSupportMessage,

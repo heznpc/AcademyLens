@@ -3,6 +3,46 @@ const test = require("node:test");
 
 const BrowserTranslator = require("../src/lib/browser-translator.js");
 
+test("browser translator stops remaining batch work when cancelled", async () => {
+  const controller = new AbortController();
+  const requests = [];
+  let destroyed = 0;
+  const scope = {
+    Translator: {
+      async availability() { return "available"; },
+      async create(options) {
+        assert.equal(options.signal, controller.signal);
+        return {
+          async translate(text, callOptions) {
+            assert.equal(callOptions.signal, controller.signal);
+            requests.push(text);
+            controller.abort();
+            return "Cancelled result";
+          },
+          destroy() { destroyed += 1; }
+        };
+      }
+    }
+  };
+  await assert.rejects(() => BrowserTranslator.translateBatch(["First", "Second"], {
+    scope, targetLanguage: "ko", signal: controller.signal
+  }), { name: "AbortError" });
+  assert.deepEqual(requests, ["First"]);
+  assert.equal(destroyed, 1);
+});
+
+test("single-text browser translation requires explicit download permission", async () => {
+  let creates = 0;
+  await assert.rejects(() => BrowserTranslator.translateText("An explanation", {
+    targetLanguage: "ko",
+    scope: { Translator: {
+      async availability() { return "downloadable"; },
+      async create() { creates += 1; }
+    } }
+  }), /downloadable/);
+  assert.equal(creates, 0);
+});
+
 test("browser translator reports unsupported when the API is absent", async () => {
   assert.equal(BrowserTranslator.supportStatus({}), "unsupported");
   const result = await BrowserTranslator.availability({
@@ -17,6 +57,8 @@ test("browser translator reports unsupported when the API is absent", async () =
 
 test("browser translator normalizes legacy Hebrew language code", () => {
   assert.equal(BrowserTranslator.normalizeLanguage("iw"), "he");
+  assert.equal(BrowserTranslator.normalizeLanguage("zh-CN"), "zh");
+  assert.equal(BrowserTranslator.normalizeLanguage("zh-TW"), "zh-Hant");
   assert.equal(BrowserTranslator.normalizeLanguage("pt-BR"), "pt-BR");
 });
 

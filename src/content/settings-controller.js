@@ -29,6 +29,8 @@
       }
       normalized.translationEngine = constants.normalizeTranslationEngine(normalized.translationEngine);
       normalized.ollamaModel = constants.normalizeOllamaModel(normalized.ollamaModel);
+      const providerRevision = Number(normalized.providerRevision);
+      normalized.providerRevision = Number.isSafeInteger(providerRevision) && providerRevision >= 0 ? providerRevision : 0;
       return normalized;
     }
 
@@ -39,7 +41,8 @@
       if (
         settings.targetLanguage !== storedSettings.targetLanguage ||
         settings.translationEngine !== storedSettings.translationEngine ||
-        settings.ollamaModel !== storedSettings.ollamaModel
+        settings.ollamaModel !== storedSettings.ollamaModel ||
+        settings.providerRevision !== storedSettings.providerRevision
       ) {
         await chromeRef.storage.local.set({ [constants.STORAGE_KEYS.SETTINGS]: settings });
       }

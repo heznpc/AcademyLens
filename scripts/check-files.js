@@ -73,7 +73,12 @@ const REQUIRED_PREMIUM_LOCALES = PREMIUM_LOCALE_RECORDS.map((record) => record.l
 const REQUIRED_EXTENSION_PERMISSIONS = ["storage"];
 // The remote Google Translate path is opt-in: it must never be granted at install time.
 const REQUIRED_HOST_PERMISSIONS = ["https://academy.openai.com/*"];
-const REQUIRED_OPTIONAL_HOST_PERMISSIONS = ["https://translate.googleapis.com/*", "http://localhost:11434/*"];
+const REQUIRED_OPTIONAL_HOST_PERMISSIONS = [
+  "https://translate.googleapis.com/*",
+  "http://localhost:11434/*",
+  "https://api.puter.com/*",
+  "https://*/*"
+];
 // Store-listing locales are driven by measured install share, not by guesswork.
 const REQUIRED_UI_LOCALES = ["de", "en", "es", "fr", "it", "ja", "ko", "pt_BR", "ru", "zh_CN", "zh_TW"];
 const REQUIRED_LOCALE_MESSAGE_KEYS = ["extName", "extShortName", "extDescription"];
